@@ -70,7 +70,8 @@ local function addCreature(player, data, creatureId, mutationId, paid)
 	if rarity.announce or mutation.rank >= 4 then
 		Remotes.Notify:FireAllClients(
 			"🚨 " .. player.DisplayName .. " создал " .. creatureLabel(creatureId, mutationId) .. " [" .. rarity.name .. "]!",
-			rarity.color
+			rarity.color,
+			true
 		)
 	end
 

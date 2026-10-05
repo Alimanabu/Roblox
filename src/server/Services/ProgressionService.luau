@@ -101,7 +101,7 @@ local function rebirth(player)
 	data.upgrades = { speed = 0, luck = 0, slots = 0 }
 
 	local title = Rebirths.titleFor(data.rebirths)
-	Remotes.Notify:FireAllClients("♻️ " .. player.DisplayName .. " переродился и стал «" .. title .. "»!", GOLD)
+	Remotes.Notify:FireAllClients("♻️ " .. player.DisplayName .. " переродился и стал «" .. title .. "»!", GOLD, true)
 	ProgressionService.updateOverhead(player)
 	ProgressionService.RebirthDone:Fire(player)
 	DataService.markDirty(player)

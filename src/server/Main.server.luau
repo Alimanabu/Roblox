@@ -24,6 +24,7 @@ local GiftService = require(Services.GiftService)
 local AchievementService = require(Services.AchievementService)
 local TradeService = require(Services.TradeService)
 local SkinService = require(Services.SkinService)
+local SettingsService = require(Services.SettingsService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -57,6 +58,7 @@ DataService.setSnapshotBuilder(function(player, data)
 		playtime = GiftService.snapshot(player, data),
 		achievements = AchievementService.snapshot(data),
 		skins = data.skins,
+		settings = data.settings,
 	}
 end)
 
@@ -77,5 +79,6 @@ GiftService.init()
 AchievementService.init()
 TradeService.init()
 SkinService.init()
+SettingsService.init()
 
 print("🧠 Brainrot Factory запущена! 🤌")

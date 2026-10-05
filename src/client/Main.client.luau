@@ -9,6 +9,7 @@ local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.State)
 local Sfx = require(script.Parent.Sfx)
+local Music = require(script.Parent.Music)
 local Theme = require(script.Parent.Ui.Theme)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
@@ -48,14 +49,23 @@ end, Panels.giftsReady)
 local reveal = Reveal.new(screenGui)
 local tutorial = TutorialBanner.new(screenGui, hud)
 
+Music.start()
+local announcementsOn = true
+
 State.onChanged(function(state)
+	Sfx.enabled = state.settings.sfx
+	Music.setEnabled(state.settings.music)
+	announcementsOn = state.settings.announcements
 	hud:update(state)
 	panels:update(state)
 	tutorial:update(state)
 end)
 
 Remotes.State.OnClientEvent:Connect(State.set)
-Remotes.Notify.OnClientEvent:Connect(function(text, color)
+Remotes.Notify.OnClientEvent:Connect(function(text, color, isAnnouncement)
+	if isAnnouncement and not announcementsOn then
+		return
+	end
 	hud:notify(text, color)
 end)
 local Creatures = require(Shared.Config.Creatures)

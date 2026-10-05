@@ -30,8 +30,13 @@ local function soundFor(name)
 	return sound
 end
 
+Sfx.enabled = true
+
 -- pitch — необязательная поправка высоты (например, выше для редких брейнротов).
 function Sfx.play(name, pitch)
+	if not Sfx.enabled then
+		return
+	end
 	local sound = soundFor(name)
 	if not sound then
 		return

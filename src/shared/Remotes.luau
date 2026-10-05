@@ -24,6 +24,7 @@ local EVENTS = {
 	"TradeCancel", -- () выйти из обмена
 	"BuySkin", -- (skinId)
 	"ApplySkin", -- (uid, skinId | nil)
+	"SetSetting", -- (key, bool) настройки игрока
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

@@ -216,7 +216,8 @@ local function endCarry(thief, success, reason)
 			if rarity.rank >= 5 then
 				Remotes.Notify:FireAllClients(
 					"🚨 " .. thief.DisplayName .. " украл " .. name .. " у " .. owner.DisplayName .. "!",
-					rarity.color
+					rarity.color,
+					true
 				)
 			end
 		end

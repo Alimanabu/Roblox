@@ -98,6 +98,18 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = bar,
 	})
 
+	-- Кнопка настроек рядом с уровнем.
+	Theme.button({
+		Name = "SettingsButton",
+		Position = UDim2.fromOffset(278, 10),
+		Size = UDim2.fromOffset(48, 48),
+		Text = "⚙️",
+		Color = C.Background,
+		Parent = screenGui,
+	}, function()
+		onMenu("Settings")
+	end)
+
 	-- Удача сверху справа.
 	local luckFrame = create("Frame", {
 		Name = "Luck",

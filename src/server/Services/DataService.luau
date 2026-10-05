@@ -59,6 +59,7 @@ local function defaultData()
 		codes = {}, -- [КОД] = true — введённые промокоды
 		achievements = {}, -- [id] = true
 		skins = {}, -- [skinId] = true — купленные скины
+		settings = { music = true, sfx = true, announcements = true },
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

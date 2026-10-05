@@ -973,6 +973,49 @@ function Trade.build(content, state)
 end
 
 ---------------------------------------------------------------------------
+-- НАСТРОЙКИ
+---------------------------------------------------------------------------
+local SettingsPanel = { title = "⚙️ Настройки" }
+
+local SETTINGS = {
+	{ key = "music", name = "🎵 Музыка" },
+	{ key = "sfx", name = "🔊 Звуки" },
+	{ key = "announcements", name = "📢 Объявления сервера (кто что выбил/украл)" },
+}
+
+function SettingsPanel.signature(state)
+	local parts = {}
+	for _, setting in ipairs(SETTINGS) do
+		table.insert(parts, tostring(state.settings[setting.key]))
+	end
+	return table.concat(parts, "|")
+end
+
+function SettingsPanel.build(content, state)
+	list(content, 8)
+	for order, setting in ipairs(SETTINGS) do
+		local on = state.settings[setting.key] ~= false
+		local row = card({ Size = UDim2.new(1, -10, 0, 54), LayoutOrder = order }, { Theme.padding(8) })
+		Theme.label({
+			Size = UDim2.new(0.7, 0, 1, 0),
+			Text = setting.name,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = row,
+		})
+		Theme.button({
+			Size = UDim2.new(0.3, -8, 1, 0),
+			Position = UDim2.new(0.7, 8, 0, 0),
+			Text = on and "ВКЛ" or "ВЫКЛ",
+			Color = on and C.Good or C.Bad,
+			Parent = row,
+		}, function()
+			Remotes.SetSetting:FireServer(setting.key, not on)
+		end)
+		row.Parent = content
+	end
+end
+
+---------------------------------------------------------------------------
 -- СКИНЫ
 ---------------------------------------------------------------------------
 local SkinsPanel = { title = "🎨 Скины брейнротов" }
@@ -1200,6 +1243,7 @@ end
 ---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Settings = SettingsPanel,
 	Skins = SkinsPanel,
 	Trade = Trade,
 	Achievements = AchievementsPanel,
