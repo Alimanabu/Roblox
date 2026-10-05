@@ -4,7 +4,6 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
-local StarterGui = game:GetService("StarterGui")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
@@ -14,12 +13,9 @@ local Theme = require(script.Parent.Ui.Theme)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
 local Reveal = require(script.Parent.Ui.Reveal)
+local StealStatus = require(script.Parent.Ui.StealStatus)
 
 local player = Players.LocalPlayer
-
-pcall(function()
-	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
-end)
 
 local screenGui = Theme.create("ScreenGui", {
 	Name = "BrainrotFactoryUI",
@@ -75,14 +71,47 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	end
 end)
 
+-- Тебя шлёпнули — отлетаешь.
+Remotes.Knockback.OnClientEvent:Connect(function(velocity)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if root and humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		root.AssemblyLinearVelocity = velocity
+	end
+end)
+
+-- Статус кражи и замка.
+local status = StealStatus.new(screenGui)
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		status:update(player, workspace:FindFirstChild("Plots"))
+	end
+end)
+
 -- Брейнроты на базах покачиваются и крутятся; редкие переливаются радугой.
+-- Кнопку «Украсть» видно только на чужих базах, кнопку замка — только на своей.
 local plots = workspace:WaitForChild("Plots")
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
+	local serverNow = workspace:GetServerTimeNow()
 	for _, plot in ipairs(plots:GetChildren()) do
+		local isMine = plot:GetAttribute("OwnerUserId") == player.UserId
+		local locked = (plot:GetAttribute("LockedUntil") or 0) > serverNow
+		local lockButton = plot:FindFirstChild("LockButton")
+		local lockPrompt = lockButton and lockButton:FindFirstChild("LockPrompt")
+		if lockPrompt then
+			lockPrompt.Enabled = isMine and not locked
+		end
 		local folder = plot:FindFirstChild("Creatures")
 		if folder then
 			for _, part in ipairs(folder:GetChildren()) do
+				local stealPrompt = part:FindFirstChild("StealPrompt")
+				if stealPrompt then
+					stealPrompt.Enabled = not isMine and not locked and plot:GetAttribute("OwnerUserId") ~= nil
+				end
 				local base = part:GetAttribute("BaseCFrame")
 				if base then
 					local phase = base.Position.X * 0.3 + base.Position.Z * 0.2

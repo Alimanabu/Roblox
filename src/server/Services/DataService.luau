@@ -25,6 +25,7 @@ end
 local profiles = {} -- [player] = data
 local dirty = {} -- [player] = true, если состояние надо отправить клиенту
 local snapshotBuilder = nil -- function(player, data) -> snapshot, задаётся из Main
+local saveExtras = {} -- функции, которые добавляют в сохранение «временно отсутствующих» брейнротов
 
 DataService.Loaded = Instance.new("BindableEvent")
 
@@ -84,6 +85,12 @@ function DataService.setSnapshotBuilder(builder)
 	snapshotBuilder = builder
 end
 
+-- callback(player) -> список брейнротов, которые должны попасть в сохранение,
+-- хотя сейчас их нет в data.creatures (например, их прямо сейчас несёт вор).
+function DataService.addSaveExtra(callback)
+	table.insert(saveExtras, callback)
+end
+
 function DataService.get(player)
 	return profiles[player]
 end
@@ -106,9 +113,25 @@ function DataService.save(player)
 		return
 	end
 	data.lastOnline = os.time()
+
+	local toSave = data
+	local extras = {}
+	for _, callback in ipairs(saveExtras) do
+		for _, entry in ipairs(callback(player) or {}) do
+			table.insert(extras, entry)
+		end
+	end
+	if #extras > 0 then
+		toSave = table.clone(data)
+		toSave.creatures = table.clone(data.creatures)
+		for _, entry in ipairs(extras) do
+			table.insert(toSave.creatures, entry)
+		end
+	end
+
 	local ok, err = withRetries(function()
 		return store:UpdateAsync(keyFor(player), function()
-			return data
+			return toSave
 		end)
 	end)
 	if not ok then

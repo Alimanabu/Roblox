@@ -22,6 +22,9 @@ local PLOT_SIZE = 90
 local RING_RADIUS = 150
 local COLUMNS = 8
 local SPACING = 9
+local MAX_PADS = 48 -- 6 рядов по 8
+
+PlotService.PLOT_SIZE = PLOT_SIZE
 
 local plotsFolder
 local plots = {} -- { { model, owner, origin } }
@@ -144,6 +147,50 @@ local function buildWorld()
 		billboard(ownerSign, UDim2.fromOffset(400, 80), Vector3.zero, "Свободная база", Color3.fromRGB(200, 200, 200)).Name =
 			"OwnerGui"
 
+		-- Кнопка замка: закрывает базу от воров.
+		local lockButton = part({
+			Name = "LockButton",
+			Size = Vector3.new(6, 1, 6),
+			CFrame = cframe * CFrame.new(PLOT_SIZE / 2 - 8, 1, PLOT_SIZE / 2 - 8),
+			Color = Color3.fromRGB(80, 200, 255),
+			Material = Enum.Material.Neon,
+			Parent = model,
+		})
+		billboard(lockButton, UDim2.fromOffset(200, 50), Vector3.new(0, 4, 0), "🔓 Замок", Color3.new(1, 1, 1)).Name = "LockGui"
+		local lockPrompt = Instance.new("ProximityPrompt")
+		lockPrompt.Name = "LockPrompt"
+		lockPrompt.ActionText = "Закрыть базу"
+		lockPrompt.ObjectText = "Замок"
+		lockPrompt.HoldDuration = 0
+		lockPrompt.MaxActivationDistance = 10
+		lockPrompt.RequiresLineOfSight = false
+		lockPrompt.Parent = lockButton
+
+		-- Лазерный забор: виден, когда база закрыта.
+		local barrier = Instance.new("Folder")
+		barrier.Name = "Barrier"
+		barrier.Parent = model
+		local half = PLOT_SIZE / 2
+		for _, offset in ipairs({
+			{ Vector3.new(0, 4, -half), Vector3.new(PLOT_SIZE, 8, 0.5) },
+			{ Vector3.new(0, 4, half), Vector3.new(PLOT_SIZE, 8, 0.5) },
+			{ Vector3.new(-half, 4, 0), Vector3.new(0.5, 8, PLOT_SIZE) },
+			{ Vector3.new(half, 4, 0), Vector3.new(0.5, 8, PLOT_SIZE) },
+		}) do
+			part({
+				Name = "Wall",
+				Size = offset[2],
+				CFrame = cframe * CFrame.new(offset[1]),
+				Color = Color3.fromRGB(255, 50, 80),
+				Material = Enum.Material.ForceField,
+				Transparency = 1,
+				CanCollide = false,
+				CanQuery = false,
+				CanTouch = false,
+				Parent = barrier,
+			})
+		end
+
 		local creaturesFolder = Instance.new("Folder")
 		creaturesFolder.Name = "Creatures"
 		creaturesFolder.Parent = model
@@ -179,7 +226,9 @@ function PlotService.render(player)
 		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
 	end)
 
-	for index = 1, slots do
+	-- Мест может быть меньше, чем брейнротов (например, вернули после неудачной кражи).
+	local pads = math.min(math.max(slots, #sorted), MAX_PADS)
+	for index = 1, pads do
 		local base = slotCFrame(plot, index)
 		part({
 			Name = "Pad",
@@ -214,6 +263,18 @@ function PlotService.render(player)
 			if mutation.id ~= "normal" then
 				nameText = mutation.name .. " " .. nameText
 			end
+			-- Чужие игроки могут украсть брейнрота. Чем реже — тем дольше красть.
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.Name = "StealPrompt"
+			prompt.ActionText = "Украсть"
+			prompt.ObjectText = creature.name
+			prompt.HoldDuration = 0.8 + rarity.rank * 0.4
+			prompt.MaxActivationDistance = 9
+			prompt.RequiresLineOfSight = false
+			prompt.KeyboardKeyCode = Enum.KeyCode.F
+			prompt:SetAttribute("Uid", entry.uid)
+			prompt.Parent = body
+
 			local rarityHex = rarity.color:ToHex()
 			billboard(
 				body,
@@ -228,6 +289,53 @@ function PlotService.render(player)
 				)
 			)
 		end
+	end
+end
+
+function PlotService.getPlot(player)
+	return plotOf[player]
+end
+
+function PlotService.ownerOfModel(model)
+	for _, plot in ipairs(plots) do
+		if plot.model == model then
+			return plot.owner, plot
+		end
+	end
+	return nil
+end
+
+-- Находится ли точка внутри участка (с небольшим запасом по краям).
+function PlotService.isInside(plot, position, margin)
+	local localPos = plot.cframe:PointToObjectSpace(position)
+	local half = PLOT_SIZE / 2 + (margin or 0)
+	return math.abs(localPos.X) <= half and math.abs(localPos.Z) <= half and localPos.Y < 40
+end
+
+-- Точка сразу за забором участка, куда выталкиваем чужаков.
+function PlotService.outsideCFrame(plot, position)
+	local localPos = plot.cframe:PointToObjectSpace(position)
+	local half = PLOT_SIZE / 2 + 6
+	local x, z = localPos.X, localPos.Z
+	if math.abs(x) > math.abs(z) then
+		x = math.sign(x) * half
+	else
+		z = (z == 0 and 1 or math.sign(z)) * half
+	end
+	return plot.cframe * CFrame.new(x, 4, z)
+end
+
+function PlotService.setLockVisual(plot, locked, secondsLeft)
+	for _, wall in ipairs(plot.model.Barrier:GetChildren()) do
+		wall.Transparency = locked and 0.4 or 1
+	end
+	local label = plot.model.LockButton.LockGui.Label
+	if locked then
+		label.Text = string.format("🔒 %d с", math.ceil(secondsLeft))
+		label.TextColor3 = Color3.fromRGB(255, 120, 120)
+	else
+		label.Text = "🔓 Замок"
+		label.TextColor3 = Color3.new(1, 1, 1)
 	end
 end
 
@@ -255,6 +363,8 @@ local function releasePlot(player)
 	plotOf[player] = nil
 	plot.model.Creatures:ClearAllChildren()
 	plot.model:SetAttribute("OwnerUserId", nil)
+	plot.model:SetAttribute("LockedUntil", nil)
+	PlotService.setLockVisual(plot, false, 0)
 	local gui = plot.model.OwnerSign.OwnerGui
 	gui.Label.Text = "Свободная база"
 	gui.Label.TextColor3 = Color3.fromRGB(200, 200, 200)

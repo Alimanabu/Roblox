@@ -17,6 +17,7 @@ local EVENTS = {
 	"State", -- (snapshot)
 	"CraftResult", -- (result)
 	"Notify", -- (text, color)
+	"Knockback", -- (velocity) тебя шлёпнули
 }
 
 local Remotes = {}
