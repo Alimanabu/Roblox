@@ -1,0 +1,52 @@
+-- Точка входа сервера Brainrot Factory.
+
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Formulas = require(Shared.Util.Formulas)
+local Levels = require(Shared.Config.Levels)
+local Rebirths = require(Shared.Config.Rebirths)
+require(Shared.Remotes) -- создаёт RemoteEvent'ы
+
+local Services = script.Parent.Services
+local DataService = require(Services.DataService)
+local MonetizationService = require(Services.MonetizationService)
+local ProgressionService = require(Services.ProgressionService)
+local FactoryService = require(Services.FactoryService)
+local IncomeService = require(Services.IncomeService)
+local PlotService = require(Services.PlotService)
+
+-- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
+DataService.setSnapshotBuilder(function(player, data)
+	local passes = MonetizationService.passes(player)
+	local now = os.time()
+	return {
+		coins = data.coins,
+		totalEarned = data.totalEarned,
+		income = Formulas.totalIncome(data, passes),
+		incomeMultiplier = Formulas.incomeMultiplier(data, passes),
+		level = data.level,
+		xp = data.xp,
+		xpNext = Levels.xpToNext(data.level),
+		title = Levels.titleFor(data.level),
+		rebirths = data.rebirths,
+		rebirthTitle = Rebirths.titleFor(data.rebirths),
+		creatures = data.creatures,
+		slots = Formulas.slots(data, passes),
+		craftTime = Formulas.craftTime(data, passes),
+		luck = Formulas.luck(data, passes, now),
+		luckBoostLeft = math.max(0, (data.boosts.luckUntil or 0) - now),
+		upgrades = data.upgrades,
+		index = data.index,
+		stats = data.stats,
+		passes = passes,
+		autoCraft = FactoryService.autoCraftCapsule(player),
+	}
+end)
+
+DataService.init()
+MonetizationService.init()
+ProgressionService.init()
+FactoryService.init()
+IncomeService.init()
+PlotService.init()
+
+print("🧠 Brainrot Factory запущена! 🤌")
