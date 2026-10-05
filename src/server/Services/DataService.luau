@@ -298,9 +298,10 @@ local function onPlayerAdded(player)
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
 	-- Старые сохранения: брейнроты без «происхождения» считаем своими.
 	for _, entry in ipairs(data.creatures) do
-		if entry.origin == nil then
-			entry.origin = player.UserId
-			entry.gen = data.rebirths
+		if entry.lineage == nil then
+			entry.lineage = Formulas.lineageOf(entry, player.UserId, data.rebirths)
+			entry.origin = nil
+			entry.gen = nil
 		end
 	end
 	profiles[player] = data

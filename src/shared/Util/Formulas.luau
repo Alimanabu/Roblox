@@ -206,6 +206,32 @@ function Formulas.capsuleInSeason(capsule, now)
 	return capsule.season == nil or Seasons.isActive(capsule.season, now or os.time())
 end
 
+-- «Родословная» брейнрота: { ["UserId"] = самое раннее поколение (номер перерождения),
+-- в котором этот игрок им владел }. Нельзя вернуть себе брейнрота «из прошлой жизни»
+-- (обменом, кражей или через скрещивание у друга).
+function Formulas.lineageOf(entry, fallbackUserId, fallbackGen)
+	if entry.lineage then
+		return entry.lineage
+	end
+	-- Старый формат (origin/gen) или совсем старые записи.
+	return { [tostring(entry.origin or fallbackUserId)] = entry.gen or fallbackGen or 0 }
+end
+
+function Formulas.mergeLineage(target, lineage)
+	for userId, gen in pairs(lineage) do
+		target[userId] = math.min(target[userId] or math.huge, gen)
+	end
+	return target
+end
+
+function Formulas.isFromPastLife(entry, userId, rebirths)
+	local gen = entry.lineage and entry.lineage[tostring(userId)]
+	if gen == nil and entry.origin == userId then
+		gen = entry.gen or 0
+	end
+	return gen ~= nil and rebirths > gen
+end
+
 function Formulas.capsuleUnlocked(capsule, data)
 	return data.level >= capsule.level and data.rebirths >= capsule.rebirths
 end

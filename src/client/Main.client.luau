@@ -154,6 +154,13 @@ RunService.RenderStepped:Connect(function()
 	local serverNow = workspace:GetServerTimeNow()
 	local camera = workspace.CurrentCamera
 	tutorial:animate(t)
+
+	-- Босс на площади покачивается и поворачивается.
+	local boss = workspace:FindFirstChild("Boss")
+	local bossBase = boss and boss:GetAttribute("BaseCFrame")
+	if bossBase then
+		boss:PivotTo(bossBase * CFrame.new(0, math.abs(math.sin(t * 1.5)) * 2, 0) * CFrame.Angles(0, math.sin(t * 0.7) * 0.6, 0))
+	end
 	for _, plot in ipairs(plots:GetChildren()) do
 		local isMine = plot:GetAttribute("OwnerUserId") == player.UserId
 		local locked = (plot:GetAttribute("LockedUntil") or 0) > serverNow

@@ -198,7 +198,7 @@ local function execute(trade)
 	-- Нельзя «спрятать» брейнротов у друга на время перерождения и забрать обратно.
 	local function returnsAfterRebirth(entries, receiver, receiverData)
 		for _, entry in ipairs(entries) do
-			if entry.origin == receiver.UserId and receiverData.rebirths > (entry.gen or 0) then
+			if Formulas.isFromPastLife(entry, receiver.UserId, receiverData.rebirths) then
 				return true
 			end
 		end
@@ -225,17 +225,21 @@ local function execute(trade)
 			table.remove(data.creatures, index)
 		end
 	end
-	local function add(data, entries)
+	local function add(data, entries, receiver, giver)
 		for _, entry in ipairs(entries) do
-			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, origin = entry.origin, gen = entry.gen })
+			local lineage = Formulas.mergeLineage(
+				table.clone(Formulas.lineageOf(entry, giver.UserId, 0)),
+				{ [tostring(receiver.UserId)] = data.rebirths }
+			)
+			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, lineage = lineage })
 			data.nextUid += 1
 			data.index[entry.id] = true
 		end
 	end
 	remove(dataA, giveA)
 	remove(dataB, giveB)
-	add(dataA, giveB)
-	add(dataB, giveA)
+	add(dataA, giveB, a, b)
+	add(dataB, giveA, b, a)
 	dataA.stats.trades = (dataA.stats.trades or 0) + 1
 	dataB.stats.trades = (dataB.stats.trades or 0) + 1
 	return nil

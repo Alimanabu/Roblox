@@ -15,14 +15,14 @@ local Actions = require(script.Parent.Actions)
 
 local BossService = {}
 
-BossService.POSITION = CFrame.new(0, 0, 30) * CFrame.Angles(0, math.pi, 0)
+BossService.POSITION = CFrame.new(0, 0, 34) * CFrame.Angles(0, math.pi, 0)
 BossService.SCALE = 3
 BossService.HIT_RANGE = 10 -- от края босса
 BossService.DAMAGE = 10
 BossService.BASE_HP = 300
 BossService.HP_PER_PLAYER = 200
 BossService.SHOCKWAVE_EVERY = 5
-BossService.SHOCKWAVE_RADIUS = 22
+BossService.SHOCKWAVE_RADIUS = 16 -- не достаёт до спавна в центре площади
 
 local GOLD = Color3.fromRGB(255, 220, 80)
 local RED = Color3.fromRGB(255, 80, 80)
@@ -54,6 +54,8 @@ local function spawnBoss()
 	model.Name = "Boss"
 	model:ScaleTo(BossService.SCALE)
 	model:PivotTo(BossService.POSITION)
+	-- Покачивание делает клиент (плавно), сервер модель не двигает.
+	model:SetAttribute("BaseCFrame", BossService.POSITION)
 	for _, piece in ipairs(model:GetDescendants()) do
 		if piece:IsA("BasePart") then
 			piece.CanCollide = true
@@ -112,7 +114,11 @@ local function despawn(defeated)
 	local current = boss
 	boss = nil
 	current.model:Destroy()
-	finishedUntil = current.endsAt
+	-- Не появляемся снова ни в этом окне, ни в «ручном» окне из панели «🛠 Тест».
+	local forcedUntil = workspace:GetAttribute("ForcedEvent") == Events.Boss.id
+			and (workspace:GetAttribute("ForcedEventUntil") or 0)
+		or 0
+	finishedUntil = math.max(current.endsAt, bossWindowEnd() or 0, forcedUntil)
 
 	if not defeated then
 		Remotes.Notify:FireAllClients("👹 Босс сбежал... В следующий раз шлёпайте сильнее!", RED)
@@ -121,7 +127,9 @@ local function despawn(defeated)
 
 	local total, best, bestDamage = 0, nil, 0
 	for player, damage in pairs(current.damage) do
-		total += damage
+		if player.Parent then
+			total += damage -- ушедшие игроки не уменьшают доли остальных
+		end
 		if damage > bestDamage and player.Parent then
 			best, bestDamage = player, damage
 		end
@@ -180,6 +188,19 @@ local function shockwave()
 end
 
 function BossService.init()
+	-- Повторный запуск босса из панели «🛠 Тест» должен работать и после победы.
+	workspace:GetAttributeChangedSignal("ForcedEventUntil"):Connect(function()
+		finishedUntil = 0
+	end)
+	-- Кто-то зашёл, пока идёт бой — босс становится крепче.
+	Players.PlayerAdded:Connect(function()
+		if boss then
+			boss.maxHp += BossService.HP_PER_PLAYER
+			boss.hp += BossService.HP_PER_PLAYER
+			updateBar()
+		end
+	end)
+
 	task.spawn(function()
 		while true do
 			task.wait(0.1)
@@ -191,13 +212,7 @@ function BossService.init()
 				despawn(false)
 			end
 			if boss then
-				-- Покачивается и поворачивается к игрокам.
 				local t = os.clock()
-				boss.model:PivotTo(
-					BossService.POSITION
-						* CFrame.new(0, math.abs(math.sin(t * 1.5)) * 2, 0)
-						* CFrame.Angles(0, math.sin(t * 0.7) * 0.6, 0)
-				)
 				if t - boss.lastShockwave > BossService.SHOCKWAVE_EVERY then
 					boss.lastShockwave = t
 					shockwave()

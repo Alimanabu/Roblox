@@ -66,6 +66,13 @@ local function confirmButton(key, props, confirmText, action)
 		if armed[key] and os.clock() < armed[key] then
 			button.Text = confirmText
 			button.BackgroundColor3 = C.Gold
+			-- Новая кнопка после перерисовки тоже должна «остыть» по таймеру.
+			task.delay(armed[key] - os.clock() + 0.05, function()
+				if button.Parent and not (armed[key] and os.clock() < armed[key]) then
+					button.Text = normalText
+					button.BackgroundColor3 = normalColor
+				end
+			end)
 		else
 			button.Text = normalText
 			button.BackgroundColor3 = normalColor

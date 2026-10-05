@@ -157,6 +157,27 @@ for _, capsule in ipairs(Capsules.List) do
 	end
 end
 
+-- 5h. Родословная: брейнрота «из прошлой жизни» нельзя вернуть даже через скрещивание.
+do
+	local A, B, C = 1, 2, 3
+	-- A создал два брейнрота в поколении 0 и отдал B; потом A переродился (1) и отдал ещё один.
+	local old1 = { lineage = Formulas.mergeLineage({ ["1"] = 0 }, { ["2"] = 0 }) }
+	local old2 = { lineage = Formulas.mergeLineage({ ["1"] = 0 }, { ["2"] = 0 }) }
+	local fresh = { lineage = Formulas.mergeLineage({ ["1"] = 1 }, { ["2"] = 0 }) }
+	local foreign = { lineage = { ["3"] = 0 } }
+	-- B скрещивает (порядок и чужие брейнроты не должны помогать).
+	local merged = {}
+	for _, e in ipairs({ foreign, fresh, old1, old2 }) do
+		Formulas.mergeLineage(merged, Formulas.lineageOf(e, B, 0))
+	end
+	local result = { lineage = Formulas.mergeLineage(merged, { ["2"] = 0 }) }
+	check(Formulas.isFromPastLife(result, A, 1), "скрещивание отмывает брейнротов из прошлой жизни")
+	check(not Formulas.isFromPastLife(result, C, 0), "C не перерождался — ему можно")
+	check(not Formulas.isFromPastLife(fresh, A, 1), "новый брейнрот A после перерождения можно вернуть")
+	-- Старый формат origin/gen тоже понимается.
+	check(Formulas.isFromPastLife({ origin = A, gen = 0 }, A, 1), "старый формат origin/gen")
+end
+
 -- 5f. Гарантия: разумные пороги у каждой капсулы.
 for _, capsule in ipairs(Capsules.List) do
 	local threshold = Formulas.pityThreshold(capsule)

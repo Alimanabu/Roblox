@@ -45,16 +45,14 @@ end
 
 -- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
 -- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
-local function addCreature(player, data, creatureId, mutationId, paid, originOverride, genOverride)
-	-- origin/gen: кто и в каком «поколении» (номер перерождения) создал брейнрота.
-	-- Не даём вернуть его себе после перерождения через обмен или кражу.
+local function addCreature(player, data, creatureId, mutationId, paid, lineage)
+	-- lineage: кто владел брейнротом и в каком «поколении» (см. Formulas.lineageOf).
 	local entry = {
 		uid = tostring(data.nextUid),
 		id = creatureId,
 		mut = mutationId,
 		paid = paid,
-		origin = originOverride or player.UserId,
-		gen = genOverride or data.rebirths,
+		lineage = Formulas.mergeLineage(lineage or {}, { [tostring(player.UserId)] = data.rebirths }),
 	}
 	data.nextUid += 1
 	table.insert(data.creatures, entry)
@@ -262,13 +260,10 @@ local function fuse(player, rarityId)
 	local paid = 0
 	-- Если среди скрещённых был чужой брейнрот, результат «наследует» его происхождение,
 	-- иначе скрещивание отмывало бы брейнротов, спрятанных у друга на время перерождения.
-	local inheritOrigin, inheritGen
+	local lineage = {}
 	for _, index in ipairs(toRemove) do
 		local removed = table.remove(data.creatures, index)
-		if removed.origin and removed.origin ~= player.UserId then
-			inheritOrigin = removed.origin
-			inheritGen = math.max(inheritGen or 0, removed.gen or 0)
-		end
+		Formulas.mergeLineage(lineage, Formulas.lineageOf(removed, player.UserId, data.rebirths))
 		if paid and removed.paid then
 			paid += removed.paid
 		else
@@ -284,7 +279,7 @@ local function fuse(player, rarityId)
 	data.stats.fused += 1
 	Actions.fire(player, "fuse", 1)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, inheritOrigin, inheritGen)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, lineage)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,

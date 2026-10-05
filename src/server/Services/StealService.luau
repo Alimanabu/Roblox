@@ -198,7 +198,7 @@ local function endCarry(thief, success, reason)
 	local thiefData = success and DataService.get(thief)
 	if success and not thiefData then
 		success, reason = false, "вор вышел"
-	elseif success and entry.origin == thief.UserId and thiefData.rebirths > (entry.gen or 0) then
+	elseif success and Formulas.isFromPastLife(entry, thief.UserId, thiefData.rebirths) then
 		success, reason = false, "своего брейнрота из прошлой жизни вернуть нельзя"
 	elseif success and #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
 		success, reason = false, "на твоей базе нет места"
@@ -206,7 +206,10 @@ local function endCarry(thief, success, reason)
 
 	if success then
 		do
-			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, origin = entry.origin, gen = entry.gen }
+			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, lineage = Formulas.mergeLineage(
+				table.clone(Formulas.lineageOf(entry, owner.UserId, 0)),
+				{ [tostring(thief.UserId)] = thiefData.rebirths }
+			) }
 			thiefData.nextUid += 1
 			table.insert(thiefData.creatures, newEntry)
 			thiefData.index[entry.id] = true
