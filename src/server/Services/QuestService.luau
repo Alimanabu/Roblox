@@ -99,6 +99,7 @@ local function claimDaily(player)
 	local text = giveReward(player, data, reward.coinsMinutes, reward.luckMinutes)
 	Remotes.Notify:FireClient(player, "🎁 День " .. day .. ": " .. text, GOLD)
 	Actions.fire(player, "daily", 1)
+	Remotes.Sfx:FireClient(player, "coins")
 	DataService.markDirty(player)
 end
 

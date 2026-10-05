@@ -32,6 +32,7 @@ function EventService.init()
 				tintColor = event.color
 				if not activeIds[event.id] then
 					Remotes.Notify:FireAllClients("🎉 Начался ивент " .. event.name .. ": " .. event.desc, event.color)
+					Remotes.Sfx:FireAllClients("event")
 				end
 			end
 			for id in pairs(activeIds) do

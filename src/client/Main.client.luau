@@ -3,12 +3,12 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.State)
+local Sfx = require(script.Parent.Sfx)
 local Theme = require(script.Parent.Ui.Theme)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
@@ -57,15 +57,20 @@ Remotes.State.OnClientEvent:Connect(State.set)
 Remotes.Notify.OnClientEvent:Connect(function(text, color)
 	hud:notify(text, color)
 end)
-local craftSound = Theme.create("Sound", {
-	Name = "CraftSound",
-	SoundId = "rbxasset://sounds/electronicpingshort.wav",
-	Volume = 0.5,
-	Parent = SoundService,
-})
+local Creatures = require(Shared.Config.Creatures)
+local Rarities = require(Shared.Config.Rarities)
 Remotes.CraftResult.OnClientEvent:Connect(function(result)
 	reveal:show(result, State.current)
-	craftSound:Play()
+	local creature = Creatures.get(result.id)
+	local rarity = creature and Rarities.get(creature.rarity)
+	if rarity and rarity.rank >= 6 then
+		Sfx.play("rare")
+	else
+		Sfx.play("craft", 1 + (rarity and rarity.rank or 1) * 0.06)
+	end
+end)
+Remotes.Sfx.OnClientEvent:Connect(function(name)
+	Sfx.play(name)
 end)
 
 -- Подошёл к машине на базе -> открываем фабрику.
@@ -80,6 +85,7 @@ Remotes.Knockback.OnClientEvent:Connect(function(velocity)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	Sfx.play("slap")
 	if root and humanoid then
 		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 		root.AssemblyLinearVelocity = velocity

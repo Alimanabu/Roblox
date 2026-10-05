@@ -20,6 +20,7 @@ local EVENTS = {
 	"CraftResult", -- (result)
 	"Notify", -- (text, color)
 	"Knockback", -- (velocity) тебя шлёпнули
+	"Sfx", -- (soundName) проиграть звук
 }
 
 local Remotes = {}

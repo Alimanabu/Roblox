@@ -41,6 +41,7 @@ function ProgressionService.addXp(player, data, amount)
 
 	ProgressionService.updateOverhead(player)
 	Remotes.Notify:FireClient(player, "⭐ Новый уровень: " .. data.level .. "!", GOLD)
+	Remotes.Sfx:FireClient(player, "levelup")
 	if Levels.titleFor(data.level) ~= Levels.titleFor(oldLevel) then
 		Remotes.Notify:FireClient(player, "🏷️ Новый титул: " .. Levels.titleFor(data.level), GOLD)
 	end

@@ -180,6 +180,7 @@ local function endCarry(thief, success, reason)
 			DataService.markDirty(thief)
 			PlotService.render(thief)
 			Remotes.Notify:FireClient(thief, "🦹 Украдено: " .. name .. "!", GOOD)
+			Remotes.Sfx:FireClient(thief, "success")
 
 			if rarity.rank >= 5 then
 				Remotes.Notify:FireAllClients(
@@ -193,6 +194,7 @@ local function endCarry(thief, success, reason)
 			ownerData.stats.lostToThieves = (ownerData.stats.lostToThieves or 0) + 1
 			DataService.markDirty(owner)
 			Remotes.Notify:FireClient(owner, "😭 " .. thief.DisplayName .. " украл твоего " .. name .. "!", BAD)
+			Remotes.Sfx:FireClient(owner, "lose")
 		end
 		return
 	end
@@ -275,6 +277,7 @@ local function startSteal(thief, prompt)
 	local name = displayName(entry)
 	Remotes.Notify:FireClient(thief, "🏃 Неси " .. name .. " на свою базу!", WARN)
 	Remotes.Notify:FireClient(owner, "⚠️ " .. thief.DisplayName .. " крадёт " .. name .. "! Догони и шлёпни!", BAD)
+	Remotes.Sfx:FireClient(owner, "alarm")
 end
 
 local function onLockPrompt(player, prompt)
@@ -290,6 +293,7 @@ local function onLockPrompt(player, prompt)
 	setLock(player, StealService.LOCK_TIME)
 	Actions.fire(player, "lock", 1)
 	Remotes.Notify:FireClient(player, "🔒 База закрыта на " .. StealService.LOCK_TIME .. " секунд", GOOD)
+	Remotes.Sfx:FireClient(player, "lock")
 end
 
 -- Шлёпалка: отталкивает игроков. Если шлёпнуть вора — он роняет брейнрота.
@@ -321,6 +325,7 @@ local function slap(player)
 							Actions.fire(player, "slapThief", 1)
 							endCarry(other, false, player.DisplayName .. " тебя шлёпнул!")
 							Remotes.Notify:FireClient(player, "👋 Шлёп! Вор уронил брейнрота!", GOOD)
+							Remotes.Sfx:FireClient(player, "success")
 						end
 					end
 				end
