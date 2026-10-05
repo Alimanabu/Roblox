@@ -17,6 +17,11 @@ local EVENTS = {
 	"Admin", -- (command, arg) тестовые команды (только админы / Studio)
 	"RedeemCode", -- (text) ввести промокод
 	"ClaimGift", -- (index) подарок за время в игре
+	"TradeRequest", -- (targetUserId) пригласить к обмену
+	"TradeRespond", -- (fromUserId, accept) ответить на приглашение
+	"TradeSetOffer", -- ({ uid, ... }) что я кладу в обмен
+	"TradeReady", -- (bool) «Готов»
+	"TradeCancel", -- () выйти из обмена
 
 	-- сервер -> клиент
 	"State", -- (snapshot)
@@ -24,6 +29,8 @@ local EVENTS = {
 	"Notify", -- (text, color)
 	"Knockback", -- (velocity) тебя шлёпнули
 	"Sfx", -- (soundName) проиграть звук
+	"TradeState", -- (state | nil) состояние обмена
+	"TradeInvite", -- (fromUserId, fromName) тебя зовут обменяться
 }
 
 local Remotes = {}

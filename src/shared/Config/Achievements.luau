@@ -50,6 +50,7 @@ Achievements.List = {
 	{ id = "rebirth5", name = "Огайо Финальный Босс", desc = "Переродись 5 раз", reward = { coinsMinutes = 60, luckMinutes = 60 }, check = function(d) return d.rebirths >= 5 end },
 	{ id = "million", name = "Миллионер", desc = "Заработай $1M за всё время", reward = { coinsMinutes = 5 }, check = function(d) return d.totalEarned >= 1e6 end },
 	{ id = "billion", name = "Миллиардер", desc = "Заработай $1B за всё время", reward = { coinsMinutes = 30 }, check = function(d) return d.totalEarned >= 1e9 end },
+	{ id = "trade", name = "Деловой партнёр", desc = "Соверши обмен", reward = { coinsMinutes = 5 }, check = function(d) return stat(d, "trades") >= 1 end },
 	{ id = "streak7", name = "Верный фанат", desc = "Забери награду 7-го дня", reward = { coinsMinutes = 20 }, check = function(d) return d.daily.streak >= 7 end },
 }
 

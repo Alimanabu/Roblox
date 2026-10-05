@@ -16,6 +16,7 @@ local Reveal = require(script.Parent.Ui.Reveal)
 local StealStatus = require(script.Parent.Ui.StealStatus)
 local EventBanner = require(script.Parent.Ui.EventBanner)
 local TutorialBanner = require(script.Parent.Ui.TutorialBanner)
+local TradeInvite = require(script.Parent.Ui.TradeInvite)
 
 local player = Players.LocalPlayer
 
@@ -71,6 +72,29 @@ Remotes.CraftResult.OnClientEvent:Connect(function(result)
 end)
 Remotes.Sfx.OnClientEvent:Connect(function(name)
 	Sfx.play(name)
+end)
+
+-- Обмен.
+local tradeInvite = TradeInvite.new(screenGui)
+Remotes.TradeInvite.OnClientEvent:Connect(function(fromUserId, fromName)
+	tradeInvite:show(fromUserId, fromName)
+	Sfx.play("lock")
+end)
+Remotes.TradeState.OnClientEvent:Connect(function(tradeState)
+	Panels.trade = tradeState
+	if tradeState then
+		panels:open("Trade", true)
+	end
+	panels:refresh()
+end)
+-- Пока идёт отсчёт обмена, обновляем окно, чтобы цифры менялись.
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if Panels.trade and Panels.trade.confirmAt and panels.openName == "Trade" then
+			panels:refresh()
+		end
+	end
 end)
 
 -- Подошёл к машине на базе -> открываем фабрику.

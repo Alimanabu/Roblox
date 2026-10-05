@@ -22,6 +22,7 @@ local AdminService = require(Services.AdminService)
 local CodeService = require(Services.CodeService)
 local GiftService = require(Services.GiftService)
 local AchievementService = require(Services.AchievementService)
+local TradeService = require(Services.TradeService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -72,5 +73,6 @@ AdminService.init()
 CodeService.init()
 GiftService.init()
 AchievementService.init()
+TradeService.init()
 
 print("🧠 Brainrot Factory запущена! 🤌")

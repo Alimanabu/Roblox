@@ -20,6 +20,7 @@ local MENU = {
 	{ id = "Rebirth", text = "♻️ Перерождение", color = C.Purple },
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
 	{ id = "Achievements", text = "🏆 Достижения", color = Color3.fromRGB(200, 150, 40) },
+	{ id = "Trade", text = "🤝 Обмен", color = Color3.fromRGB(60, 170, 140) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
 	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
 	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },

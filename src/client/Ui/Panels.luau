@@ -802,6 +802,176 @@ function Help.build(content)
 end
 
 ---------------------------------------------------------------------------
+-- ОБМЕН
+---------------------------------------------------------------------------
+local Trade = { title = "🤝 Обмен брейнротами" }
+Panels.trade = nil -- состояние обмена с сервера (nil — обмена нет)
+
+function Trade.signature(state)
+	local parts = { #Players:GetPlayers() }
+	local trade = Panels.trade
+	if trade then
+		table.insert(parts, trade.partnerUserId)
+		table.insert(parts, table.concat(trade.myOffer, ","))
+		for _, entry in ipairs(trade.theirOffer) do
+			table.insert(parts, entry.id .. entry.mut)
+		end
+		table.insert(parts, tostring(trade.myReady) .. tostring(trade.theirReady) .. tostring(trade.confirmAt))
+	end
+	for _, entry in ipairs(state.creatures) do
+		table.insert(parts, entry.uid)
+	end
+	return table.concat(parts, "|")
+end
+
+local function offerRow(parent, order, entry, selected, onClick)
+	local creature = Creatures.get(entry.id)
+	if not creature then
+		return
+	end
+	local rarity = Rarities.get(creature.rarity)
+	local button = Theme.button({
+		Size = UDim2.new(1, -6, 0, 40),
+		Text = (selected and "✅ " or "") .. creatureName(entry) .. "  " .. colored(rarity.name, rarity.color),
+		Color = selected and C.Purple or C.Card,
+		LayoutOrder = order,
+		Parent = parent,
+	}, onClick)
+	button.AutoButtonColor = onClick ~= nil
+end
+
+local function column(content, x, title)
+	local frame = create("Frame", {
+		Size = UDim2.new(0.5, -6, 0, 300),
+		Position = UDim2.new(x, x > 0 and 6 or 0, 0, 0),
+		BackgroundTransparency = 1,
+		Parent = content,
+	})
+	Theme.label({ Size = UDim2.new(1, 0, 0, 26), Text = title, TextColor3 = C.Coins, Parent = frame })
+	local scroll = create("ScrollingFrame", {
+		Position = UDim2.fromOffset(0, 30),
+		Size = UDim2.new(1, 0, 1, -30),
+		BackgroundColor3 = C.Background,
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		Parent = frame,
+	}, { Theme.corner(10) })
+	list(scroll, 4)
+	return scroll
+end
+
+function Trade.build(content, state)
+	local trade = Panels.trade
+	if not trade then
+		list(content, 8)
+		Theme.label({
+			Size = UDim2.new(1, -10, 0, 50),
+			Text = "Выбери игрока и предложи обмен. Каждый кладёт до 6 брейнротов, потом оба жмут «Готов».",
+			TextColor3 = C.Muted,
+			LayoutOrder = 0,
+			Parent = content,
+		})
+		local others = 0
+		for order, other in ipairs(Players:GetPlayers()) do
+			if other ~= player then
+				others += 1
+				local row = card({ Size = UDim2.new(1, -10, 0, 50), LayoutOrder = order }, { Theme.padding(6) })
+				Theme.label({
+					Size = UDim2.new(0.6, 0, 1, 0),
+					Text = other.DisplayName,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Parent = row,
+				})
+				Theme.button({
+					Size = UDim2.new(0.4, -6, 1, 0),
+					Position = UDim2.new(0.6, 6, 0, 0),
+					Text = "🤝 Предложить",
+					Color = C.Good,
+					Parent = row,
+				}, function()
+					Remotes.TradeRequest:FireServer(other.UserId)
+				end)
+				row.Parent = content
+			end
+		end
+		if others == 0 then
+			Theme.label({
+				Size = UDim2.new(1, -10, 0, 40),
+				Text = "На сервере больше никого нет 😢",
+				LayoutOrder = 1,
+				Parent = content,
+			})
+		end
+		return
+	end
+
+	-- Идёт обмен.
+	local selected = {}
+	for _, uid in ipairs(trade.myOffer) do
+		selected[uid] = true
+	end
+	local mine = column(content, 0, "Ты отдаёшь (" .. #trade.myOffer .. "/6)")
+	local sorted = table.clone(state.creatures)
+	table.sort(sorted, function(a, b)
+		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
+	end)
+	for order, entry in ipairs(sorted) do
+		offerRow(mine, order, entry, selected[entry.uid], function()
+			local offer = table.clone(trade.myOffer)
+			local index = table.find(offer, entry.uid)
+			if index then
+				table.remove(offer, index)
+			elseif #offer < 6 then
+				table.insert(offer, entry.uid)
+			end
+			Remotes.TradeSetOffer:FireServer(offer)
+		end)
+	end
+
+	local theirs = column(content, 0.5, trade.partnerName .. " отдаёт")
+	for order, entry in ipairs(trade.theirOffer) do
+		offerRow(theirs, order, entry, false, nil)
+	end
+
+	local status
+	if trade.confirmAt then
+		status = "⏳ Обмен через " .. math.max(0, math.ceil(trade.confirmAt - workspace:GetServerTimeNow())) .. " с..."
+	else
+		status = (trade.myReady and "✅ Ты готов" or "Ты не готов")
+			.. "  •  "
+			.. (trade.theirReady and ("✅ " .. trade.partnerName .. " готов") or (trade.partnerName .. " не готов"))
+	end
+	Theme.label({
+		Size = UDim2.new(1, 0, 0, 26),
+		Position = UDim2.fromOffset(0, 308),
+		Text = status,
+		TextColor3 = trade.confirmAt and C.Good or C.Muted,
+		Parent = content,
+	})
+	Theme.button({
+		Size = UDim2.new(0.5, -6, 0, 44),
+		Position = UDim2.fromOffset(0, 340),
+		Text = trade.myReady and "❌ Не готов" or "✅ Готов",
+		Color = trade.myReady and C.Gold or C.Good,
+		Parent = content,
+	}, function()
+		Remotes.TradeReady:FireServer(not trade.myReady)
+	end)
+	Theme.button({
+		Size = UDim2.new(0.5, -6, 0, 44),
+		Position = UDim2.new(0.5, 6, 0, 340),
+		Text = "🚪 Выйти из обмена",
+		Color = C.Bad,
+		Parent = content,
+	}, function()
+		Remotes.TradeCancel:FireServer()
+	end)
+end
+
+---------------------------------------------------------------------------
 -- ДОСТИЖЕНИЯ
 ---------------------------------------------------------------------------
 local AchievementsPanel = { title = "🏆 Достижения" }
@@ -915,6 +1085,7 @@ end
 ---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Trade = Trade,
 	Achievements = AchievementsPanel,
 	Admin = Admin,
 	Help = Help,
@@ -1015,6 +1186,14 @@ function Panels:close()
 	self.openName = nil
 	self.window.Visible = false
 	self.content:ClearAllChildren()
+end
+
+-- Перерисовать окно, даже если состояние игрока не менялось (например, обмен).
+function Panels:refresh()
+	self.lastSignature = nil
+	if self.openName then
+		self:rebuild()
+	end
 end
 
 function Panels:update(state)
