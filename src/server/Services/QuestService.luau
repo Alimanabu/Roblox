@@ -10,6 +10,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local Actions = require(script.Parent.Actions)
+local RewardService = require(script.Parent.RewardService)
 
 local QuestService = {}
 
@@ -34,19 +35,7 @@ local function ensureQuests(player, data)
 end
 
 local function giveReward(player, data, coinsMinutes, luckMinutes)
-	local parts = {}
-	if coinsMinutes and coinsMinutes > 0 then
-		local income = Formulas.totalIncome(data, MonetizationService.passes(player))
-		local coins = Daily.coinsFor(income, coinsMinutes)
-		data.coins += coins
-		data.totalEarned += coins
-		table.insert(parts, "💰 " .. Format.coins(coins))
-	end
-	if luckMinutes and luckMinutes > 0 then
-		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, os.time()) + luckMinutes * 60
-		table.insert(parts, "🍀 x2 удачи на " .. luckMinutes .. " мин")
-	end
-	return table.concat(parts, " + ")
+	return RewardService.grant(player, data, { coinsMinutes = coinsMinutes, luckMinutes = luckMinutes })
 end
 
 local function onAction(player, kind, amount)

@@ -56,6 +56,7 @@ local function defaultData()
 		daily = { streak = 0, lastClaimDay = 0 },
 		quests = { day = 0, list = {} },
 		tutorial = { step = 1, progress = 0 },
+		codes = {}, -- [КОД] = true — введённые промокоды
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

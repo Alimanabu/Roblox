@@ -15,6 +15,7 @@ local EVENTS = {
 	"ClaimDaily", -- () забрать ежедневную награду
 	"ClaimQuest", -- (index) забрать награду за задание
 	"Admin", -- (command, arg) тестовые команды (только админы / Studio)
+	"RedeemCode", -- (text) ввести промокод
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

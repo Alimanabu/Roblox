@@ -608,6 +608,36 @@ function Rewards.build(content, state)
 		})
 	end
 
+	-- Промокоды.
+	local codeRow = create("Frame", {
+		Size = UDim2.new(1, -10, 0, 44),
+		BackgroundTransparency = 1,
+		LayoutOrder = 90,
+		Parent = content,
+	})
+	local codeBox = create("TextBox", {
+		Size = UDim2.new(0.65, -8, 1, 0),
+		BackgroundColor3 = C.Card,
+		PlaceholderText = "🎟️ Промокод (например, SIXSEVEN)",
+		PlaceholderColor3 = C.Muted,
+		Text = "",
+		Font = Theme.Font,
+		TextScaled = true,
+		TextColor3 = C.Text,
+		ClearTextOnFocus = false,
+		Parent = codeRow,
+	}, { Theme.corner(10), Theme.padding(6) })
+	Theme.button({
+		Size = UDim2.new(0.35, 0, 1, 0),
+		Position = UDim2.fromScale(0.65, 0),
+		Text = "Ввести код",
+		Color = C.Purple,
+		Parent = codeRow,
+	}, function()
+		Remotes.RedeemCode:FireServer(codeBox.Text)
+		codeBox.Text = ""
+	end)
+
 	Theme.button({
 		Size = UDim2.new(0.5, 0, 0, 48),
 		Text = r.canClaim and ("🎁 Забрать день " .. r.nextDay) or "✅ Приходи завтра",
