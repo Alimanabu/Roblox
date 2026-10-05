@@ -21,6 +21,7 @@ local MENU = {
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
 	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
+	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },
 }
 
 function Hud.new(screenGui, onMenu)
@@ -143,6 +144,14 @@ function Hud.new(screenGui, onMenu)
 			onMenu(item.id)
 		end)
 		self.buttons[item.id] = button
+		if item.adminOnly then
+			local localPlayer = game:GetService("Players").LocalPlayer
+			local function refresh()
+				button.Visible = localPlayer:GetAttribute("IsAdmin") == true
+			end
+			refresh()
+			localPlayer:GetAttributeChangedSignal("IsAdmin"):Connect(refresh)
+		end
 		-- Красный кружок «!», когда в разделе есть что забрать.
 		self.badges[item.id] = create("TextLabel", {
 			Name = "Badge",

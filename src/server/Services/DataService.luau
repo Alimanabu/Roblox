@@ -104,6 +104,20 @@ function DataService.addSaveExtra(callback)
 	table.insert(saveExtras, callback)
 end
 
+-- Полный сброс прогресса (тест-команда). Покупки за Robux не трогаем.
+function DataService.reset(player)
+	local old = profiles[player]
+	if not old then
+		return nil
+	end
+	local fresh = defaultData()
+	fresh.receipts = old.receipts
+	fresh.session = old.session
+	profiles[player] = fresh
+	dirty[player] = true
+	return fresh
+end
+
 function DataService.onClose(callback)
 	table.insert(closeCallbacks, callback)
 end

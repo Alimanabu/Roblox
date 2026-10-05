@@ -715,8 +715,75 @@ function Help.build(content)
 end
 
 ---------------------------------------------------------------------------
+-- ТЕСТ (только админы / Studio)
+---------------------------------------------------------------------------
+local Admin = { title = "🛠 Тест-команды" }
+
+local ADMIN_BUTTONS = {
+	{ "💰 +1K", "coins", 1000 },
+	{ "💰 +1M", "coins", 1000000 },
+	{ "💰 +1B", "coins", 1000000000 },
+	{ "⭐ +1 уровень", "levels", 1 },
+	{ "⭐ +10 уровней", "levels", 10 },
+	{ "Сигма", "creature", "sigma" },
+	{ "Аура", "creature", "aura" },
+	{ "Скибиди", "creature", "skibidi" },
+	{ "Брейнрот Бог", "creature", "god" },
+	{ "SIX SEVEN", "creature", "sixseven" },
+	{ "Мутант 67", "mutant" },
+	{ "🍀 Шторм удачи", "event", "luck_storm" },
+	{ "💰 Денежный дождь", "event", "money_rain" },
+	{ "🧬 Мутаген", "event", "mutant_fog" },
+	{ "⚡ Турбо", "event", "turbo" },
+	{ "🤌 Минута 67", "event", "minute67" },
+	{ "📚 Пропустить обучение", "skipTutorial" },
+	{ "🎁 Сбросить награды дня", "resetDaily" },
+	{ "⚠️ СБРОС ПРОГРЕССА", "reset" },
+}
+
+function Admin.signature()
+	return "admin"
+end
+
+function Admin.build(content)
+	list(content, 8)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 24),
+		Text = "Только для проверки игры. Видно в Studio и админам из Config/Admins.",
+		TextColor3 = C.Muted,
+		LayoutOrder = 0,
+		Parent = content,
+	})
+	local grid = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
+		Parent = content,
+	}, {
+		create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(200, 44),
+			CellPadding = UDim2.fromOffset(8, 8),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	for order, def in ipairs(ADMIN_BUTTONS) do
+		Theme.button({
+			Text = def[1],
+			Color = def[2] == "reset" and C.Bad or C.Card,
+			LayoutOrder = order,
+			Parent = grid,
+		}, function()
+			Remotes.Admin:FireServer(def[2], def[3])
+		end)
+	end
+end
+
+---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Admin = Admin,
 	Help = Help,
 	Rewards = Rewards,
 	Factory = Factory,

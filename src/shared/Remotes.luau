@@ -14,6 +14,7 @@ local EVENTS = {
 	"SetAutoCraft", -- (capsuleId | nil)
 	"ClaimDaily", -- () забрать ежедневную награду
 	"ClaimQuest", -- (index) забрать награду за задание
+	"Admin", -- (command, arg) тестовые команды (только админы / Studio)
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

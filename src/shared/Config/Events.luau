@@ -25,6 +25,18 @@ Events.SixSeven = {
 	endMinute = 8, -- не включительно
 }
 
+function Events.byId(id)
+	if id == Events.SixSeven.id then
+		return Events.SixSeven
+	end
+	for _, event in ipairs(Events.Random) do
+		if event.id == id then
+			return event
+		end
+	end
+	return nil
+end
+
 local function randomEventFor(cycleIndex)
 	-- Перемешиваем порядок, чтобы ивенты не шли по кругу предсказуемо.
 	local index = (cycleIndex * 7919 + 13) % #Events.Random + 1
@@ -45,6 +57,20 @@ function Events.active(time)
 	local six = Events.SixSeven
 	if minute >= six.startMinute and minute < six.endMinute then
 		table.insert(result, { event = six, endsAt = hourStart + six.endMinute * 60 })
+	end
+
+	-- Ивент, запущенный вручную через панель «🛠 Тест» (атрибуты на workspace).
+	local forcedId = workspace and workspace:GetAttribute("ForcedEvent")
+	local forcedUntil = workspace and workspace:GetAttribute("ForcedEventUntil")
+	if forcedId and forcedUntil and time < forcedUntil then
+		local forced = Events.byId(forcedId)
+		local already = false
+		for _, active in ipairs(result) do
+			already = already or active.event == forced
+		end
+		if forced and not already then
+			table.insert(result, { event = forced, endsAt = forcedUntil })
+		end
 	end
 	return result
 end

@@ -79,6 +79,15 @@ local function addCreature(player, data, creatureId, mutationId, paid)
 	return entry, isNew
 end
 
+-- Выдать брейнрота напрямую (награды, тест-команды). Возвращает запись.
+function FactoryService.give(player, creatureId, mutationId)
+	local data = DataService.get(player)
+	if not data or not Creatures.get(creatureId) then
+		return nil
+	end
+	return (addCreature(player, data, creatureId, mutationId or "normal", nil))
+end
+
 -- Возвращает true, если получилось создать.
 local function craft(player, capsuleId, silent)
 	local data = DataService.get(player)
