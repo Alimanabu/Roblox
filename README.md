@@ -34,20 +34,29 @@ Roblox-симулятор: строишь фабрику мемов, кидае�
 ```
 src/
   shared/                 -> ReplicatedStorage.Shared (общий код)
-    Config/               все цифры игры: редкости, брейнроты, капсулы, уровни...
+    Config/               все цифры и списки игры:
+                          Rarities, Creatures, Capsules, Mutations, Levels, Upgrades,
+                          Rebirths, Events, Daily (награды/задания/подарки), Achievements,
+                          Codes, Skins, Sounds, Music, Tutorial, Monetization, Admins
     Util/Formulas.luau    вся игровая математика (шансы, доход, удача)
+    Util/CreatureModel.luau  сборка моделей брейнротов из деталей
     Util/Format.luau      красивые числа ($1.5K, 2.3M)
     Remotes.luau          сетевые события
   server/                 -> ServerScriptService.Server
     Main.server.luau      запуск сервера
-    Services/             данные, фабрика, доход, уровни, базы, донат
+    Services/             Data, Factory, Income, Plot, Steal, Trade, Quest, Gift, Code,
+                          Achievement, Skin, Event, Leaderboard, Tutorial, Settings,
+                          Monetization, Admin, Reward, Progression, Actions (шина событий)
   client/                 -> StarterPlayerScripts.Client
     Main.client.luau      запуск клиента, анимации
     Ui/                   интерфейс (создаётся кодом)
+    Sfx.luau, Music.luau  звуки и музыка
 tests/                    проверки баланса и формул
+docs/                     DESIGN (дизайн), TESTING (чек-лист), IDEAS (идеи других игр)
 ```
 
-Чтобы поменять баланс, достаточно править файлы в `src/shared/Config/`.
+Почти всё, что хочется поменять (цены, шансы, коды, скины, звуки), лежит в
+`src/shared/Config/`. Код трогать не нужно.
 
 ## Тесты
 
