@@ -36,7 +36,7 @@ Achievements.List = {
 	{ id = "indexAll", name = "Ходячий Индекс", desc = "Открой ВСЕХ брейнротов", reward = { coinsMinutes = 60, luckMinutes = 60 }, check = function(d) return indexCount(d) >= #Creatures.List end },
 	{ id = "aura", name = "Аура-фармер", desc = "Получи брейнрота «Аура»", reward = { coinsMinutes = 5 }, check = function(d) return hasRarity(d, "aura") end },
 	{ id = "god", name = "Встреча с Богом", desc = "Получи Брейнрот Бога", reward = { coinsMinutes = 20 }, check = function(d) return hasRarity(d, "god") end },
-	{ id = "sixseven", name = "SIX... SEVEN!!! 🤌", desc = "Получи SIX SEVEN", reward = { coinsMinutes = 67, luckMinutes = 67 }, check = function(d) return hasRarity(d, "sixseven") end },
+	{ id = "sixseven", name = "SIX... SEVEN!!! 🤌", desc = "Получи SIX SEVEN (+ Скин 67)", reward = { coinsMinutes = 67, luckMinutes = 67, skin = "sixseven" }, check = function(d) return hasRarity(d, "sixseven") end },
 	{ id = "mutant", name = "Мутант", desc = "Получи брейнрота с мутацией", reward = { coinsMinutes = 3 }, check = function(d) return stat(d, "mutants") >= 1 end },
 	{ id = "mutant25", name = "Лаборатория мутантов", desc = "Получи 25 мутантов", reward = { coinsMinutes = 15 }, check = function(d) return stat(d, "mutants") >= 25 end },
 	{ id = "fuse10", name = "Генетик", desc = "Скрести брейнротов 10 раз", reward = { coinsMinutes = 8 }, check = function(d) return stat(d, "fused") >= 10 end },

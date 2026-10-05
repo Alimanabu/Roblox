@@ -58,6 +58,7 @@ local function defaultData()
 		tutorial = { step = 1, progress = 0 },
 		codes = {}, -- [КОД] = true — введённые промокоды
 		achievements = {}, -- [id] = true
+		skins = {}, -- [skinId] = true — купленные скины
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

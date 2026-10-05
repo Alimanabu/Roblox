@@ -22,6 +22,8 @@ local EVENTS = {
 	"TradeSetOffer", -- ({ uid, ... }) что я кладу в обмен
 	"TradeReady", -- (bool) «Готов»
 	"TradeCancel", -- () выйти из обмена
+	"BuySkin", -- (skinId)
+	"ApplySkin", -- (uid, skinId | nil)
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

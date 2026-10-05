@@ -53,7 +53,7 @@ local function stateFor(trade, player)
 	for _, uid in ipairs(trade.offers[partner]) do
 		local entry = partnerData and findEntry(partnerData, uid)
 		if entry then
-			table.insert(theirOffer, { id = entry.id, mut = entry.mut })
+			table.insert(theirOffer, { id = entry.id, mut = entry.mut, skin = entry.skin })
 		end
 	end
 	return {
@@ -215,7 +215,7 @@ local function execute(trade)
 	end
 	local function add(data, entries)
 		for _, entry in ipairs(entries) do
-			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid })
+			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin })
 			data.nextUid += 1
 			data.index[entry.id] = true
 		end

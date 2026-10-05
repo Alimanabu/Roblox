@@ -9,4 +9,5 @@ return {
 	RIZZ = { creatureRarity = "rizz" },
 	SIGMA = { coinsMinutes = 5, luckMinutes = 10 },
 	RELEASE = { coinsMinutes = 15, luckMinutes = 15 },
+	SKIN67 = { skin = "sixseven", text = "Скин 67 разблокирован! Надень его в 🎨 Скины" },
 }

@@ -6,6 +6,7 @@ local Config = script.Parent.Parent.Config
 local Creatures = require(Config.Creatures)
 local Rarities = require(Config.Rarities)
 local Mutations = require(Config.Mutations)
+local Skins = require(Config.Skins)
 
 local CreatureModel = {}
 
@@ -245,8 +246,49 @@ local function bodySize(shape, s)
 	return s, s, s
 end
 
+local function applySkin(model, body, skin)
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local isFace = part.Name == "Eye" or part.Name == "Pupil" or part.Name == "Mouth"
+			if part == body or (skin.allParts and not isFace) then
+				part.Color = skin.color
+				part.Material = Enum.Material[skin.material]
+				part.Transparency = skin.transparency or 0
+			end
+			if skin.eyes and part.Name == "Pupil" then
+				part.Color = skin.eyes
+				part.Material = Enum.Material.Neon
+			end
+		end
+	end
+	if skin.effect == "fire" then
+		local fire = Instance.new("Fire")
+		fire.Size = 4
+		fire.Heat = 8
+		fire.Parent = body
+	elseif skin.effect == "smoke" then
+		local smoke = Instance.new("Smoke")
+		smoke.Color = Color3.fromRGB(110, 255, 60)
+		smoke.Opacity = 0.15
+		smoke.RiseVelocity = 2
+		smoke.Parent = body
+	elseif skin.effect == "snow" or skin.effect == "stars" then
+		local particles = Instance.new("ParticleEmitter")
+		particles.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		particles.Color = ColorSequence.new(skin.effect == "snow" and Color3.new(1, 1, 1) or skin.color)
+		particles.Rate = 6
+		particles.Lifetime = NumberRange.new(1.2, 2)
+		particles.Speed = NumberRange.new(0.5, 1.5)
+		particles.SpreadAngle = Vector2.new(180, 180)
+		particles.Size = NumberSequence.new(0.3, 0)
+		particles.LightEmission = 1
+		particles.Parent = body
+	end
+end
+
 -- Возвращает Model. cframe — где стоит центр «пола» под брейнротом.
-function CreatureModel.build(creatureId, mutationId, cframe)
+-- skinId — необязательный скин (Config/Skins).
+function CreatureModel.build(creatureId, mutationId, cframe, skinId)
 	local creature = Creatures.get(creatureId)
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(mutationId)
@@ -326,8 +368,14 @@ function CreatureModel.build(creatureId, mutationId, cframe)
 		sparkles.Parent = body
 	end
 
+	local skin = Skins.get(skinId)
+	if skin then
+		applySkin(model, body, skin)
+	end
+
 	model.WorldPivot = cframe
-	model:SetAttribute("Rainbow", rarity.rainbow == true or mutation.id == "rainbow")
+	model:SetAttribute("Rainbow", rarity.rainbow == true or mutation.id == "rainbow" or (skin ~= nil and skin.rainbow == true))
+	model:SetAttribute("Skin", skinId)
 	model:SetAttribute("Height", h + 0.3)
 	return model, body
 end

@@ -111,6 +111,19 @@ for code in pairs(shared_require("Config/Codes")) do
 	check(code == string.upper(code), "промокод не заглавными: " .. code)
 end
 
+-- 5e. Скины: материалы существуют, награды-скины ссылаются на настоящие скины.
+local Skins = shared_require("Config/Skins")
+local MATERIALS = { Neon = true, Glass = true, SmoothPlastic = true, Foil = true, ForceField = true }
+for _, skin in ipairs(Skins.List) do
+	check(MATERIALS[skin.material], "скин " .. skin.id .. ": неизвестный материал " .. tostring(skin.material))
+end
+for code, reward in pairs(shared_require("Config/Codes")) do
+	check(reward.skin == nil or Skins.get(reward.skin) ~= nil, "код " .. code .. " выдаёт несуществующий скин")
+end
+for _, achievement in ipairs(Achievements.List) do
+	check(achievement.reward.skin == nil or Skins.get(achievement.reward.skin) ~= nil, "достижение выдаёт несуществующий скин")
+end
+
 -- 6. Ивенты.
 local Events = shared_require("Config/Events")
 local hour = 1000 * 3600 -- начало какого-то часа (UTC)

@@ -115,7 +115,7 @@ local function makeCarryVisual(thief, entry)
 	local mutation = Mutations.get(entry.mut)
 
 	-- Модель уменьшаем и приклеиваем к голове вора.
-	local model, body = CreatureModel.build(entry.id, entry.mut, head.CFrame * CFrame.new(0, 0.6, 0))
+	local model, body = CreatureModel.build(entry.id, entry.mut, head.CFrame * CFrame.new(0, 0.6, 0), entry.skin)
 	model.Name = "StolenBrainrot"
 	local scale = math.min(1, 2.5 / creature.size)
 	model:ScaleTo(scale)
@@ -200,7 +200,7 @@ local function endCarry(thief, success, reason)
 
 	if success then
 		do
-			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid }
+			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin }
 			thiefData.nextUid += 1
 			table.insert(thiefData.creatures, newEntry)
 			thiefData.index[entry.id] = true

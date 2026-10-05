@@ -31,6 +31,10 @@ function RewardService.grant(player, data, reward)
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, os.time()) + reward.luckMinutes * 60
 		table.insert(parts, "🍀 x2 удачи на " .. reward.luckMinutes .. " мин")
 	end
+	if reward.skin and not data.skins[reward.skin] then
+		data.skins[reward.skin] = true
+		table.insert(parts, "🎨 скин")
+	end
 	if reward.creatureRarity then
 		local pool = Creatures.ByRarity[reward.creatureRarity]
 		if pool then

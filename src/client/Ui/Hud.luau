@@ -21,6 +21,7 @@ local MENU = {
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
 	{ id = "Achievements", text = "🏆 Достижения", color = Color3.fromRGB(200, 150, 40) },
 	{ id = "Trade", text = "🤝 Обмен", color = Color3.fromRGB(60, 170, 140) },
+	{ id = "Skins", text = "🎨 Скины", color = Color3.fromRGB(220, 90, 200) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
 	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
 	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },
@@ -127,11 +128,11 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 10, 0.5, 20),
-		Size = UDim2.fromOffset(170, #MENU * 48),
+		Size = UDim2.fromOffset(170, #MENU * 43),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
 	}, {
-		create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
+		create("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 	self.badges = {}
 	self.buttons = {}
@@ -140,7 +141,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 			Name = item.id,
 			Text = item.text,
 			Color = item.color,
-			Size = UDim2.new(1, 0, 0, 42),
+			Size = UDim2.new(1, 0, 0, 38),
 			LayoutOrder = order,
 			Parent = menu,
 		}, function()

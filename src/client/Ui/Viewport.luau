@@ -6,7 +6,7 @@ local CreatureModel = require(Shared.Util.CreatureModel)
 local Viewport = {}
 
 -- Создаёт ViewportFrame с моделью. silhouette = true — чёрный силуэт (ещё не открыт).
-function Viewport.creature(props, creatureId, mutationId, silhouette)
+function Viewport.creature(props, creatureId, mutationId, silhouette, skinId)
 	local frame = Instance.new("ViewportFrame")
 	frame.BackgroundTransparency = 1
 	frame.Ambient = Color3.fromRGB(180, 180, 180)
@@ -18,7 +18,7 @@ function Viewport.creature(props, creatureId, mutationId, silhouette)
 		end
 	end
 
-	local model = CreatureModel.build(creatureId, mutationId or "normal", CFrame.new())
+	local model = CreatureModel.build(creatureId, mutationId or "normal", CFrame.new(), skinId)
 	if silhouette then
 		for _, part in ipairs(model:GetDescendants()) do
 			if part:IsA("BasePart") then

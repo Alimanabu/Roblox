@@ -233,7 +233,7 @@ local function buildCreature(plot, entry, standCFrame, data, passes)
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(entry.mut)
 
-	local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame)
+	local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame, entry.skin)
 	model.Name = "Creature"
 	model:SetAttribute("Uid", entry.uid)
 	-- Клиент по этому атрибуту делает анимацию «покачивания».
@@ -314,6 +314,11 @@ function PlotService.render(player)
 			local standCFrame = slotCFrame(plot, index) * CFrame.new(0, 0.6, 0)
 			local model = existing[entry.uid]
 			existing[entry.uid] = nil
+			-- Сменили скин — модель надо пересобрать.
+			if model and model:GetAttribute("Skin") ~= entry.skin then
+				model:Destroy()
+				model = nil
+			end
 			if model then
 				if model:GetAttribute("BaseCFrame") ~= standCFrame then
 					model:SetAttribute("BaseCFrame", standCFrame)

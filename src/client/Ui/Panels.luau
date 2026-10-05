@@ -13,6 +13,7 @@ local Upgrades = require(Shared.Config.Upgrades)
 local Rebirths = require(Shared.Config.Rebirths)
 local Monetization = require(Shared.Config.Monetization)
 local Achievements = require(Shared.Config.Achievements)
+local Skins = require(Shared.Config.Skins)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -972,6 +973,120 @@ function Trade.build(content, state)
 end
 
 ---------------------------------------------------------------------------
+-- СКИНЫ
+---------------------------------------------------------------------------
+local SkinsPanel = { title = "🎨 Скины брейнротов" }
+local selectedSkin = nil -- выбранный скин; nil = «снять скин»
+
+function SkinsPanel.signature(state)
+	local parts = { tostring(selectedSkin) }
+	for _, skin in ipairs(Skins.List) do
+		table.insert(parts, tostring(state.skins[skin.id]) .. (skin.price and state.coins >= skin.price and "1" or "0"))
+	end
+	for _, entry in ipairs(state.creatures) do
+		table.insert(parts, entry.uid .. tostring(entry.skin))
+	end
+	return table.concat(parts, "|")
+end
+
+function SkinsPanel.build(content, state, panels)
+	list(content, 8)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 24),
+		Text = "Скины только для красоты. Выбери скин, потом нажми «Надеть» у брейнрота.",
+		TextColor3 = C.Muted,
+		LayoutOrder = 0,
+		Parent = content,
+	})
+	local grid = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
+		Parent = content,
+	}, {
+		create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(150, 150),
+			CellPadding = UDim2.fromOffset(8, 8),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	for _, skin in ipairs(Skins.List) do
+		local owned = state.skins[skin.id] == true
+		local isSelected = selectedSkin == skin.id
+		local box = card({
+			LayoutOrder = skin.order,
+			BackgroundColor3 = isSelected and C.Purple or C.Card,
+			Parent = grid,
+		}, { Theme.stroke(owned and skin.color or C.CardLocked, isSelected and 4 or 2), Theme.padding(6) })
+		Viewport.creature({
+			Size = UDim2.new(1, 0, 0, 62),
+			Parent = box,
+		}, "bananito_ninjini", "normal", false, skin.id)
+		Theme.label({ Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 64), Text = skin.name, Parent = box })
+		local text, color
+		if owned then
+			text, color = isSelected and "✅ Выбран" or "Выбрать", isSelected and C.Gold or C.Good
+		elseif skin.price then
+			text, color = Format.coins(skin.price), state.coins >= skin.price and C.Good or C.Bad
+		else
+			text, color = "🔒 Секрет", C.CardLocked
+		end
+		Theme.button({
+			Size = UDim2.new(1, 0, 0, 36),
+			Position = UDim2.new(0, 0, 1, -36),
+			Text = text,
+			Color = color,
+			Parent = box,
+		}, function()
+			if owned then
+				selectedSkin = skin.id
+				panels:refresh()
+			elseif skin.price then
+				Remotes.BuySkin:FireServer(skin.id)
+			end
+		end)
+	end
+
+	Theme.button({
+		Size = UDim2.new(0.5, 0, 0, 36),
+		Text = selectedSkin == nil and "✅ Режим «снять скин»" or "Снять скины (выбрать)",
+		Color = selectedSkin == nil and C.Gold or C.Card,
+		LayoutOrder = 2,
+		Parent = content,
+	}, function()
+		selectedSkin = nil
+		panels:refresh()
+	end)
+
+	local sorted = table.clone(state.creatures)
+	table.sort(sorted, function(a, b)
+		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
+	end)
+	for order, entry in ipairs(sorted) do
+		local skin = Skins.get(entry.skin)
+		local row = card({ Size = UDim2.new(1, -10, 0, 44), LayoutOrder = 10 + order }, { Theme.padding(6) })
+		Theme.label({
+			Size = UDim2.new(0.65, 0, 1, 0),
+			Text = creatureName(entry) .. (skin and ("  " .. skin.name) or ""),
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = row,
+		})
+		Theme.button({
+			Size = UDim2.new(0.35, -6, 1, 0),
+			Position = UDim2.new(0.65, 6, 0, 0),
+			Text = selectedSkin and "🎨 Надеть" or "Снять",
+			Color = selectedSkin and C.Purple or C.Bad,
+			Parent = row,
+		}, function()
+			Remotes.ApplySkin:FireServer(entry.uid, selectedSkin)
+		end)
+		row.Parent = content
+	end
+end
+
+---------------------------------------------------------------------------
 -- ДОСТИЖЕНИЯ
 ---------------------------------------------------------------------------
 local AchievementsPanel = { title = "🏆 Достижения" }
@@ -1085,6 +1200,7 @@ end
 ---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Skins = SkinsPanel,
 	Trade = Trade,
 	Achievements = AchievementsPanel,
 	Admin = Admin,
@@ -1158,7 +1274,7 @@ function Panels:rebuild()
 	self.lastSignature = signature
 	local scroll = self.content.CanvasPosition
 	self.content:ClearAllChildren()
-	definition.build(self.content, self.state)
+	definition.build(self.content, self.state, self)
 	self.content.CanvasPosition = scroll
 end
 
