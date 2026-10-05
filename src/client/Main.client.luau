@@ -117,7 +117,9 @@ RunService.RenderStepped:Connect(function()
 		local lockButton = plot:FindFirstChild("LockButton")
 		local lockPrompt = lockButton and lockButton:FindFirstChild("LockPrompt")
 		if lockPrompt then
-			lockPrompt.Enabled = isMine and not locked
+			local shieldOnly = plot:GetAttribute("LockKind") == "shield"
+			local ready = (plot:GetAttribute("LockReadyAt") or 0) <= serverNow
+			lockPrompt.Enabled = isMine and ready and (not locked or shieldOnly)
 		end
 		local folder = plot:FindFirstChild("Creatures")
 		if folder then

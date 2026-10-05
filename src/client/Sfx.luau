@@ -47,6 +47,12 @@ function Sfx.play(name, pitch)
 			copy.Ended:Once(function()
 				copy:Destroy()
 			end)
+			-- Если звук не загрузился, Ended не придёт — убираем копию сами.
+			task.delay(6, function()
+				if copy.Parent then
+					copy:Destroy()
+				end
+			end)
 			task.wait(def.gap or 0)
 		end
 	end)

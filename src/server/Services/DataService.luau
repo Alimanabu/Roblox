@@ -31,6 +31,9 @@ local profiles = {} -- [player] = data
 local dirty = {} -- [player] = true, если состояние надо отправить клиенту
 local snapshotBuilder = nil -- function(player, data) -> snapshot, задаётся из Main
 local saveExtras = {} -- функции, которые добавляют в сохранение «временно отсутствующих» брейнротов
+local closeCallbacks = {} -- вызываются при выключении сервера до финального сохранения
+local releasing = {} -- [player] = true: игрок уходит, обычные сохранения уже не нужны
+local pendingRelease = {} -- [userId] = true: идёт финальное сохранение ушедшего игрока
 
 DataService.Loaded = Instance.new("BindableEvent")
 
@@ -99,6 +102,10 @@ function DataService.addSaveExtra(callback)
 	table.insert(saveExtras, callback)
 end
 
+function DataService.onClose(callback)
+	table.insert(closeCallbacks, callback)
+end
+
 function DataService.get(player)
 	return profiles[player]
 end
@@ -123,10 +130,19 @@ local function sessionOwnedByOther(saved)
 end
 
 -- release = true, когда игрок уходит: снимаем блокировку сессии.
+-- Возвращает true, если сохранение прошло (или сохранять некуда, как в Studio без API).
 function DataService.save(player, release)
 	local data = profiles[player]
-	if not data or not store then
-		return
+	if not data then
+		return false
+	end
+	if not store then
+		return true
+	end
+	-- Игрок уже уходит: обычное сохранение могло бы вернуть блокировку сессии
+	-- после финального, и игрок не смог бы зайти на другой сервер.
+	if releasing[player] and not release then
+		return false
 	end
 	data.lastOnline = os.time()
 
@@ -160,9 +176,12 @@ function DataService.save(player, release)
 	end)
 	if not ok then
 		warn("[DataService] Не удалось сохранить", player.Name, err)
+		return false
 	elseif stolenSession then
 		warn("[DataService] Сессию", player.Name, "занял другой сервер, сохранение пропущено")
+		return false
 	end
+	return true
 end
 
 -- Загружает прогресс и ставит блокировку сессии.
@@ -214,6 +233,10 @@ function DataService.addReceipt(data, receiptId)
 end
 
 local function onPlayerAdded(player)
+	-- Перезашёл на этот же сервер, пока идёт финальное сохранение прошлого захода, — ждём.
+	while pendingRelease[player.UserId] do
+		task.wait(0.1)
+	end
 	local data
 	if store then
 		local ok, result = loadWithLock(player)
@@ -254,10 +277,14 @@ end
 
 local function onPlayerRemoving(player)
 	if profiles[player] then
+		releasing[player] = true
+		pendingRelease[player.UserId] = true
 		DataService.save(player, true)
+		pendingRelease[player.UserId] = nil
 	end
 	profiles[player] = nil
 	dirty[player] = nil
+	releasing[player] = nil
 end
 
 function DataService.init()
@@ -288,6 +315,9 @@ function DataService.init()
 	end)
 
 	game:BindToClose(function()
+		for _, callback in ipairs(closeCallbacks) do
+			pcall(callback)
+		end
 		if RunService:IsStudio() and not store then
 			return
 		end

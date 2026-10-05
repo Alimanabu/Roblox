@@ -73,8 +73,11 @@ local function processReceipt(receiptInfo)
 
 	DataService.addReceipt(data, receiptId)
 	DataService.markDirty(player)
-	-- Сохраняем сразу, чтобы покупка точно не потерялась.
-	task.spawn(DataService.save, player)
+	-- Подтверждаем покупку Roblox только после успешного сохранения: если сервер
+	-- упадёт раньше, Roblox повторит выдачу на следующем заходе.
+	if not DataService.save(player) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 

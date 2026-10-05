@@ -76,9 +76,14 @@ function StealStatus:update(player, plots)
 	self.lock.Visible = true
 	local left = (myPlot:GetAttribute("LockedUntil") or 0) - serverNow
 	if left > 0 then
-		self.lockLabel.Text = "🔒 База закрыта " .. Format.time(left)
+		local shield = myPlot:GetAttribute("LockKind") == "shield"
+		self.lockLabel.Text = (shield and "🛡️ Защита " or "🔒 База закрыта ") .. Format.time(left)
 		self.lockLabel.TextColor3 = C.Good
 		self.lockStroke.Color = C.Good
+	elseif (myPlot:GetAttribute("LockReadyAt") or 0) > serverNow then
+		self.lockLabel.Text = "⏳ Замок через " .. Format.time(myPlot:GetAttribute("LockReadyAt") - serverNow)
+		self.lockLabel.TextColor3 = C.Gold
+		self.lockStroke.Color = C.Gold
 	else
 		self.lockLabel.Text = "🔓 База открыта!"
 		self.lockLabel.TextColor3 = C.Bad

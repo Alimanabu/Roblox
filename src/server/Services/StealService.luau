@@ -29,6 +29,7 @@ local StealService = {}
 
 StealService.CARRY_TIME = 60
 StealService.LOCK_TIME = 60
+StealService.LOCK_COOLDOWN = 30 -- после конца замка нельзя сразу закрыть снова
 StealService.JOIN_SHIELD = 90
 StealService.CARRY_SPEED = 12
 StealService.NORMAL_SPEED = 16
@@ -42,7 +43,10 @@ local WARN = Color3.fromRGB(255, 170, 60)
 
 local carries = {} -- [thief] = { owner, entry, deadline, visual, highlight, diedConn }
 local lockedUntil = {} -- [owner] = время сервера
+local lockKind = {} -- [owner] = "shield" (защита при входе) | "lock" (замок)
+local lockReadyAt = {} -- [owner] = когда снова можно нажать замок
 local lastSlap = {} -- [player] = os.clock()
+local closing = false -- сервер выключается: новые кражи запрещены
 
 local function now()
 	return workspace:GetServerTimeNow()
@@ -75,9 +79,27 @@ function StealService.isCarrying(player)
 	return carries[player] ~= nil
 end
 
-local function setLock(owner, seconds)
+local function setLock(owner, seconds, kind)
 	-- Атрибут на участке выставляет цикл ниже (база может назначиться чуть позже).
 	lockedUntil[owner] = now() + seconds
+	lockKind[owner] = kind
+	if kind == "lock" then
+		lockReadyAt[owner] = lockedUntil[owner] + StealService.LOCK_COOLDOWN
+	end
+end
+
+-- Сколько брейнротов хозяина сейчас несут воры. Пока > 0, перерождаться нельзя
+-- (иначе неудачная кража вернула бы брейнрота в уже «чистую» базу).
+local function updateRobbed(owner)
+	local count = 0
+	for _, carry in pairs(carries) do
+		if carry.owner == owner then
+			count += 1
+		end
+	end
+	if owner.Parent then
+		owner:SetAttribute("BeingRobbed", count > 0 and count or nil)
+	end
 end
 
 -- Брейнрот над головой вора.
@@ -165,10 +187,18 @@ local function endCarry(thief, success, reason)
 	local owner = carry.owner
 	local entry = carry.entry
 	local name = displayName(entry)
+	updateRobbed(owner)
+
+	-- Перед зачислением ещё раз проверяем место: вор мог забить базу, пока бежал.
+	local thiefData = success and DataService.get(thief)
+	if success and not thiefData then
+		success, reason = false, "вор вышел"
+	elseif success and #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
+		success, reason = false, "на твоей базе нет места"
+	end
 
 	if success then
-		local thiefData = DataService.get(thief)
-		if thiefData then
+		do
 			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut }
 			thiefData.nextUid += 1
 			table.insert(thiefData.creatures, newEntry)
@@ -215,11 +245,12 @@ local function endCarry(thief, success, reason)
 end
 
 local function startSteal(thief, prompt)
-	local creaturePart = prompt.Parent
-	local plotModel = creaturePart and creaturePart:FindFirstAncestorWhichIsA("Model")
+	-- Prompt -> Body -> модель брейнрота -> папка Creatures -> модель базы.
+	local creaturesFolder = prompt:FindFirstAncestor("Creatures")
+	local plotModel = creaturesFolder and creaturesFolder.Parent
 	local owner = plotModel and PlotService.ownerOfModel(plotModel)
 	local uid = prompt:GetAttribute("Uid")
-	if not owner or owner == thief or type(uid) ~= "string" then
+	if closing or not owner or owner == thief or type(uid) ~= "string" then
 		return
 	end
 
@@ -270,6 +301,7 @@ local function startSteal(thief, prompt)
 	}
 	humanoid.WalkSpeed = StealService.CARRY_SPEED
 	thief:SetAttribute("CarryDeadline", deadline)
+	updateRobbed(owner)
 
 	DataService.markDirty(owner)
 	PlotService.render(owner)
@@ -286,11 +318,17 @@ local function onLockPrompt(player, prompt)
 	if owner ~= player then
 		return
 	end
-	if StealService.isLocked(player) then
+	-- Защиту при входе можно «продлить» замком (это шаг обучения), обычный замок — нет.
+	if StealService.isLocked(player) and lockKind[player] == "lock" then
 		Remotes.Notify:FireClient(player, "База уже закрыта", WARN)
 		return
 	end
-	setLock(player, StealService.LOCK_TIME)
+	local wait = (lockReadyAt[player] or 0) - now()
+	if wait > 0 then
+		Remotes.Notify:FireClient(player, "⏳ Замок перезаряжается: ещё " .. math.ceil(wait) .. " с", WARN)
+		return
+	end
+	setLock(player, StealService.LOCK_TIME, "lock")
 	Actions.fire(player, "lock", 1)
 	Remotes.Notify:FireClient(player, "🔒 База закрыта на " .. StealService.LOCK_TIME .. " секунд", GOOD)
 	Remotes.Sfx:FireClient(player, "lock")
@@ -373,7 +411,20 @@ local function watchTool(tool, player)
 	end)
 end
 
+-- Отменить все кражи (брейнроты возвращаются хозяевам). Вызывается при выключении сервера,
+-- чтобы кража не завершилась уже после последнего сохранения хозяина (иначе дюп).
+function StealService.cancelAll(reason)
+	for thief in pairs(carries) do
+		endCarry(thief, false, reason)
+	end
+end
+
 function StealService.init()
+	DataService.onClose(function()
+		closing = true
+		StealService.cancelAll("сервер выключается")
+	end)
+
 	-- Пока вор несёт брейнрота, он должен попадать в сохранение хозяина.
 	DataService.addSaveExtra(function(owner)
 		local extras = {}
@@ -420,7 +471,7 @@ function StealService.init()
 
 	-- Защита при входе.
 	DataService.Loaded.Event:Connect(function(player)
-		setLock(player, StealService.JOIN_SHIELD)
+		setLock(player, StealService.JOIN_SHIELD, "shield")
 		task.delay(3, function()
 			if player.Parent then
 				Remotes.Notify:FireClient(player, "🛡️ Твоя база защищена " .. StealService.JOIN_SHIELD .. " секунд", GOOD)
@@ -438,6 +489,8 @@ function StealService.init()
 			end
 		end
 		lockedUntil[player] = nil
+		lockKind[player] = nil
+		lockReadyAt[player] = nil
 		lastSlap[player] = nil
 	end)
 
@@ -452,6 +505,8 @@ function StealService.init()
 				if plot then
 					if plot.model:GetAttribute("LockedUntil") ~= lockedUntil[owner] then
 						plot.model:SetAttribute("LockedUntil", lockedUntil[owner])
+						plot.model:SetAttribute("LockKind", lockKind[owner])
+						plot.model:SetAttribute("LockReadyAt", lockReadyAt[owner])
 					end
 					local locked = (lockedUntil[owner] or 0) > t
 					PlotService.setLockVisual(plot, locked, (lockedUntil[owner] or 0) - t)

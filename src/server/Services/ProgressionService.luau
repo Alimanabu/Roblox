@@ -82,6 +82,10 @@ local function rebirth(player)
 	end
 	local cost = Rebirths.cost(data.rebirths)
 	local levelRequired = Rebirths.levelRequired(data.rebirths)
+	if player:GetAttribute("BeingRobbed") then
+		Remotes.Notify:FireClient(player, "У тебя сейчас крадут брейнрота! Сначала отбей его 👋", BAD)
+		return
+	end
 	if data.level < levelRequired then
 		Remotes.Notify:FireClient(player, "Нужен " .. levelRequired .. " уровень для перерождения", BAD)
 		return

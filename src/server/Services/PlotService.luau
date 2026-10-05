@@ -193,6 +193,10 @@ local function buildWorld()
 			})
 		end
 
+		local padsFolder = Instance.new("Folder")
+		padsFolder.Name = "Pads"
+		padsFolder.Parent = model
+
 		local creaturesFolder = Instance.new("Folder")
 		creaturesFolder.Name = "Creatures"
 		creaturesFolder.Parent = model
@@ -210,81 +214,124 @@ local function slotCFrame(plot, index)
 	return plot.cframe * CFrame.new(x, 1, z)
 end
 
+local function labelText(entry, creature, rarity, mutation, data, passes)
+	local nameText = creature.name
+	if mutation.id ~= "normal" then
+		nameText = mutation.name .. " " .. nameText
+	end
+	return string.format(
+		'%s\n<font color="#%s">%s</font>\n<font color="#78ff78">%s/с</font>',
+		nameText,
+		rarity.color:ToHex(),
+		rarity.name,
+		Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods()))
+	)
+end
+
+local function buildCreature(plot, entry, standCFrame, data, passes)
+	local creature = Creatures.get(entry.id)
+	local rarity = Rarities.get(creature.rarity)
+	local mutation = Mutations.get(entry.mut)
+
+	local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame)
+	model.Name = "Creature"
+	model:SetAttribute("Uid", entry.uid)
+	-- Клиент по этому атрибуту делает анимацию «покачивания».
+	model:SetAttribute("BaseCFrame", standCFrame)
+	local size = model:GetAttribute("Height")
+
+	-- Чужие игроки могут украсть брейнрота. Чем реже — тем дольше красть.
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "StealPrompt"
+	prompt.ActionText = "Украсть"
+	prompt.ObjectText = creature.name
+	prompt.HoldDuration = 0.8 + rarity.rank * 0.4
+	prompt.MaxActivationDistance = 9
+	prompt.RequiresLineOfSight = false
+	prompt.KeyboardKeyCode = Enum.KeyCode.F
+	prompt:SetAttribute("Uid", entry.uid)
+	prompt.Parent = body
+
+	billboard(body, UDim2.fromOffset(170, 66), Vector3.new(0, size / 2 + 2, 0), labelText(entry, creature, rarity, mutation, data, passes)).Name =
+		"InfoGui"
+	model.Parent = plot.model.Creatures
+	return model
+end
+
+-- Обновляет базу. Важно: не пересоздаём брейнротов, которые не изменились —
+-- иначе у вора, который как раз зажал «Украсть», пропала бы кнопка.
 function PlotService.render(player)
 	local plot = plotOf[player]
 	local data = DataService.get(player)
 	if not plot or not data then
 		return
 	end
-	local folder = plot.model.Creatures
-	folder:ClearAllChildren()
-
 	local passes = MonetizationService.passes(player)
 	local slots = Formulas.slots(data, passes)
 
 	-- Сильнейшие брейнроты стоят в первом ряду.
 	local sorted = table.clone(data.creatures)
 	table.sort(sorted, function(a, b)
-		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
+		local ia, ib = Formulas.creatureBaseIncome(a), Formulas.creatureBaseIncome(b)
+		if ia == ib then
+			return a.uid < b.uid
+		end
+		return ia > ib
 	end)
 
+	-- Постаменты: пересоздаём только когда меняется их количество.
 	-- Мест может быть меньше, чем брейнротов (например, вернули после неудачной кражи).
 	local pads = math.min(math.max(slots, #sorted), MAX_PADS)
-	for index = 1, pads do
-		local base = slotCFrame(plot, index)
-		part({
-			Name = "Pad",
-			Size = Vector3.new(7, 0.6, 7),
-			CFrame = base * CFrame.new(0, 0.3, 0),
-			Color = Color3.fromRGB(90, 90, 120),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = folder,
-		})
+	local padsFolder = plot.model.Pads
+	if #padsFolder:GetChildren() ~= pads then
+		padsFolder:ClearAllChildren()
+		for index = 1, pads do
+			part({
+				Name = "Pad",
+				Size = Vector3.new(7, 0.6, 7),
+				CFrame = slotCFrame(plot, index) * CFrame.new(0, 0.3, 0),
+				Color = Color3.fromRGB(90, 90, 120),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = padsFolder,
+			})
+		end
+	end
 
+	local existing = {}
+	for _, model in ipairs(plot.model.Creatures:GetChildren()) do
+		local uid = model:GetAttribute("Uid")
+		if uid then
+			existing[uid] = model
+		else
+			model:Destroy()
+		end
+	end
+
+	for index = 1, pads do
 		local entry = sorted[index]
 		local creature = entry and Creatures.get(entry.id)
 		if creature then
-			local rarity = Rarities.get(creature.rarity)
-			local mutation = Mutations.get(entry.mut)
-			-- Брейнрот стоит на постаменте лицом к входу на базу.
-			local standCFrame = base * CFrame.new(0, 0.6, 0)
-			local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame)
-			model.Name = "Creature"
-			-- Клиент по этому атрибуту делает анимацию «покачивания».
-			model:SetAttribute("BaseCFrame", standCFrame)
-			model.Parent = folder
-			local size = model:GetAttribute("Height")
-
-			local nameText = creature.name
-			if mutation.id ~= "normal" then
-				nameText = mutation.name .. " " .. nameText
+			local standCFrame = slotCFrame(plot, index) * CFrame.new(0, 0.6, 0)
+			local model = existing[entry.uid]
+			existing[entry.uid] = nil
+			if model then
+				if model:GetAttribute("BaseCFrame") ~= standCFrame then
+					model:SetAttribute("BaseCFrame", standCFrame)
+					model:PivotTo(standCFrame)
+				end
+				local gui = model.PrimaryPart and model.PrimaryPart:FindFirstChild("InfoGui")
+				if gui then
+					gui.Label.Text = labelText(entry, creature, Rarities.get(creature.rarity), Mutations.get(entry.mut), data, passes)
+				end
+			else
+				buildCreature(plot, entry, standCFrame, data, passes)
 			end
-			-- Чужие игроки могут украсть брейнрота. Чем реже — тем дольше красть.
-			local prompt = Instance.new("ProximityPrompt")
-			prompt.Name = "StealPrompt"
-			prompt.ActionText = "Украсть"
-			prompt.ObjectText = creature.name
-			prompt.HoldDuration = 0.8 + rarity.rank * 0.4
-			prompt.MaxActivationDistance = 9
-			prompt.RequiresLineOfSight = false
-			prompt.KeyboardKeyCode = Enum.KeyCode.F
-			prompt:SetAttribute("Uid", entry.uid)
-			prompt.Parent = body
-
-			local rarityHex = rarity.color:ToHex()
-			billboard(
-				body,
-				UDim2.fromOffset(170, 66),
-				Vector3.new(0, size / 2 + 2, 0),
-				string.format(
-					'%s\n<font color="#%s">%s</font>\n<font color="#78ff78">%s/с</font>',
-					nameText,
-					rarityHex,
-					rarity.name,
-					Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods()))
-				)
-			)
 		end
+	end
+
+	-- Кого больше нет в данных (продали, скрестили, украли) — убираем.
+	for _, model in pairs(existing) do
+		model:Destroy()
 	end
 end
 
@@ -358,6 +405,7 @@ local function releasePlot(player)
 	plot.owner = nil
 	plotOf[player] = nil
 	plot.model.Creatures:ClearAllChildren()
+	plot.model.Pads:ClearAllChildren()
 	plot.model:SetAttribute("OwnerUserId", nil)
 	plot.model:SetAttribute("LockedUntil", nil)
 	PlotService.setLockVisual(plot, false, 0)
