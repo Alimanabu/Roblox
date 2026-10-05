@@ -506,7 +506,7 @@ function Index.build(content, state)
 		Theme.label({
 			Size = UDim2.new(1, 0, 0, 20),
 			Position = UDim2.fromOffset(0, 120),
-			Text = ((rarity.secret and not known) and "???" or rarity.name) .. (creature.season and " 🎃" or ""),
+			Text = ((rarity.secret and not known) and "???" or rarity.name) .. (creature.season == "halloween" and " 🎃" or (creature.season and " 🎄" or "")),
 			TextColor3 = rarity.color,
 			Parent = box,
 		})

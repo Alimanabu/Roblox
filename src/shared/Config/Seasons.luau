@@ -13,6 +13,13 @@ Seasons.List = {
 		endsAt = 1793923200, -- 6 ноября 2026, 00:00 UTC
 		color = Color3.fromRGB(255, 140, 0),
 	},
+	{
+		id = "newyear",
+		name = "🎄 Новый год",
+		startsAt = 1797724800, -- 20 декабря 2026, 00:00 UTC
+		endsAt = 1799625600, -- 11 января 2027, 00:00 UTC
+		color = Color3.fromRGB(80, 200, 255),
+	},
 }
 
 Seasons.ById = {}

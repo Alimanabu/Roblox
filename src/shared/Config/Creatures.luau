@@ -55,6 +55,11 @@ Creatures.List = {
 	{ id = "zucchino_ridente", name = "Цуккино Риденте", rarity = "rizz", season = "halloween", income = 65, color = Color3.fromRGB(255, 130, 20), size = 2.8, body = "ball", acc = { "antenna", "shades" }, desc = "Тыква, которая смеётся над твоими мемами." },
 	{ id = "scheletro_mewing", name = "Скелетро Мьюинг", rarity = "sigma", season = "halloween", income = 330, color = Color3.fromRGB(235, 235, 220), size = 3.2, body = "tall", acc = { "chin", "headband" }, desc = "Скелет, у которого челюсть идеальная. Буквально." },
 	{ id = "fantasma_aurino", name = "Фантазма Аурино", rarity = "aura", season = "halloween", income = 1900, color = Color3.fromRGB(220, 230, 255), size = 3.6, body = "tall", acc = { "halo", "cape" }, desc = "Призрак, который фармит ауру с того света." },
+	-- 🎄 НОВЫЙ ГОД (лимитированные)
+	{ id = "pupazzo_rizz", name = "Пупаццо Ризз", rarity = "rizz", season = "newyear", income = 62, color = Color3.fromRGB(245, 250, 255), size = 2.8, body = "ball", acc = { "beak", "headband" }, desc = "Снеговик с морковным риззом." },
+	{ id = "renna_sigmina", name = "Ренна Сигмина", rarity = "sigma", season = "newyear", income = 320, color = Color3.fromRGB(150, 100, 60), size = 3.2, body = "wide", acc = { "horns", "antenna" }, desc = "Олень, который тащит сани в 4 утра." },
+	{ id = "abete_aurella", name = "Абете Аурелла", rarity = "aura", season = "newyear", income = 1850, color = Color3.fromRGB(40, 160, 70), size = 3.6, body = "wedge", acc = { "halo", "glitch" }, desc = "Ёлка с гирляндой ауры." },
+	{ id = "nonno_gelo", name = "Нонно Джело", rarity = "skibidi", season = "newyear", income = 11800, color = Color3.fromRGB(210, 30, 40), size = 4, body = "tall", acc = { "chin", "crown", "cape" }, desc = "Дедушка Мороз из Италии. Дарит только мемы." },
 	{ id = "vampiro_dj", name = "Вампиро Диджеино", rarity = "skibidi", season = "halloween", income = 11500, color = Color3.fromRGB(120, 20, 40), size = 4, body = "ball", acc = { "headphones", "cape", "horns" }, desc = "Вампир-диджей. Играет только ночью, но громко." },
 }
 

@@ -81,6 +81,16 @@ Capsules.List = {
 		weights = { rizz = 50, sigma = 35, aura = 13, skibidi = 2 },
 	},
 	{
+		id = "newyear_capsule",
+		name = "🎄 Новогодняя капсула",
+		desc = "Только до 10 января! Эксклюзивные брейнроты.",
+		cost = 300000,
+		level = 10,
+		season = "newyear",
+		color = Color3.fromRGB(80, 200, 255),
+		weights = { rizz = 50, sigma = 35, aura = 13, skibidi = 2 },
+	},
+	{
 		id = "world_trend",
 		name = "Мировой тренд",
 		desc = "Этот мем знает вся планета.",

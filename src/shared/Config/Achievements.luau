@@ -71,6 +71,15 @@ Achievements.List = {
 		end
 		return false
 	end },
+	{ id = "newyear", name = "Новый год 2027 🎄", desc = "Получи новогоднего брейнрота", reward = { coinsMinutes = 10 }, check = function(d)
+		for id in pairs(d.index) do
+			local creature = Creatures.get(id)
+			if creature and creature.season == "newyear" then
+				return true
+			end
+		end
+		return false
+	end },
 	{ id = "streak7", name = "Верный фанат", desc = "Забери награду 7-го дня", reward = { coinsMinutes = 20 }, check = function(d) return d.daily.streak >= 7 end },
 }
 
