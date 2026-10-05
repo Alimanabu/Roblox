@@ -13,6 +13,7 @@ local Hud = {}
 Hud.__index = Hud
 
 local MENU = {
+	{ id = "Rewards", text = "🎁 Награды", color = Color3.fromRGB(255, 120, 60) },
 	{ id = "Factory", text = "🏭 Фабрика", color = C.Accent },
 	{ id = "Base", text = "🧠 База", color = C.Blue },
 	{ id = "Upgrades", text = "⬆️ Улучшения", color = C.Good },
@@ -127,8 +128,9 @@ function Hud.new(screenGui, onMenu)
 	}, {
 		create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
+	self.badges = {}
 	for order, item in ipairs(MENU) do
-		Theme.button({
+		local button = Theme.button({
 			Name = item.id,
 			Text = item.text,
 			Color = item.color,
@@ -138,6 +140,21 @@ function Hud.new(screenGui, onMenu)
 		}, function()
 			onMenu(item.id)
 		end)
+		-- Красный кружок «!», когда в разделе есть что забрать.
+		self.badges[item.id] = create("TextLabel", {
+			Name = "Badge",
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(1, -4, 0, 4),
+			Size = UDim2.fromOffset(24, 24),
+			BackgroundColor3 = C.Bad,
+			Text = "!",
+			Font = Theme.Font,
+			TextScaled = true,
+			TextColor3 = C.Text,
+			Visible = false,
+			ZIndex = 3,
+			Parent = button,
+		}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	end
 
 	-- Уведомления.
@@ -161,6 +178,14 @@ function Hud.new(screenGui, onMenu)
 end
 
 function Hud:update(state)
+	local rewardsReady = state.rewards.canClaim
+	for _, quest in ipairs(state.rewards.quests) do
+		if quest.progress >= quest.target and not quest.claimed then
+			rewardsReady = true
+		end
+	end
+	self.badges.Rewards.Visible = rewardsReady
+
 	self.coinsLabel.Text = Format.coins(state.coins)
 	self.incomeLabel.Text = "+" .. Format.coins(state.income) .. "/с"
 	self.titleLabel.Text = state.title .. " • ур. " .. state.level

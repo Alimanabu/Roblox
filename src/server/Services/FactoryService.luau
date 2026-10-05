@@ -14,6 +14,7 @@ local Remotes = require(Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local QuestService = require(script.Parent.QuestService)
 
 local FactoryService = {}
 
@@ -53,6 +54,15 @@ local function addCreature(player, data, creatureId, mutationId)
 	local mutation = Mutations.get(mutationId)
 
 	ProgressionService.addXp(player, data, rarity.xp * (isNew and 3 or 1))
+	if rarity.rank >= Rarities.get("sigma").rank then
+		QuestService.progress(player, "sigmaPlus", 1)
+	end
+	if mutation.id ~= "normal" then
+		QuestService.progress(player, "mutant", 1)
+	end
+	if isNew then
+		QuestService.progress(player, "newIndex", 1)
+	end
 
 	if rarity.announce or mutation.rank >= 4 then
 		Remotes.Notify:FireAllClients(
@@ -112,6 +122,7 @@ local function craft(player, capsuleId, silent)
 	local mutationId = Formulas.rollMutation(luck, rng)
 
 	local entry, isNew = addCreature(player, data, creature.id, mutationId)
+	QuestService.progress(player, "craft", 1)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,
@@ -133,6 +144,7 @@ local function sell(player, uid)
 			table.remove(data.creatures, index)
 			data.coins += value
 			data.stats.sold += 1
+			QuestService.progress(player, "sell", 1)
 			Remotes.Notify:FireClient(player, "Продано за " .. Format.coins(value), GOOD)
 			FactoryService.CreaturesChanged:Fire(player)
 			DataService.markDirty(player)
@@ -162,6 +174,7 @@ local function sellRarity(player, rarityId)
 	end
 	data.coins += total
 	data.stats.sold += count
+	QuestService.progress(player, "sell", count)
 	Remotes.Notify:FireClient(player, "Продано " .. count .. " шт. за " .. Format.coins(total), GOOD)
 	FactoryService.CreaturesChanged:Fire(player)
 	DataService.markDirty(player)
@@ -207,6 +220,7 @@ local function fuse(player, rarityId)
 	local creature = Formulas.randomCreatureOf(nextRarity.id, rng)
 	local mutationId = Formulas.rollMutation(luck, rng)
 	data.stats.fused += 1
+	QuestService.progress(player, "fuse", 1)
 
 	local entry, isNew = addCreature(player, data, creature.id, mutationId)
 	Remotes.CraftResult:FireClient(player, {

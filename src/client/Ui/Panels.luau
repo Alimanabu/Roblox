@@ -545,8 +545,126 @@ function Shop.build(content, state)
 end
 
 ---------------------------------------------------------------------------
+-- НАГРАДЫ: ежедневная серия и задания
+---------------------------------------------------------------------------
+local Rewards = { title = "🎁 Награды и задания" }
+
+function Rewards.signature(state)
+	local r = state.rewards
+	local parts = { tostring(r.canClaim), r.nextDay, r.streak, r.rewards[1] }
+	for _, quest in ipairs(r.quests) do
+		table.insert(parts, quest.text .. quest.progress .. tostring(quest.claimed))
+	end
+	return table.concat(parts, "|")
+end
+
+function Rewards.build(content, state)
+	local r = state.rewards
+	list(content, 10)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 28),
+		Text = "Заходи каждый день — на 7-й день мега-награда!",
+		TextColor3 = C.Coins,
+		LayoutOrder = 0,
+		Parent = content,
+	})
+
+	local row = create("Frame", {
+		Size = UDim2.new(1, -10, 0, 96),
+		BackgroundTransparency = 1,
+		LayoutOrder = 1,
+		Parent = content,
+	}, {
+		create("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			Padding = UDim.new(0, 6),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	for day, text in ipairs(r.rewards) do
+		local done = day < r.nextDay or (day == r.nextDay and not r.canClaim)
+		local current = day == r.nextDay and r.canClaim
+		local cell = card({
+			Size = UDim2.fromOffset(84, 96),
+			LayoutOrder = day,
+			BackgroundColor3 = done and C.CardLocked or C.Card,
+			Parent = row,
+		}, { Theme.stroke(current and C.Gold or (day == 7 and C.Accent or C.Card), current and 4 or 2), Theme.padding(4) })
+		Theme.label({ Size = UDim2.new(1, 0, 0, 22), Text = (done and "✅ " or "") .. "День " .. day, Parent = cell })
+		Theme.label({
+			Size = UDim2.new(1, 0, 1, -24),
+			Position = UDim2.fromOffset(0, 24),
+			Text = text,
+			TextColor3 = day == 7 and C.Gold or C.Muted,
+			Parent = cell,
+		})
+	end
+
+	Theme.button({
+		Size = UDim2.new(0.5, 0, 0, 48),
+		Text = r.canClaim and ("🎁 Забрать день " .. r.nextDay) or "✅ Приходи завтра",
+		Color = r.canClaim and C.Good or C.CardLocked,
+		LayoutOrder = 2,
+		Parent = content,
+	}, function()
+		Remotes.ClaimDaily:FireServer()
+	end)
+
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 28),
+		Text = "📋 Задания на сегодня (новые через " .. Format.time(r.secondsToReset) .. ")",
+		TextColor3 = C.Coins,
+		LayoutOrder = 3,
+		Parent = content,
+	})
+	for order, quest in ipairs(r.quests) do
+		local done = quest.progress >= quest.target
+		local box = card({ Size = UDim2.new(1, -10, 0, 70), LayoutOrder = 10 + order }, { Theme.padding(8) })
+		Theme.label({
+			Size = UDim2.new(0.65, 0, 0.5, 0),
+			Text = quest.text,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = box,
+		})
+		local bar = create("Frame", {
+			Size = UDim2.new(0.62, 0, 0.35, 0),
+			Position = UDim2.fromScale(0, 0.6),
+			BackgroundColor3 = C.CardLocked,
+			Parent = box,
+		}, { Theme.corner(6) })
+		create("Frame", {
+			Size = UDim2.fromScale(math.clamp(quest.progress / quest.target, 0, 1), 1),
+			BackgroundColor3 = done and C.Good or C.Blue,
+			Parent = bar,
+		}, { Theme.corner(6) })
+		Theme.label({ Size = UDim2.fromScale(1, 1), Text = quest.progress .. " / " .. quest.target, ZIndex = 2, Parent = bar })
+
+		local text, color
+		if quest.claimed then
+			text, color = "✅ Получено", C.CardLocked
+		elseif done then
+			text, color = "🎁 " .. quest.reward, C.Good
+		else
+			text, color = quest.reward, C.CardLocked
+		end
+		Theme.button({
+			Size = UDim2.new(0.35, -8, 1, 0),
+			Position = UDim2.new(0.65, 8, 0, 0),
+			Text = text,
+			Color = color,
+			Parent = box,
+		}, function()
+			Remotes.ClaimQuest:FireServer(quest.index)
+		end)
+		box.Parent = content
+	end
+end
+
+---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Rewards = Rewards,
 	Factory = Factory,
 	Base = Base,
 	Upgrades = UpgradesPanel,

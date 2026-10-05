@@ -47,7 +47,9 @@ local function defaultData()
 		upgrades = { speed = 0, luck = 0, slots = 0 },
 		boosts = { luckUntil = 0 },
 		index = {}, -- [creatureId] = true — открытые брейнроты (коллекция)
-		stats = { crafted = 0, fused = 0, sold = 0 },
+		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0 },
+		daily = { streak = 0, lastClaimDay = 0 },
+		quests = { day = 0, list = {} },
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

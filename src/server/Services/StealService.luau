@@ -22,6 +22,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local PlotService = require(script.Parent.PlotService)
+local QuestService = require(script.Parent.QuestService)
 
 local StealService = {}
 
@@ -166,6 +167,7 @@ local function endCarry(thief, success, reason)
 			table.insert(thiefData.creatures, newEntry)
 			thiefData.index[entry.id] = true
 			thiefData.stats.stolen = (thiefData.stats.stolen or 0) + 1
+			QuestService.progress(thief, "steal", 1)
 			local rarity = Rarities.get(Creatures.get(entry.id).rarity)
 			ProgressionService.addXp(thief, thiefData, rarity.xp)
 			DataService.markDirty(thief)
@@ -279,6 +281,7 @@ local function onLockPrompt(player, prompt)
 		return
 	end
 	setLock(player, StealService.LOCK_TIME)
+	QuestService.progress(player, "lock", 1)
 	Remotes.Notify:FireClient(player, "🔒 База закрыта на " .. StealService.LOCK_TIME .. " секунд", GOOD)
 end
 
@@ -306,7 +309,9 @@ local function slap(player)
 					if flat.Unit:Dot(Vector3.new(facing.X, 0, facing.Z).Unit) > 0.2 then
 						local velocity = flat.Unit * StealService.SLAP_FORCE + Vector3.new(0, 35, 0)
 						Remotes.Knockback:FireClient(other, velocity)
+						QuestService.progress(player, "slap", 1)
 						if carries[other] then
+							QuestService.progress(player, "slapThief", 1)
 							endCarry(other, false, player.DisplayName .. " тебя шлёпнул!")
 							Remotes.Notify:FireClient(player, "👋 Шлёп! Вор уронил брейнрота!", GOOD)
 						end

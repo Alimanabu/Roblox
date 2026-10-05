@@ -12,6 +12,8 @@ local EVENTS = {
 	"BuyUpgrade", -- (upgradeId)
 	"Rebirth", -- ()
 	"SetAutoCraft", -- (capsuleId | nil)
+	"ClaimDaily", -- () забрать ежедневную награду
+	"ClaimQuest", -- (index) забрать награду за задание
 
 	-- сервер -> клиент
 	"State", -- (snapshot)
