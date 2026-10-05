@@ -113,11 +113,31 @@ local function buildWorld()
 			Name = "Floor",
 			Size = Vector3.new(PLOT_SIZE, 1, PLOT_SIZE),
 			CFrame = cframe * CFrame.new(0, 0.5, 0),
-			Color = Color3.fromRGB(60, 60, 80),
+			Color = Color3.fromHSV((i - 1) / PLOT_COUNT, 0.25, 0.45),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = model,
 		})
 		model.PrimaryPart = floor
+
+		-- Светящийся бортик своего цвета у каждой базы.
+		local rimColor = Color3.fromHSV((i - 1) / PLOT_COUNT, 0.7, 1)
+		local half = PLOT_SIZE / 2
+		for _, rim in ipairs({
+			{ Vector3.new(0, 1.2, -half), Vector3.new(PLOT_SIZE, 0.4, 1) },
+			{ Vector3.new(0, 1.2, half), Vector3.new(PLOT_SIZE, 0.4, 1) },
+			{ Vector3.new(-half, 1.2, 0), Vector3.new(1, 0.4, PLOT_SIZE) },
+			{ Vector3.new(half, 1.2, 0), Vector3.new(1, 0.4, PLOT_SIZE) },
+		}) do
+			part({
+				Name = "Rim",
+				Size = rim[2],
+				CFrame = cframe * CFrame.new(rim[1]),
+				Color = rimColor,
+				Material = Enum.Material.Neon,
+				CanCollide = false,
+				Parent = model,
+			})
+		end
 
 		local machine = part({
 			Name = "Machine",
