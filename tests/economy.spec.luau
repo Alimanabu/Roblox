@@ -91,6 +91,26 @@ for _, capsule in ipairs(Capsules.List) do
 	end
 end
 
+-- 5c. Достижения: проверки не падают и не выполнены у нового игрока.
+local Achievements = shared_require("Config/Achievements")
+local fresh = {
+	coins = 0, totalEarned = 0, level = 1, rebirths = 0, creatures = {}, index = {},
+	stats = { crafted = 0 }, daily = { streak = 0 },
+}
+local ids = {}
+for _, achievement in ipairs(Achievements.List) do
+	check(not ids[achievement.id], "повтор id достижения " .. achievement.id)
+	ids[achievement.id] = true
+	local ok, done = pcall(achievement.check, fresh)
+	check(ok, "достижение " .. achievement.id .. " падает: " .. tostring(done))
+	check(ok and not done, "достижение " .. achievement.id .. " выполнено у нового игрока")
+end
+
+-- 5d. Промокоды записаны заглавными (сервер приводит ввод к верхнему регистру).
+for code in pairs(shared_require("Config/Codes")) do
+	check(code == string.upper(code), "промокод не заглавными: " .. code)
+end
+
 -- 6. Ивенты.
 local Events = shared_require("Config/Events")
 local hour = 1000 * 3600 -- начало какого-то часа (UTC)

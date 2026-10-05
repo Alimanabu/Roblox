@@ -12,6 +12,7 @@ local Mutations = require(Shared.Config.Mutations)
 local Upgrades = require(Shared.Config.Upgrades)
 local Rebirths = require(Shared.Config.Rebirths)
 local Monetization = require(Shared.Config.Monetization)
+local Achievements = require(Shared.Config.Achievements)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -801,6 +802,51 @@ function Help.build(content)
 end
 
 ---------------------------------------------------------------------------
+-- ДОСТИЖЕНИЯ
+---------------------------------------------------------------------------
+local AchievementsPanel = { title = "🏆 Достижения" }
+
+function AchievementsPanel.signature(state)
+	return tostring(state.achievements.count)
+end
+
+function AchievementsPanel.build(content, state)
+	list(content, 6)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 28),
+		Text = "Получено: " .. state.achievements.count .. " / " .. state.achievements.total,
+		TextColor3 = C.Coins,
+		LayoutOrder = 0,
+		Parent = content,
+	})
+	-- Сначала полученные, потом остальные (в порядке списка).
+	for order, achievement in ipairs(Achievements.List) do
+		local done = state.achievements.unlocked[achievement.id] == true
+		local row = card({
+			Size = UDim2.new(1, -10, 0, 54),
+			LayoutOrder = (done and 0 or 1000) + order,
+			BackgroundColor3 = done and C.Card or C.CardLocked,
+		}, { Theme.padding(6), Theme.stroke(done and C.Gold or C.CardLocked, 2) })
+		Theme.label({
+			Size = UDim2.new(1, 0, 0.55, 0),
+			Text = (done and "🏆 " or "🔒 ") .. achievement.name,
+			TextColor3 = done and C.Gold or C.Text,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = row,
+		})
+		Theme.label({
+			Size = UDim2.new(1, 0, 0.42, 0),
+			Position = UDim2.fromScale(0, 0.58),
+			Text = achievement.desc,
+			TextColor3 = C.Muted,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = row,
+		})
+		row.Parent = content
+	end
+end
+
+---------------------------------------------------------------------------
 -- ТЕСТ (только админы / Studio)
 ---------------------------------------------------------------------------
 local Admin = { title = "🛠 Тест-команды" }
@@ -869,6 +915,7 @@ end
 ---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Achievements = AchievementsPanel,
 	Admin = Admin,
 	Help = Help,
 	Rewards = Rewards,

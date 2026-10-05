@@ -19,6 +19,7 @@ local MENU = {
 	{ id = "Upgrades", text = "⬆️ Улучшения", color = C.Good },
 	{ id = "Rebirth", text = "♻️ Перерождение", color = C.Purple },
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
+	{ id = "Achievements", text = "🏆 Достижения", color = Color3.fromRGB(200, 150, 40) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
 	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
 	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },
@@ -125,11 +126,11 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 10, 0.5, 20),
-		Size = UDim2.fromOffset(170, #MENU * 56),
+		Size = UDim2.fromOffset(170, #MENU * 48),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
 	}, {
-		create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+		create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 	self.badges = {}
 	self.buttons = {}
@@ -138,7 +139,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 			Name = item.id,
 			Text = item.text,
 			Color = item.color,
-			Size = UDim2.new(1, 0, 0, 48),
+			Size = UDim2.new(1, 0, 0, 42),
 			LayoutOrder = order,
 			Parent = menu,
 		}, function()

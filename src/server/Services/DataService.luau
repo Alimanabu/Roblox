@@ -52,11 +52,12 @@ local function defaultData()
 		upgrades = { speed = 0, luck = 0, slots = 0 },
 		boosts = { luckUntil = 0 },
 		index = {}, -- [creatureId] = true — открытые брейнроты (коллекция)
-		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0 },
+		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0, mutants = 0, thievesSlapped = 0 },
 		daily = { streak = 0, lastClaimDay = 0 },
 		quests = { day = 0, list = {} },
 		tutorial = { step = 1, progress = 0 },
 		codes = {}, -- [КОД] = true — введённые промокоды
+		achievements = {}, -- [id] = true
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}
