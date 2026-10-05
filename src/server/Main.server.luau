@@ -16,6 +16,7 @@ local PlotService = require(Services.PlotService)
 local StealService = require(Services.StealService)
 local QuestService = require(Services.QuestService)
 local EventService = require(Services.EventService)
+local LeaderboardService = require(Services.LeaderboardService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -57,5 +58,6 @@ IncomeService.init()
 PlotService.init()
 StealService.init()
 QuestService.init()
+LeaderboardService.init()
 
 print("🧠 Brainrot Factory запущена! 🤌")
