@@ -55,6 +55,8 @@ Achievements.List = {
 	{ id = "thief10", name = "Мастер-вор", desc = "Укради 10 брейнротов", reward = { coinsMinutes = 20 }, check = function(d) return stat(d, "stolen") >= 10 end },
 	{ id = "defender", name = "Защитник базы", desc = "Шлёпни вора", reward = { coinsMinutes = 5 }, check = function(d) return stat(d, "thievesSlapped") >= 1 end },
 	{ id = "defender10", name = "Охранник 80 уровня", desc = "Шлёпни 10 воров", reward = { coinsMinutes = 20 }, check = function(d) return stat(d, "thievesSlapped") >= 10 end },
+	{ id = "boss", name = "Охотник на боссов", desc = "Победи босса-брейнрота", reward = { coinsMinutes = 10 }, check = function(d) return stat(d, "bossKills") >= 1 end },
+	{ id = "boss10", name = "Гроза Огайо", desc = "Победи 10 боссов", reward = { coinsMinutes = 40, luckMinutes = 30 }, check = function(d) return stat(d, "bossKills") >= 10 end },
 	{ id = "level10", name = "Тиктокер", desc = "Дойди до 10 уровня", reward = { coinsMinutes = 5 }, check = function(d) return d.level >= 10 end },
 	{ id = "level30", name = "Легенда трендов", desc = "Дойди до 30 уровня", reward = { coinsMinutes = 30 }, check = function(d) return d.level >= 30 end },
 	{ id = "rebirth", name = "Новая жизнь", desc = "Переродись", reward = { luckMinutes = 30 }, check = function(d) return d.rebirths >= 1 end },

@@ -177,6 +177,13 @@ local nextEvent, startsAt = Events.nextEvent(hour + 4 * 60)
 check(nextEvent.id == "minute67" and startsAt == hour + 6 * 60, "следующий ивент после 4:00 — Минута 67")
 local _, startsAt2 = Events.nextEvent(hour + 9 * 60)
 check(startsAt2 == hour + 15 * 60, "после Минуты 67 следующий ивент в :15")
+local bossNext = Events.nextEvent(hour + 20 * 60)
+check(bossNext.id == "boss", "в :20 следующим должен быть босс в :30")
+local bossActive = false
+for _, active in ipairs(Events.active(hour + 31 * 60)) do
+	bossActive = bossActive or active.event.id == "boss"
+end
+check(bossActive, "в :31 босс должен быть активен")
 local seen = {}
 for cycle = 0, 40 do
 	for _, active in ipairs(Events.active(cycle * Events.CYCLE + 1)) do

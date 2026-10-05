@@ -25,9 +25,24 @@ Events.SixSeven = {
 	endMinute = 8, -- не включительно
 }
 
+-- Каждый час с :30 до :33 на площадь приходит босс (см. server/Services/BossService).
+Events.Boss = {
+	id = "boss",
+	name = "👹 БОСС-БРЕЙНРОТ",
+	desc = "Шлёпайте босса на площади всем сервером!",
+	color = Color3.fromRGB(255, 70, 70),
+	startMinute = 30,
+	endMinute = 33,
+}
+
+-- Ивенты, которые идут каждый час в одно и то же время.
+Events.Hourly = { Events.SixSeven, Events.Boss }
+
 function Events.byId(id)
-	if id == Events.SixSeven.id then
-		return Events.SixSeven
+	for _, event in ipairs(Events.Hourly) do
+		if event.id == id then
+			return event
+		end
 	end
 	for _, event in ipairs(Events.Random) do
 		if event.id == id then
@@ -54,9 +69,10 @@ function Events.active(time)
 
 	local hourStart = math.floor(time / 3600) * 3600
 	local minute = (time - hourStart) / 60
-	local six = Events.SixSeven
-	if minute >= six.startMinute and minute < six.endMinute then
-		table.insert(result, { event = six, endsAt = hourStart + six.endMinute * 60 })
+	for _, hourly in ipairs(Events.Hourly) do
+		if minute >= hourly.startMinute and minute < hourly.endMinute then
+			table.insert(result, { event = hourly, endsAt = hourStart + hourly.endMinute * 60 })
+		end
 	end
 
 	-- Ивент, запущенный вручную через панель «🛠 Тест» (атрибуты на workspace).
@@ -80,15 +96,19 @@ function Events.nextEvent(time)
 	local cycleIndex = math.floor(time / Events.CYCLE) + 1
 	local nextRandom = cycleIndex * Events.CYCLE
 
+	local bestEvent, bestTime = randomEventFor(cycleIndex), nextRandom
 	local hourStart = math.floor(time / 3600) * 3600
-	local nextSix = hourStart + Events.SixSeven.startMinute * 60
-	if nextSix <= time then
-		nextSix += 3600
+	for _, hourly in ipairs(Events.Hourly) do
+		local startsAt = hourStart + hourly.startMinute * 60
+		if startsAt <= time then
+			startsAt += 3600
+		end
+		-- При совпадении по времени показываем ежечасный ивент (он важнее).
+		if startsAt <= bestTime then
+			bestEvent, bestTime = hourly, startsAt
+		end
 	end
-	if nextSix < nextRandom then
-		return Events.SixSeven, nextSix
-	end
-	return randomEventFor(cycleIndex), nextRandom
+	return bestEvent, bestTime
 end
 
 -- Множители от всех активных ивентов.

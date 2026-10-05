@@ -24,6 +24,7 @@ local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local PlotService = require(script.Parent.PlotService)
 local Actions = require(script.Parent.Actions)
+local BossService = require(script.Parent.BossService)
 
 local StealService = {}
 
@@ -394,6 +395,9 @@ local function slap(player)
 	local root = rootOf(player)
 	if not root then
 		return
+	end
+	if BossService.tryHit(player, root) then
+		Remotes.Sfx:FireClient(player, "slap")
 	end
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= player then
