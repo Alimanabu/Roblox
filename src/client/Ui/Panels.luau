@@ -17,6 +17,7 @@ local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
 
 local Theme = require(script.Parent.Theme)
+local Viewport = require(script.Parent.Viewport)
 local create = Theme.create
 local C = Theme.Colors
 
@@ -446,7 +447,7 @@ function Index.build(content, state)
 		Parent = content,
 	}, {
 		create("UIGridLayout", {
-			CellSize = UDim2.fromOffset(150, 120),
+			CellSize = UDim2.fromOffset(150, 160),
 			CellPadding = UDim2.fromOffset(8, 8),
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			SortOrder = Enum.SortOrder.LayoutOrder,
@@ -460,22 +461,21 @@ function Index.build(content, state)
 			BackgroundColor3 = known and C.Card or C.CardLocked,
 			Parent = grid,
 		}, { Theme.stroke(rarity.color, known and 3 or 1), Theme.padding(6) })
-		create("Frame", {
-			Size = UDim2.fromOffset(34, 34),
+		Viewport.creature({
+			Size = UDim2.fromOffset(84, 76),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Position = UDim2.fromScale(0.5, 0),
-			BackgroundColor3 = known and creature.color or Color3.fromRGB(20, 20, 20),
 			Parent = box,
-		}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		}, creature.id, "normal", not known)
 		Theme.label({
 			Size = UDim2.new(1, 0, 0, 40),
-			Position = UDim2.fromOffset(0, 38),
+			Position = UDim2.fromOffset(0, 78),
 			Text = known and creature.name or "???",
 			Parent = box,
 		})
 		Theme.label({
 			Size = UDim2.new(1, 0, 0, 20),
-			Position = UDim2.fromOffset(0, 80),
+			Position = UDim2.fromOffset(0, 120),
 			Text = (rarity.secret and not known) and "???" or rarity.name,
 			TextColor3 = rarity.color,
 			Parent = box,

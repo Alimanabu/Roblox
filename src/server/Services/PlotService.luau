@@ -9,6 +9,7 @@ local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
+local CreatureModel = require(Shared.Util.CreatureModel)
 
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
@@ -245,20 +246,14 @@ function PlotService.render(player)
 		if creature then
 			local rarity = Rarities.get(creature.rarity)
 			local mutation = Mutations.get(entry.mut)
-			local size = creature.size
-			local body = part({
-				Name = "Creature",
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(size, size, size),
-				CFrame = base * CFrame.new(0, 0.6 + size / 2 + 0.3, 0),
-				Color = mutation.color or creature.color,
-				Material = mutation.id == "normal" and Enum.Material.SmoothPlastic or Enum.Material.Neon,
-				CanCollide = false,
-				Parent = folder,
-			})
+			-- Брейнрот стоит на постаменте лицом к входу на базу.
+			local standCFrame = base * CFrame.new(0, 0.6, 0)
+			local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame)
+			model.Name = "Creature"
 			-- Клиент по этому атрибуту делает анимацию «покачивания».
-			body:SetAttribute("BaseCFrame", body.CFrame)
-			body:SetAttribute("Rainbow", rarity.rainbow == true)
+			model:SetAttribute("BaseCFrame", standCFrame)
+			model.Parent = folder
+			local size = model:GetAttribute("Height")
 
 			local nameText = creature.name
 			if mutation.id ~= "normal" then
@@ -280,7 +275,7 @@ function PlotService.render(player)
 			billboard(
 				body,
 				UDim2.fromOffset(170, 66),
-				Vector3.new(0, size / 2 + 1.8, 0),
+				Vector3.new(0, size / 2 + 2, 0),
 				string.format(
 					'%s\n<font color="#%s">%s</font>\n<font color="#78ff78">%s/с</font>',
 					nameText,

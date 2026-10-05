@@ -100,6 +100,7 @@ local plots = workspace:WaitForChild("Plots")
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
 	local serverNow = workspace:GetServerTimeNow()
+	local camera = workspace.CurrentCamera
 	for _, plot in ipairs(plots:GetChildren()) do
 		local isMine = plot:GetAttribute("OwnerUserId") == player.UserId
 		local locked = (plot:GetAttribute("LockedUntil") or 0) > serverNow
@@ -110,17 +111,25 @@ RunService.RenderStepped:Connect(function()
 		end
 		local folder = plot:FindFirstChild("Creatures")
 		if folder then
-			for _, part in ipairs(folder:GetChildren()) do
-				local stealPrompt = part:FindFirstChild("StealPrompt")
-				if stealPrompt then
-					stealPrompt.Enabled = not isMine and not locked and plot:GetAttribute("OwnerUserId") ~= nil
-				end
-				local base = part:GetAttribute("BaseCFrame")
-				if base then
-					local phase = base.Position.X * 0.3 + base.Position.Z * 0.2
-					part.CFrame = base * CFrame.new(0, math.sin(t * 2 + phase) * 0.4, 0) * CFrame.Angles(0, t + phase, 0)
-					if part:GetAttribute("Rainbow") then
-						part.Color = Color3.fromHSV((t * 0.3 + phase * 0.05) % 1, 0.7, 1)
+			for _, model in ipairs(folder:GetChildren()) do
+				local body = model:IsA("Model") and model.PrimaryPart
+				if body then
+					local stealPrompt = body:FindFirstChild("StealPrompt")
+					if stealPrompt then
+						stealPrompt.Enabled = not isMine and not locked and plot:GetAttribute("OwnerUserId") ~= nil
+					end
+					local base = model:GetAttribute("BaseCFrame")
+					-- Анимируем только тех, кто близко к камере — экономим FPS на телефонах.
+					if base and camera and (base.Position - camera.CFrame.Position).Magnitude < 140 then
+						local phase = base.Position.X * 0.3 + base.Position.Z * 0.2
+						model:PivotTo(
+							base
+								* CFrame.new(0, math.abs(math.sin(t * 2 + phase)) * 0.5, 0)
+								* CFrame.Angles(0, math.sin(t * 0.8 + phase) * 0.35, 0)
+						)
+						if model:GetAttribute("Rainbow") then
+							body.Color = Color3.fromHSV((t * 0.3 + phase * 0.05) % 1, 0.7, 1)
+						end
 					end
 				end
 			end

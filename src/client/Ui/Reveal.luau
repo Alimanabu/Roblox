@@ -10,6 +10,7 @@ local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 
 local Theme = require(script.Parent.Theme)
+local Viewport = require(script.Parent.Viewport)
 local create = Theme.create
 local C = Theme.Colors
 
@@ -22,7 +23,7 @@ function Reveal.new(screenGui)
 		Name = "Reveal",
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.78),
-		Size = UDim2.fromOffset(420, 150),
+		Size = UDim2.fromOffset(540, 150),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.1,
 		Visible = false,
@@ -33,10 +34,10 @@ function Reveal.new(screenGui)
 	self.stroke.Parent = self.frame
 	self.scale = create("UIScale", { Scale = 1, Parent = self.frame })
 
-	self.badge = Theme.label({ Size = UDim2.new(1, 0, 0, 24), Text = "", TextColor3 = C.Coins, ZIndex = 11, Parent = self.frame })
-	self.name = Theme.label({ Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 24), Text = "", ZIndex = 11, Parent = self.frame })
-	self.rarity = Theme.label({ Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 70), Text = "", ZIndex = 11, Parent = self.frame })
-	self.income = Theme.label({ Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 102), Text = "", TextColor3 = C.Good, ZIndex = 11, Parent = self.frame })
+	self.badge = Theme.label({ Size = UDim2.new(1, -130, 0, 24), Position = UDim2.fromOffset(130, 0), Text = "", TextColor3 = C.Coins, ZIndex = 11, Parent = self.frame })
+	self.name = Theme.label({ Size = UDim2.new(1, -130, 0, 44), Position = UDim2.fromOffset(130, 24), Text = "", ZIndex = 11, Parent = self.frame })
+	self.rarity = Theme.label({ Size = UDim2.new(1, -130, 0, 30), Position = UDim2.fromOffset(130, 70), Text = "", ZIndex = 11, Parent = self.frame })
+	self.income = Theme.label({ Size = UDim2.new(1, -130, 0, 26), Position = UDim2.fromOffset(130, 102), Text = "", TextColor3 = C.Good, ZIndex = 11, Parent = self.frame })
 	self.token = 0
 	return self
 end
@@ -75,6 +76,16 @@ function Reveal:show(result, state)
 	self.stroke.Color = rarity.color
 	local multiplier = state and state.incomeMultiplier or 1
 	self.income.Text = "+" .. Format.coins(Formulas.creatureBaseIncome(result) * multiplier) .. "/с"
+
+	if self.preview then
+		self.preview:Destroy()
+	end
+	self.preview = Viewport.creature({
+		Size = UDim2.fromOffset(124, 130),
+		Position = UDim2.fromOffset(0, 0),
+		ZIndex = 11,
+		Parent = self.frame,
+	}, result.id, result.mut, false)
 
 	self.frame.Visible = true
 	self.scale.Scale = 0.3

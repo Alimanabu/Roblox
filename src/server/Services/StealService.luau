@@ -16,6 +16,7 @@ local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
 local Formulas = require(Shared.Util.Formulas)
+local CreatureModel = require(Shared.Util.CreatureModel)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
@@ -90,28 +91,34 @@ local function makeCarryVisual(thief, entry)
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(entry.mut)
 
-	local size = math.min(creature.size, 3.5)
-	local ball = Instance.new("Part")
-	ball.Name = "StolenBrainrot"
-	ball.Shape = Enum.PartType.Ball
-	ball.Size = Vector3.new(size, size, size)
-	ball.Color = mutation.color or creature.color
-	ball.Material = mutation.id == "normal" and Enum.Material.SmoothPlastic or Enum.Material.Neon
-	ball.CanCollide = false
-	ball.CanQuery = false
-	ball.CanTouch = false
-	ball.Massless = true
-	ball.CFrame = head.CFrame * CFrame.new(0, 1 + size / 2, 0)
-
+	-- Модель уменьшаем и приклеиваем к голове вора.
+	local model, body = CreatureModel.build(entry.id, entry.mut, head.CFrame * CFrame.new(0, 0.6, 0))
+	model.Name = "StolenBrainrot"
+	local scale = math.min(1, 2.5 / creature.size)
+	model:ScaleTo(scale)
+	model:PivotTo(head.CFrame * CFrame.new(0, 0.6, 0))
+	for _, piece in ipairs(model:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Massless = true
+			piece.Anchored = false
+			if piece ~= body then
+				local inner = Instance.new("WeldConstraint")
+				inner.Part0 = body
+				inner.Part1 = piece
+				inner.Parent = piece
+			end
+		end
+	end
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = head
-	weld.Part1 = ball
-	weld.Parent = ball
+	weld.Part1 = body
+	weld.Parent = body
+	local size = (model:GetAttribute("Height") or creature.size) * scale
 
 	local gui = Instance.new("BillboardGui")
 	gui.Size = UDim2.fromOffset(200, 40)
 	gui.StudsOffset = Vector3.new(0, size / 2 + 1.2, 0)
-	gui.Parent = ball
+	gui.Parent = body
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
@@ -122,7 +129,7 @@ local function makeCarryVisual(thief, entry)
 	label.Text = "🦹 " .. displayName(entry)
 	label.Parent = gui
 
-	ball.Parent = character
+	model.Parent = character
 
 	local highlight = Instance.new("Highlight")
 	highlight.FillColor = Color3.fromRGB(255, 40, 60)
@@ -130,7 +137,7 @@ local function makeCarryVisual(thief, entry)
 	highlight.OutlineColor = Color3.fromRGB(255, 40, 60)
 	highlight.Parent = character
 
-	return ball, highlight
+	return model, highlight
 end
 
 local function endCarry(thief, success, reason)
