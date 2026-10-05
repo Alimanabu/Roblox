@@ -296,6 +296,13 @@ local function onPlayerAdded(player)
 	end
 
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
+	-- Старые сохранения: брейнроты без «происхождения» считаем своими.
+	for _, entry in ipairs(data.creatures) do
+		if entry.origin == nil then
+			entry.origin = player.UserId
+			entry.gen = data.rebirths
+		end
+	end
 	profiles[player] = data
 	DataService.Loaded:Fire(player, data)
 	DataService.sendNow(player)

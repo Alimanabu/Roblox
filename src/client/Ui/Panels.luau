@@ -56,24 +56,34 @@ local function list(parent, padding)
 end
 
 -- Кнопка с подтверждением: первое нажатие спрашивает «Точно?», второе (за 3 с) выполняет.
-local function confirmButton(props, confirmText, action)
+-- key — стабильный id кнопки: «взведённое» состояние переживает перерисовку окна.
+local armed = {} -- [key] = до какого os.clock() кнопка ждёт второго нажатия
+local function confirmButton(key, props, confirmText, action)
 	local normalText = props.Text
-	local normalColor = props.Color
+	local normalColor = props.Color or C.Accent
 	local button = Theme.button(props)
-	local armedUntil = 0
+	local function show()
+		if armed[key] and os.clock() < armed[key] then
+			button.Text = confirmText
+			button.BackgroundColor3 = C.Gold
+		else
+			button.Text = normalText
+			button.BackgroundColor3 = normalColor
+		end
+	end
+	show()
 	button.Activated:Connect(function()
-		if os.clock() < armedUntil then
-			armedUntil = 0
+		if armed[key] and os.clock() < armed[key] then
+			armed[key] = nil
 			action()
+			show()
 			return
 		end
-		armedUntil = os.clock() + 3
-		button.Text = confirmText
-		button.BackgroundColor3 = C.Gold
-		task.delay(3, function()
-			if button.Parent and os.clock() >= armedUntil then
-				button.Text = normalText
-				button.BackgroundColor3 = normalColor or C.Accent
+		armed[key] = os.clock() + 3
+		show()
+		task.delay(3.05, function()
+			if button.Parent then
+				show()
 			end
 		end)
 	end)
@@ -103,8 +113,14 @@ function Factory.signature(state)
 		tostring(state.autoCraft),
 		tostring(state.passes.AUTO_CRAFT),
 	}
+	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
-		table.insert(parts, (state.coins >= capsule.cost and "1" or "0") .. (state.pity[capsule.id] or 0))
+		table.insert(
+			parts,
+			(state.coins >= capsule.cost and "1" or "0")
+				.. (state.pity[capsule.id] or 0)
+				.. tostring(Formulas.capsuleInSeason(capsule, serverNow))
+		)
 	end
 	return table.concat(parts, "|")
 end
@@ -313,7 +329,7 @@ function Base.build(content, state)
 				Parent = row,
 			}
 			if rarity.rank >= 5 then
-				confirmButton(sellAllProps, "Точно? Нажми ещё", sellAll)
+				confirmButton("sellAll:" .. rarity.id, sellAllProps, "Точно? Нажми ещё", sellAll)
 			else
 				Theme.button(sellAllProps, sellAll)
 			end
@@ -373,7 +389,7 @@ function Base.build(content, state)
 			}
 			-- Редких (Аура и выше) и мутантов продаём только с подтверждением.
 			if rarity.rank >= 5 or entry.mut ~= "normal" then
-				confirmButton(sellProps, "Точно продать?", sell)
+				confirmButton("sell:" .. entry.uid, sellProps, "Точно продать?", sell)
 			else
 				Theme.button(sellProps, sell)
 			end
@@ -470,7 +486,7 @@ function Rebirth.build(content, state)
 		LayoutOrder = 1,
 		Parent = content,
 	})
-	confirmButton({
+	confirmButton("rebirth", {
 		Size = UDim2.new(0.6, 0, 0, 56),
 		Text = "♻️ ПЕРЕРОДИТЬСЯ",
 		Color = (levelOk and coinsOk) and C.Purple or C.CardLocked,

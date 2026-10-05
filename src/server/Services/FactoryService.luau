@@ -45,7 +45,7 @@ end
 
 -- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
 -- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
-local function addCreature(player, data, creatureId, mutationId, paid)
+local function addCreature(player, data, creatureId, mutationId, paid, originOverride, genOverride)
 	-- origin/gen: кто и в каком «поколении» (номер перерождения) создал брейнрота.
 	-- Не даём вернуть его себе после перерождения через обмен или кражу.
 	local entry = {
@@ -53,8 +53,8 @@ local function addCreature(player, data, creatureId, mutationId, paid)
 		id = creatureId,
 		mut = mutationId,
 		paid = paid,
-		origin = player.UserId,
-		gen = data.rebirths,
+		origin = originOverride or player.UserId,
+		gen = genOverride or data.rebirths,
 	}
 	data.nextUid += 1
 	table.insert(data.creatures, entry)
@@ -119,6 +119,11 @@ local function craft(player, capsuleId, silent)
 		return fail("Эта капсула ещё закрыта!")
 	end
 	if not Formulas.capsuleInSeason(capsule, os.time()) then
+		if autoCraft[player] == capsule.id then
+			autoCraft[player] = nil
+			DataService.markDirty(player)
+			Remotes.Notify:FireClient(player, "Сезон закончился — авто-фабрика выключена", BAD)
+		end
 		return fail("Этот сезон закончился 🎃")
 	end
 	local now = os.clock()
@@ -150,7 +155,7 @@ local function craft(player, capsuleId, silent)
 	-- Гарантия: долго не везло — самая редкая редкость капсулы выпадает точно.
 	local pityRarity = Formulas.pityRarity(capsule)
 	local pity = (data.pity[capsule.id] or 0) + 1
-	if pity >= Formulas.pityThreshold(capsule) then
+	if pity >= Formulas.pityThreshold(capsule) and Rarities.get(rarityId).rank < Rarities.get(pityRarity).rank then
 		rarityId = pityRarity
 		Remotes.Notify:FireClient(player, "🎯 Сработала гарантия!", Color3.fromRGB(255, 220, 80))
 	end
@@ -255,8 +260,15 @@ local function fuse(player, rarityId)
 		return a > b
 	end)
 	local paid = 0
+	-- Если среди скрещённых был чужой брейнрот, результат «наследует» его происхождение,
+	-- иначе скрещивание отмывало бы брейнротов, спрятанных у друга на время перерождения.
+	local inheritOrigin, inheritGen
 	for _, index in ipairs(toRemove) do
 		local removed = table.remove(data.creatures, index)
+		if removed.origin and removed.origin ~= player.UserId then
+			inheritOrigin = removed.origin
+			inheritGen = math.max(inheritGen or 0, removed.gen or 0)
+		end
 		if paid and removed.paid then
 			paid += removed.paid
 		else
@@ -272,7 +284,7 @@ local function fuse(player, rarityId)
 	data.stats.fused += 1
 	Actions.fire(player, "fuse", 1)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, inheritOrigin, inheritGen)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,

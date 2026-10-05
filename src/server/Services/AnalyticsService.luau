@@ -22,8 +22,8 @@ end
 
 -- Воронка обучения: шаг 1 = зашёл в игру, дальше шаги из Config/Tutorial.
 function AnalyticsService.onboardingStep(player, step)
-	local name = step == 1 and "Зашёл в игру"
-		or (Tutorial.Steps[step - 1] and Tutorial.Steps[step - 1].action or "Обучение пройдено")
+	local previous = Tutorial.Steps[step - 1]
+	local name = step == 1 and "Зашёл в игру" or (previous and ("Шаг " .. (step - 1) .. ": " .. previous.text) or "Обучение пройдено")
 	safe(Analytics.LogOnboardingFunnelStepEvent, player, step, name)
 end
 
@@ -81,14 +81,17 @@ local TRACKED = {
 }
 
 function AnalyticsService.init()
+	local lastStep = {}
 	DataService.Loaded.Event:Connect(function(player)
 		local data = DataService.get(player)
-		if data and data.tutorial.step == 1 and data.stats.crafted == 0 then
+		if not data then
+			return
+		end
+		lastStep[player] = data.tutorial.step
+		if data.tutorial.step == 1 and data.stats.crafted == 0 then
 			AnalyticsService.onboardingStep(player, 1)
 		end
 	end)
-
-	local lastStep = {}
 	Actions.connect(function(player, kind, amount)
 		if TRACKED[kind] then
 			AnalyticsService.event(player, TRACKED[kind], amount)
@@ -97,7 +100,7 @@ function AnalyticsService.init()
 		task.defer(function()
 			local data = DataService.get(player)
 			if data and lastStep[player] ~= data.tutorial.step then
-				if lastStep[player] and data.tutorial.step <= #Tutorial.Steps + 1 then
+				if data.tutorial.step <= #Tutorial.Steps + 1 then
 					AnalyticsService.onboardingStep(player, data.tutorial.step)
 				end
 				lastStep[player] = data.tutorial.step
