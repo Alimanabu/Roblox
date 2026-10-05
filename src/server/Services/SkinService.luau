@@ -7,6 +7,12 @@ local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
+local TradeService = require(script.Parent.TradeService)
+
+-- Смена скина пересобирает модель (и кнопку «Украсть»), поэтому не чаще раза
+-- в APPLY_COOLDOWN секунд — иначе можно было бы «сбивать» воров.
+local APPLY_COOLDOWN = 10
+local lastApply = {} -- [player] = os.clock()
 
 local SkinService = {}
 
@@ -46,6 +52,16 @@ local function apply(player, uid, skinId)
 	if skinId ~= nil and (type(skinId) ~= "string" or not Skins.get(skinId) or not data.skins[skinId]) then
 		return
 	end
+	if TradeService.isTrading(player) then
+		Remotes.Notify:FireClient(player, "Нельзя менять скины во время обмена", BAD)
+		return
+	end
+	local now = os.clock()
+	if lastApply[player] and now - lastApply[player] < APPLY_COOLDOWN then
+		Remotes.Notify:FireClient(player, "Скин можно менять раз в " .. APPLY_COOLDOWN .. " секунд", BAD)
+		return
+	end
+	lastApply[player] = now
 	for _, entry in ipairs(data.creatures) do
 		if entry.uid == uid then
 			entry.skin = skinId
@@ -59,6 +75,9 @@ end
 function SkinService.init()
 	Remotes.BuySkin.OnServerEvent:Connect(buy)
 	Remotes.ApplySkin.OnServerEvent:Connect(apply)
+	game:GetService("Players").PlayerRemoving:Connect(function(player)
+		lastApply[player] = nil
+	end)
 end
 
 return SkinService

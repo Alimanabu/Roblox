@@ -37,7 +37,15 @@ function RewardService.grant(player, data, reward)
 	end
 	if reward.creatureRarity then
 		local pool = Creatures.ByRarity[reward.creatureRarity]
-		if pool then
+		local passes = MonetizationService.passes(player)
+		if pool and #data.creatures >= Formulas.slots(data, passes) then
+			-- База полна — вместо брейнрота деньги: 10 минут его дохода (минимум 10 мин дохода игрока).
+			local creature = pool[1]
+			local coins = math.max(creature.income * 600, Daily.coinsFor(Formulas.totalIncome(data, passes), 10))
+			data.coins += coins
+			data.totalEarned += coins
+			table.insert(parts, "💰 " .. Format.coins(coins) .. " (база полна)")
+		elseif pool then
 			local creature = pool[math.random(1, #pool)]
 			FactoryService.give(player, creature.id, "normal")
 			table.insert(parts, "🧠 " .. creature.name)

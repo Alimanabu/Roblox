@@ -50,7 +50,7 @@ function GiftService.snapshot(player, data)
 			claimed = claimed[player] ~= nil and claimed[player][index] == true,
 		}
 	end
-	return { start = sessionStart[player] or 0, gifts = gifts }
+	return { start = sessionStart[player] or workspace:GetServerTimeNow(), gifts = gifts }
 end
 
 function GiftService.init()

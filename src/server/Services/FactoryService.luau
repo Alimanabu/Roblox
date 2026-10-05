@@ -45,7 +45,16 @@ end
 -- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
 -- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
 local function addCreature(player, data, creatureId, mutationId, paid)
-	local entry = { uid = tostring(data.nextUid), id = creatureId, mut = mutationId, paid = paid }
+	-- origin/gen: кто и в каком «поколении» (номер перерождения) создал брейнрота.
+	-- Не даём вернуть его себе после перерождения через обмен или кражу.
+	local entry = {
+		uid = tostring(data.nextUid),
+		id = creatureId,
+		mut = mutationId,
+		paid = paid,
+		origin = player.UserId,
+		gen = data.rebirths,
+	}
 	data.nextUid += 1
 	table.insert(data.creatures, entry)
 

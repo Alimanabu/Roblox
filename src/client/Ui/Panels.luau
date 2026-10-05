@@ -581,6 +581,7 @@ end
 -- НАГРАДЫ: ежедневная серия и задания
 ---------------------------------------------------------------------------
 local Rewards = { title = "🎁 Награды и задания" }
+local codeDraft = "" -- текст промокода не теряется, когда окно перерисовывается
 
 -- Сколько минут игрок уже в игре за этот заход.
 local function playMinutes(state)
@@ -743,13 +744,16 @@ function Rewards.build(content, state)
 		BackgroundColor3 = C.Card,
 		PlaceholderText = "🎟️ Промокод (например, SIXSEVEN)",
 		PlaceholderColor3 = C.Muted,
-		Text = "",
+		Text = codeDraft,
 		Font = Theme.Font,
 		TextScaled = true,
 		TextColor3 = C.Text,
 		ClearTextOnFocus = false,
 		Parent = codeRow,
 	}, { Theme.corner(10), Theme.padding(6) })
+	codeBox:GetPropertyChangedSignal("Text"):Connect(function()
+		codeDraft = codeBox.Text
+	end)
 	Theme.button({
 		Size = UDim2.new(0.35, 0, 1, 0),
 		Position = UDim2.fromScale(0.65, 0),
@@ -759,6 +763,7 @@ function Rewards.build(content, state)
 	}, function()
 		Remotes.RedeemCode:FireServer(codeBox.Text)
 		codeBox.Text = ""
+		codeDraft = ""
 	end)
 
 	Theme.button({

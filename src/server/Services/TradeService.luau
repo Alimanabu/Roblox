@@ -195,6 +195,18 @@ local function execute(trade)
 	if #giveA == 0 and #giveB == 0 then
 		return "обмен пустой"
 	end
+	-- Нельзя «спрятать» брейнротов у друга на время перерождения и забрать обратно.
+	local function returnsAfterRebirth(entries, receiver, receiverData)
+		for _, entry in ipairs(entries) do
+			if entry.origin == receiver.UserId and receiverData.rebirths > (entry.gen or 0) then
+				return true
+			end
+		end
+		return false
+	end
+	if returnsAfterRebirth(giveA, b, dataB) or returnsAfterRebirth(giveB, a, dataA) then
+		return "своего брейнрота из прошлой жизни (до перерождения) вернуть нельзя"
+	end
 	local function fits(player, data, giving, getting)
 		local after = #data.creatures - #giving + #getting
 		return after <= Formulas.slots(data, MonetizationService.passes(player)) or after <= #data.creatures
@@ -215,7 +227,7 @@ local function execute(trade)
 	end
 	local function add(data, entries)
 		for _, entry in ipairs(entries) do
-			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin })
+			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, origin = entry.origin, gen = entry.gen })
 			data.nextUid += 1
 			data.index[entry.id] = true
 		end
@@ -279,6 +291,15 @@ function TradeService.isTrading(player)
 end
 
 function TradeService.init()
+	-- Сервер выключается: обмен не должен завершиться между сохранениями игроков.
+	DataService.onClose(function()
+		for _, trade in pairs(trades) do
+			if not trade.closed then
+				endTrade(trade, "Обмен отменён: сервер перезапускается", BAD)
+			end
+		end
+	end)
+
 	Remotes.TradeRequest.OnServerEvent:Connect(request)
 	Remotes.TradeRespond.OnServerEvent:Connect(respond)
 	Remotes.TradeSetOffer.OnServerEvent:Connect(setOffer)
