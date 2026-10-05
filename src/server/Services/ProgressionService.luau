@@ -12,6 +12,7 @@ local Formulas = require(Shared.Util.Formulas)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
+local Actions = require(script.Parent.Actions)
 
 local ProgressionService = {}
 
@@ -69,6 +70,7 @@ local function buyUpgrade(player, upgradeId)
 	data.coins -= cost
 	data.upgrades[upgrade.id] = current + 1
 	Remotes.Notify:FireClient(player, "⬆️ " .. upgrade.name .. ": уровень " .. (current + 1), GOOD)
+	Actions.fire(player, "upgrade", 1)
 	DataService.markDirty(player)
 end
 

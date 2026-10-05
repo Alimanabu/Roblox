@@ -22,7 +22,7 @@ function Reveal.new(screenGui)
 	self.frame = create("Frame", {
 		Name = "Reveal",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.78),
+		Position = UDim2.fromScale(0.5, 0.6),
 		Size = UDim2.fromOffset(540, 150),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.1,

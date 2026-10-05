@@ -16,7 +16,7 @@ function StealStatus.new(screenGui)
 	self.carry = create("Frame", {
 		Name = "CarryStatus",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -110),
+		Position = UDim2.new(0.5, 0, 1, -166),
 		Size = UDim2.fromOffset(460, 54),
 		BackgroundColor3 = C.Bad,
 		Visible = false,

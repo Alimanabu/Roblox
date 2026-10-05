@@ -9,6 +9,7 @@ local Remotes = require(Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local Actions = require(script.Parent.Actions)
 
 local QuestService = {}
 
@@ -48,7 +49,7 @@ local function giveReward(player, data, coinsMinutes, luckMinutes)
 	return table.concat(parts, " + ")
 end
 
-function QuestService.progress(player, kind, amount)
+local function onAction(player, kind, amount)
 	local data = DataService.get(player)
 	if not data then
 		return
@@ -97,6 +98,7 @@ local function claimDaily(player)
 	data.daily.lastClaimDay = Daily.today()
 	local text = giveReward(player, data, reward.coinsMinutes, reward.luckMinutes)
 	Remotes.Notify:FireClient(player, "🎁 День " .. day .. ": " .. text, GOLD)
+	Actions.fire(player, "daily", 1)
 	DataService.markDirty(player)
 end
 
@@ -158,6 +160,7 @@ function QuestService.snapshot(player, data)
 end
 
 function QuestService.init()
+	Actions.connect(onAction)
 	Remotes.ClaimDaily.OnServerEvent:Connect(claimDaily)
 	Remotes.ClaimQuest.OnServerEvent:Connect(claimQuest)
 end

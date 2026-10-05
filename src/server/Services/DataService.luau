@@ -50,6 +50,7 @@ local function defaultData()
 		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0 },
 		daily = { streak = 0, lastClaimDay = 0 },
 		quests = { day = 0, list = {} },
+		tutorial = { step = 1, progress = 0 },
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

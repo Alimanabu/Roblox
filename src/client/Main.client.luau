@@ -15,6 +15,7 @@ local Panels = require(script.Parent.Ui.Panels)
 local Reveal = require(script.Parent.Ui.Reveal)
 local StealStatus = require(script.Parent.Ui.StealStatus)
 local EventBanner = require(script.Parent.Ui.EventBanner)
+local TutorialBanner = require(script.Parent.Ui.TutorialBanner)
 
 local player = Players.LocalPlayer
 
@@ -44,10 +45,12 @@ local hud = Hud.new(screenGui, function(name)
 	panels:open(name)
 end)
 local reveal = Reveal.new(screenGui)
+local tutorial = TutorialBanner.new(screenGui, hud)
 
 State.onChanged(function(state)
 	hud:update(state)
 	panels:update(state)
+	tutorial:update(state)
 end)
 
 Remotes.State.OnClientEvent:Connect(State.set)
@@ -101,6 +104,7 @@ RunService.RenderStepped:Connect(function()
 	local t = os.clock()
 	local serverNow = workspace:GetServerTimeNow()
 	local camera = workspace.CurrentCamera
+	tutorial:animate(t)
 	for _, plot in ipairs(plots:GetChildren()) do
 		local isMine = plot:GetAttribute("OwnerUserId") == player.UserId
 		local locked = (plot:GetAttribute("LockedUntil") or 0) > serverNow

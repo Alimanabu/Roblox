@@ -129,6 +129,7 @@ function Hud.new(screenGui, onMenu)
 		create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 	self.badges = {}
+	self.buttons = {}
 	for order, item in ipairs(MENU) do
 		local button = Theme.button({
 			Name = item.id,
@@ -140,6 +141,7 @@ function Hud.new(screenGui, onMenu)
 		}, function()
 			onMenu(item.id)
 		end)
+		self.buttons[item.id] = button
 		-- Красный кружок «!», когда в разделе есть что забрать.
 		self.badges[item.id] = create("TextLabel", {
 			Name = "Badge",
