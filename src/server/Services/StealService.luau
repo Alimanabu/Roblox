@@ -36,6 +36,7 @@ StealService.NORMAL_SPEED = 16
 StealService.SLAP_RANGE = 9
 StealService.SLAP_COOLDOWN = 0.8
 StealService.SLAP_FORCE = 70
+StealService.TRAP_STUN_PER_LEVEL = 1.5
 
 local BAD = Color3.fromRGB(255, 110, 110)
 local GOOD = Color3.fromRGB(120, 255, 120)
@@ -182,6 +183,8 @@ local function endCarry(thief, success, reason)
 	local humanoid = humanoidOf(thief)
 	if humanoid then
 		humanoid.WalkSpeed = StealService.NORMAL_SPEED
+		humanoid.JumpPower = 50
+		humanoid.JumpHeight = 7.2
 	end
 	thief:SetAttribute("CarryDeadline", nil)
 
@@ -319,6 +322,33 @@ local function startSteal(thief, prompt)
 	humanoid.WalkSpeed = StealService.CARRY_SPEED
 	thief:SetAttribute("CarryDeadline", deadline)
 	updateRobbed(owner)
+
+	-- Ловушка хозяина: вор стоит на месте, пока его бьёт током.
+	local trapLevel = ownerData.upgrades.trap or 0
+	if trapLevel > 0 then
+		local stun = trapLevel * StealService.TRAP_STUN_PER_LEVEL
+		local carry = carries[thief]
+		carry.deadline += stun
+		thief:SetAttribute("CarryDeadline", carry.deadline)
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.JumpHeight = 0
+		if carry.highlight then
+			carry.highlight.FillColor = Color3.fromRGB(255, 240, 60)
+		end
+		Remotes.Notify:FireClient(thief, "⚡ Ловушка! Ты оглушён на " .. stun .. " с", BAD)
+		Remotes.Notify:FireClient(owner, "⚡ Ловушка сработала! Беги шлёпать вора!", GOOD)
+		task.delay(stun, function()
+			if carries[thief] == carry and humanoid.Parent then
+				humanoid.WalkSpeed = StealService.CARRY_SPEED
+				humanoid.JumpPower = 50
+				humanoid.JumpHeight = 7.2
+				if carry.highlight then
+					carry.highlight.FillColor = Color3.fromRGB(255, 40, 60)
+				end
+			end
+		end)
+	end
 
 	DataService.markDirty(owner)
 	PlotService.render(owner)

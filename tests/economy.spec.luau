@@ -183,7 +183,7 @@ while t < 6 * 3600 do
 
 	-- Апгрейды, если дешевле 30% монет.
 	for _, upgrade in ipairs(Upgrades.List) do
-		local lvl = data.upgrades[upgrade.id]
+		local lvl = data.upgrades[upgrade.id] or 0
 		if lvl < upgrade.maxLevel and Upgrades.cost(upgrade.id, lvl) < data.coins * 0.3 then
 			data.coins -= Upgrades.cost(upgrade.id, lvl)
 			data.upgrades[upgrade.id] = lvl + 1
