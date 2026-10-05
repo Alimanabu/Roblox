@@ -153,6 +153,28 @@ function Formulas.rollRarity(capsule, luck, rng, mods)
 	return chances[#chances - (chances[#chances].secret and 1 or 0)].rarity
 end
 
+-- Гарантия: самая редкая редкость капсулы (без секретов) и через сколько попыток
+-- она выпадет точно. Порог = 3 средних «ожидания» без удачи.
+function Formulas.pityRarity(capsule)
+	local top
+	for _, rarity in ipairs(Rarities.List) do
+		if capsule.weights[rarity.id] then
+			top = rarity.id
+		end
+	end
+	return top
+end
+
+function Formulas.pityThreshold(capsule)
+	local top = Formulas.pityRarity(capsule)
+	for _, entry in ipairs(Formulas.rarityChances(capsule, 1)) do
+		if entry.rarity == top and not entry.secret then
+			return math.ceil(3 / entry.chance)
+		end
+	end
+	return math.huge
+end
+
 function Formulas.rollMutation(luck, rng, mods)
 	mods = mods or NO_MODS
 	local luckFactor = math.min(luck, 4) * mods.mutation

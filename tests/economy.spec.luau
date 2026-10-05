@@ -124,6 +124,13 @@ for _, achievement in ipairs(Achievements.List) do
 	check(achievement.reward.skin == nil or Skins.get(achievement.reward.skin) ~= nil, "достижение выдаёт несуществующий скин")
 end
 
+-- 5f. Гарантия: разумные пороги у каждой капсулы.
+for _, capsule in ipairs(Capsules.List) do
+	local threshold = Formulas.pityThreshold(capsule)
+	check(threshold >= 10 and threshold < 5000, capsule.id .. ": странный порог гарантии " .. threshold)
+	print(string.format("  гарантия %-15s %-12s через %d", capsule.id, Formulas.pityRarity(capsule), threshold))
+end
+
 -- 6. Ивенты.
 local Events = shared_require("Config/Events")
 local hour = 1000 * 3600 -- начало какого-то часа (UTC)

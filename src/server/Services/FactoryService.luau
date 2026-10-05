@@ -132,6 +132,19 @@ local function craft(player, capsuleId, silent)
 
 	local luck = Formulas.luck(data, passes, os.time(), mods)
 	local rarityId = Formulas.rollRarity(capsule, luck, rng, mods)
+
+	-- Гарантия: долго не везло — самая редкая редкость капсулы выпадает точно.
+	local pityRarity = Formulas.pityRarity(capsule)
+	local pity = (data.pity[capsule.id] or 0) + 1
+	if pity >= Formulas.pityThreshold(capsule) then
+		rarityId = pityRarity
+		Remotes.Notify:FireClient(player, "🎯 Сработала гарантия!", Color3.fromRGB(255, 220, 80))
+	end
+	if rarityId == pityRarity or Rarities.get(rarityId).rank > Rarities.get(pityRarity).rank then
+		pity = 0
+	end
+	data.pity[capsule.id] = pity
+
 	local creature = Formulas.randomCreatureOf(rarityId, rng)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 

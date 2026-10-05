@@ -79,7 +79,7 @@ function Factory.signature(state)
 		tostring(state.passes.AUTO_CRAFT),
 	}
 	for _, capsule in ipairs(Capsules.List) do
-		table.insert(parts, state.coins >= capsule.cost and "1" or "0")
+		table.insert(parts, (state.coins >= capsule.cost and "1" or "0") .. (state.pity[capsule.id] or 0))
 	end
 	return table.concat(parts, "|")
 end
@@ -116,7 +116,7 @@ function Factory.build(content, state)
 		Parent = content,
 	}, {
 		create("UIGridLayout", {
-			CellSize = UDim2.fromOffset(196, 300),
+			CellSize = UDim2.fromOffset(196, 320),
 			CellPadding = UDim2.fromOffset(10, 10),
 			HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			SortOrder = Enum.SortOrder.LayoutOrder,
@@ -152,12 +152,21 @@ function Factory.build(content, state)
 		})
 
 		if unlocked then
+			local pityRarity = Rarities.get(Formulas.pityRarity(capsule))
+			local left = Formulas.pityThreshold(capsule) - (state.pity[capsule.id] or 0)
+			Theme.label({
+				Size = UDim2.new(1, 0, 0, 16),
+				Text = "🎯 " .. pityRarity.name .. " точно через " .. left,
+				TextColor3 = pityRarity.color,
+				LayoutOrder = 4,
+				Parent = box,
+			})
 			local canAfford = state.coins >= capsule.cost
 			Theme.button({
 				Size = UDim2.new(1, 0, 0, 40),
 				Text = "Создать " .. Format.coins(capsule.cost),
 				Color = canAfford and C.Good or C.Bad,
-				LayoutOrder = 4,
+				LayoutOrder = 5,
 				Parent = box,
 			}, function()
 				Remotes.Craft:FireServer(capsule.id)
@@ -168,7 +177,7 @@ function Factory.build(content, state)
 					Size = UDim2.new(1, 0, 0, 26),
 					Text = active and "🤖 Авто: ВКЛ" or "🤖 Авто",
 					Color = active and C.Gold or C.Card,
-					LayoutOrder = 5,
+					LayoutOrder = 6,
 					Parent = box,
 				}, function()
 					Remotes.SetAutoCraft:FireServer(not active and capsule.id or nil)
@@ -179,7 +188,7 @@ function Factory.build(content, state)
 			if capsule.rebirths > 0 then
 				need ..= " + " .. capsule.rebirths .. " перерожд."
 			end
-			Theme.label({ Size = UDim2.new(1, 0, 0, 40), Text = need, TextColor3 = C.Muted, LayoutOrder = 4, Parent = box })
+			Theme.label({ Size = UDim2.new(1, 0, 0, 40), Text = need, TextColor3 = C.Muted, LayoutOrder = 5, Parent = box })
 		end
 	end
 end

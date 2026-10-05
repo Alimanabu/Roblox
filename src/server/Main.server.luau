@@ -61,6 +61,7 @@ DataService.setSnapshotBuilder(function(player, data)
 		skins = data.skins,
 		settings = data.settings,
 		social = SocialService.snapshot(player),
+		pity = data.pity,
 	}
 end)
 
