@@ -311,6 +311,8 @@ function CreatureModel.build(creatureId, mutationId, cframe, skinId)
 		bodyProps = { Transparency = 0.15, Reflectance = 0.3 }
 	elseif mutation.id == "rainbow" or mutation.id == "sixseven" then
 		material = Enum.Material.Neon
+	elseif mutation.id == "cosmic" then
+		material = Enum.Material.ForceField
 	end
 
 	local body

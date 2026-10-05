@@ -70,6 +70,26 @@ Capsules.List = {
 		color = Color3.fromRGB(255, 230, 0),
 		weights = { skibidi = 65, god = 34.33, sixseven = 0.67 },
 	},
+	{
+		id = "world_trend",
+		name = "Мировой тренд",
+		desc = "Этот мем знает вся планета.",
+		cost = 10000000000,
+		level = 40,
+		rebirths = 3,
+		color = Color3.fromRGB(80, 220, 255),
+		weights = { god = 97, sixseven = 3 },
+	},
+	{
+		id = "ultra_brainrot",
+		name = "Ультра-брейнрот",
+		desc = "Финальная форма интернета. 🤌",
+		cost = 1000000000000,
+		level = 50,
+		rebirths = 5,
+		color = Color3.fromRGB(255, 80, 255),
+		weights = { god = 90, sixseven = 10 },
+	},
 }
 
 -- Секрет: из ЛЮБОЙ капсулы может выпасть SIX SEVEN с шансом 1 к 67 000 (умножается на удачу).
