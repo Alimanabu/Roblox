@@ -33,6 +33,16 @@ Daily.QuestPool = {
 	{ id = "index1", kind = "newIndex", target = 1, text = "Открой нового брейнрота в Индексе", minutes = 10 },
 }
 
+-- Подарки за время в игре (считается с момента захода, сбрасывается при перезаходе).
+Daily.Gifts = {
+	{ minutes = 5, reward = { coinsMinutes = 2 } },
+	{ minutes = 15, reward = { luckMinutes = 5 } },
+	{ minutes = 30, reward = { coinsMinutes = 8 } },
+	{ minutes = 60, reward = { creatureRarity = "sigma", coinsMinutes = 5 } },
+	{ minutes = 90, reward = { coinsMinutes = 20, luckMinutes = 15 } },
+	{ minutes = 120, reward = { creatureRarity = "aura", coinsMinutes = 10 } },
+}
+
 Daily.QuestById = {}
 for _, quest in ipairs(Daily.QuestPool) do
 	Daily.QuestById[quest.id] = quest

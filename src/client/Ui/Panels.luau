@@ -556,9 +556,27 @@ end
 ---------------------------------------------------------------------------
 local Rewards = { title = "🎁 Награды и задания" }
 
+-- Сколько минут игрок уже в игре за этот заход.
+local function playMinutes(state)
+	return (workspace:GetServerTimeNow() - state.playtime.start) / 60
+end
+
+function Panels.giftsReady(state)
+	local minutes = playMinutes(state)
+	for _, gift in ipairs(state.playtime.gifts) do
+		if not gift.claimed and minutes >= gift.minutes then
+			return true
+		end
+	end
+	return false
+end
+
 function Rewards.signature(state)
 	local r = state.rewards
-	local parts = { tostring(r.canClaim), r.nextDay, r.streak, r.rewards[1] }
+	local parts = { tostring(r.canClaim), r.nextDay, r.streak, r.rewards[1], math.floor(playMinutes(state)) }
+	for _, gift in ipairs(state.playtime.gifts) do
+		table.insert(parts, tostring(gift.claimed))
+	end
 	for _, quest in ipairs(r.quests) do
 		table.insert(parts, quest.text .. quest.progress .. tostring(quest.claimed))
 	end
@@ -606,6 +624,44 @@ function Rewards.build(content, state)
 			TextColor3 = day == 7 and C.Gold or C.Muted,
 			Parent = cell,
 		})
+	end
+
+	-- Подарки за время в игре.
+	local minutes = playMinutes(state)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 28),
+		Text = "⏰ Подарки за игру (ты играешь " .. math.floor(minutes) .. " мин)",
+		TextColor3 = C.Coins,
+		LayoutOrder = 60,
+		Parent = content,
+	})
+	local giftGrid = create("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+		LayoutOrder = 61,
+		Parent = content,
+	}, {
+		create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(200, 64),
+			CellPadding = UDim2.fromOffset(8, 8),
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	for index, gift in ipairs(state.playtime.gifts) do
+		local ready = minutes >= gift.minutes
+		local text, color
+		if gift.claimed then
+			text, color = "✅ " .. gift.minutes .. " мин", C.CardLocked
+		elseif ready then
+			text, color = "🎁 Забрать!\n" .. gift.reward, C.Good
+		else
+			text, color = "⏰ через " .. math.ceil(gift.minutes - minutes) .. " мин\n" .. gift.reward, C.Card
+		end
+		Theme.button({ Text = text, Color = color, LayoutOrder = index, Parent = giftGrid }, function()
+			Remotes.ClaimGift:FireServer(index)
+		end)
 	end
 
 	-- Промокоды.

@@ -24,8 +24,9 @@ local MENU = {
 	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },
 }
 
-function Hud.new(screenGui, onMenu)
+function Hud.new(screenGui, onMenu, giftsReady)
 	local self = setmetatable({}, Hud)
+	self.giftsReady = giftsReady
 
 	-- Монеты сверху по центру.
 	local coinsFrame = create("Frame", {
@@ -190,7 +191,7 @@ function Hud.new(screenGui, onMenu)
 end
 
 function Hud:update(state)
-	local rewardsReady = state.rewards.canClaim
+	local rewardsReady = state.rewards.canClaim or self.giftsReady(state)
 	for _, quest in ipairs(state.rewards.quests) do
 		if quest.progress >= quest.target and not quest.claimed then
 			rewardsReady = true

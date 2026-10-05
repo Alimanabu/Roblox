@@ -20,6 +20,7 @@ local LeaderboardService = require(Services.LeaderboardService)
 local TutorialService = require(Services.TutorialService)
 local AdminService = require(Services.AdminService)
 local CodeService = require(Services.CodeService)
+local GiftService = require(Services.GiftService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -50,6 +51,7 @@ DataService.setSnapshotBuilder(function(player, data)
 		autoCraft = FactoryService.autoCraftCapsule(player),
 		rewards = QuestService.snapshot(player, data),
 		tutorial = TutorialService.snapshot(data),
+		playtime = GiftService.snapshot(player, data),
 	}
 end)
 
@@ -66,5 +68,6 @@ LeaderboardService.init()
 TutorialService.init()
 AdminService.init()
 CodeService.init()
+GiftService.init()
 
 print("🧠 Brainrot Factory запущена! 🤌")

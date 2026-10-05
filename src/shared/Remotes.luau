@@ -16,6 +16,7 @@ local EVENTS = {
 	"ClaimQuest", -- (index) забрать награду за задание
 	"Admin", -- (command, arg) тестовые команды (только админы / Studio)
 	"RedeemCode", -- (text) ввести промокод
+	"ClaimGift", -- (index) подарок за время в игре
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

@@ -43,7 +43,7 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateS
 local panels = Panels.new(screenGui)
 local hud = Hud.new(screenGui, function(name)
 	panels:open(name)
-end)
+end, Panels.giftsReady)
 local reveal = Reveal.new(screenGui)
 local tutorial = TutorialBanner.new(screenGui, hud)
 
