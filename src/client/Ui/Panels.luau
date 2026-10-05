@@ -669,8 +669,55 @@ function Rewards.build(content, state)
 end
 
 ---------------------------------------------------------------------------
+-- КАК ИГРАТЬ
+---------------------------------------------------------------------------
+local Help = { title = "❓ Как играть" }
+
+local HELP_SECTIONS = {
+	{ "🏭 Фабрика", "Покупай мем-капсулы и создавай брейнротов. Чем популярнее тренд, тем реже он выпадает: Нормис → Лоу-ки → Ризз → Сигма → Аура → Скибиди → Брейнрот Бог → SIX SEVEN 🤌" },
+	{ "🧠 База", "Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий." },
+	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
+	{ "🦹 Кража", "Подойди к чужому брейнроту и зажми F. Беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
+	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
+	{ "🎉 Ивенты", "Каждые 15 минут идёт ивент: удача, деньги, мутации или турбо. А каждый час в 6-7 минуту наступает МИНУТА 67: шанс SIX SEVEN x6.7!" },
+	{ "♻️ Перерождение", "Сбрасывает монеты и брейнротов, но навсегда даёт +50% дохода, +10% удачи и крутой титул." },
+	{ "🎁 Награды", "Заходи каждый день за наградой, на 7-й день мега-награда. Выполняй 3 задания в день." },
+}
+
+function Help.signature()
+	return "help"
+end
+
+function Help.build(content)
+	list(content, 8)
+	for order, section in ipairs(HELP_SECTIONS) do
+		local box = card({ Size = UDim2.new(1, -10, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order }, { Theme.padding(10) })
+		Theme.label({
+			Size = UDim2.new(1, 0, 0, 26),
+			Text = section[1],
+			TextColor3 = C.Gold,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = box,
+		})
+		Theme.label({
+			Size = UDim2.new(1, 0, 0, 0),
+			Position = UDim2.fromOffset(0, 28),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Text = section[2],
+			TextScaled = false,
+			TextSize = 18,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = box,
+		})
+		box.Parent = content
+	end
+end
+
+---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Help = Help,
 	Rewards = Rewards,
 	Factory = Factory,
 	Base = Base,

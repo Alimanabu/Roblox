@@ -20,6 +20,7 @@ local MENU = {
 	{ id = "Rebirth", text = "♻️ Перерождение", color = C.Purple },
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
+	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
 }
 
 function Hud.new(screenGui, onMenu)
