@@ -43,6 +43,18 @@ Daily.Gifts = {
 	{ minutes = 120, reward = { creatureRarity = "aura", coinsMinutes = 10 } },
 }
 
+-- Колесо удачи: 1 бесплатное вращение в день + купленные. weight — относительный шанс.
+Daily.Wheel = {
+	{ weight = 30, name = "💰 5 мин дохода", reward = { coinsMinutes = 5 } },
+	{ weight = 20, name = "🍀 x2 удачи 10 мин", reward = { luckMinutes = 10 } },
+	{ weight = 18, name = "💰 15 мин дохода", reward = { coinsMinutes = 15 } },
+	{ weight = 14, name = "🧠 Сигма", reward = { creatureRarity = "sigma" } },
+	{ weight = 9, name = "🍀 x2 удачи 30 мин", reward = { luckMinutes = 30 } },
+	{ weight = 6, name = "🧠 Аура", reward = { creatureRarity = "aura" } },
+	{ weight = 2, name = "🔥 Огненный скин", reward = { skin = "fire", coinsMinutes = 5 } },
+	{ weight = 1, name = "🧠 СКИБИДИ!", reward = { creatureRarity = "skibidi" } },
+}
+
 Daily.QuestById = {}
 for _, quest in ipairs(Daily.QuestPool) do
 	Daily.QuestById[quest.id] = quest

@@ -50,6 +50,10 @@ local function grantProduct(player, data, product)
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, now) + product.minutes * 60
 		Remotes.Notify:FireClient(player, "🍀 Буст удачи x2 активирован!", Color3.fromRGB(120, 255, 120))
 		return true
+	elseif product.kind == "spins" then
+		data.wheel.extraSpins += product.amount
+		Remotes.Notify:FireClient(player, "🎡 +" .. product.amount .. " вращения колеса!", Color3.fromRGB(120, 255, 120))
+		return true
 	elseif product.kind == "coins" then
 		local income = Formulas.totalIncome(data, MonetizationService.passes(player))
 		local amount = math.max(product.minCoins, math.floor(income * 60 * product.incomeMinutes))

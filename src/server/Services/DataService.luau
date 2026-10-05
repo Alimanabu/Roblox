@@ -61,6 +61,7 @@ local function defaultData()
 		skins = {}, -- [skinId] = true — купленные скины
 		settings = { music = true, sfx = true, announcements = true },
 		pity = {}, -- [capsuleId] = попыток без самой редкой редкости капсулы
+		wheel = { lastFreeDay = 0, extraSpins = 0 },
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

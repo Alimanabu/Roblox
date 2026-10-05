@@ -124,6 +124,16 @@ for _, achievement in ipairs(Achievements.List) do
 	check(achievement.reward.skin == nil or Skins.get(achievement.reward.skin) ~= nil, "достижение выдаёт несуществующий скин")
 end
 
+-- 5e2. Колесо: призы ссылаются на настоящие скины и редкости.
+local DailyCfg = shared_require("Config/Daily")
+for _, slot in ipairs(DailyCfg.Wheel) do
+	check(slot.reward.skin == nil or Skins.get(slot.reward.skin) ~= nil, "колесо: нет скина " .. tostring(slot.reward.skin))
+	check(slot.reward.creatureRarity == nil or Creatures.ByRarity[slot.reward.creatureRarity] ~= nil, "колесо: нет редкости")
+end
+for _, gift in ipairs(DailyCfg.Gifts) do
+	check(gift.reward.creatureRarity == nil or Creatures.ByRarity[gift.reward.creatureRarity] ~= nil, "подарок: нет редкости")
+end
+
 -- 5f. Гарантия: разумные пороги у каждой капсулы.
 for _, capsule in ipairs(Capsules.List) do
 	local threshold = Formulas.pityThreshold(capsule)

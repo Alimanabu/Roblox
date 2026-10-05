@@ -18,6 +18,7 @@ local StealStatus = require(script.Parent.Ui.StealStatus)
 local EventBanner = require(script.Parent.Ui.EventBanner)
 local TutorialBanner = require(script.Parent.Ui.TutorialBanner)
 local TradeInvite = require(script.Parent.Ui.TradeInvite)
+local WheelSpin = require(script.Parent.Ui.WheelSpin)
 
 local player = Players.LocalPlayer
 
@@ -82,6 +83,14 @@ Remotes.CraftResult.OnClientEvent:Connect(function(result)
 end)
 Remotes.Sfx.OnClientEvent:Connect(function(name)
 	Sfx.play(name)
+end)
+
+-- Колесо удачи.
+local wheelSpin = WheelSpin.new(screenGui)
+Remotes.WheelResult.OnClientEvent:Connect(function(index)
+	wheelSpin:spin(index, function(final)
+		Sfx.play(final and "levelup" or "craft", final and 1 or 1.4)
+	end)
 end)
 
 -- Обмен.

@@ -206,7 +206,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 end
 
 function Hud:update(state)
-	local rewardsReady = state.rewards.canClaim or self.giftsReady(state)
+	local rewardsReady = state.rewards.canClaim or self.giftsReady(state) or state.wheel.freeAvailable
 	for _, quest in ipairs(state.rewards.quests) do
 		if quest.progress >= quest.target and not quest.claimed then
 			rewardsReady = true

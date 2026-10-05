@@ -599,7 +599,15 @@ end
 
 function Rewards.signature(state)
 	local r = state.rewards
-	local parts = { tostring(r.canClaim), r.nextDay, r.streak, r.rewards[1], math.floor(playMinutes(state)) }
+	local parts = {
+		tostring(r.canClaim),
+		r.nextDay,
+		r.streak,
+		r.rewards[1],
+		math.floor(playMinutes(state)),
+		tostring(state.wheel.freeAvailable),
+		state.wheel.extraSpins,
+	}
 	for _, gift in ipairs(state.playtime.gifts) do
 		table.insert(parts, tostring(gift.claimed))
 	end
@@ -651,6 +659,39 @@ function Rewards.build(content, state)
 			Parent = cell,
 		})
 	end
+
+	-- Колесо удачи.
+	local wheel = state.wheel
+	local wheelRow = create("Frame", {
+		Size = UDim2.new(1, -10, 0, 48),
+		BackgroundTransparency = 1,
+		LayoutOrder = 50,
+		Parent = content,
+	})
+	local canSpin = wheel.freeAvailable or wheel.extraSpins > 0
+	Theme.button({
+		Size = UDim2.new(0.6, -6, 1, 0),
+		Text = wheel.freeAvailable and "🎡 Крутить колесо (бесплатно!)"
+			or (wheel.extraSpins > 0 and ("🎡 Крутить колесо (" .. wheel.extraSpins .. ")") or "🎡 Бесплатное вращение завтра"),
+		Color = canSpin and C.Gold or C.CardLocked,
+		Parent = wheelRow,
+	}, function()
+		if canSpin then
+			Remotes.SpinWheel:FireServer()
+		end
+	end)
+	local spinsProduct = Monetization.ProductByKey.SPINS_3
+	Theme.button({
+		Size = UDim2.new(0.4, 0, 1, 0),
+		Position = UDim2.new(0.6, 6, 0, 0),
+		Text = spinsProduct.id ~= 0 and ("+3 вращения R$ " .. spinsProduct.price) or "+3 вращения (скоро)",
+		Color = spinsProduct.id ~= 0 and C.Purple or C.CardLocked,
+		Parent = wheelRow,
+	}, function()
+		if spinsProduct.id ~= 0 then
+			MarketplaceService:PromptProductPurchase(player, spinsProduct.id)
+		end
+	end)
 
 	-- Подарки за время в игре.
 	local minutes = playMinutes(state)

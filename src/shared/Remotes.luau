@@ -25,6 +25,7 @@ local EVENTS = {
 	"BuySkin", -- (skinId)
 	"ApplySkin", -- (uid, skinId | nil)
 	"SetSetting", -- (key, bool) настройки игрока
+	"SpinWheel", -- () крутить колесо удачи
 
 	-- сервер -> клиент
 	"State", -- (snapshot)
@@ -34,6 +35,7 @@ local EVENTS = {
 	"Sfx", -- (soundName) проиграть звук
 	"TradeState", -- (state | nil) состояние обмена
 	"TradeInvite", -- (fromUserId, fromName) тебя зовут обменяться
+	"WheelResult", -- (index) что выпало на колесе
 }
 
 local Remotes = {}
