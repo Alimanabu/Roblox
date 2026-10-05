@@ -32,7 +32,9 @@ local dirty = {} -- [player] = true, если состояние надо отп
 local snapshotBuilder = nil -- function(player, data) -> snapshot, задаётся из Main
 local saveExtras = {} -- функции, которые добавляют в сохранение «временно отсутствующих» брейнротов
 local closeCallbacks = {} -- вызываются при выключении сервера до финального сохранения
-local releasing = {} -- [player] = true: игрок уходит, обычные сохранения уже не нужны
+-- [player] = true: игрок уходит, обычные сохранения уже не нужны. Слабые ключи:
+-- флаг не снимаем, чтобы запоздавший автосейв не вернул блокировку сессии.
+local releasing = setmetatable({}, { __mode = "k" })
 local pendingRelease = {} -- [userId] = true: идёт финальное сохранение ушедшего игрока
 
 DataService.Loaded = Instance.new("BindableEvent")
@@ -166,6 +168,10 @@ function DataService.save(player, release)
 	local stolenSession = false
 	local ok, err = withRetries(function()
 		return store:UpdateAsync(keyFor(player), function(saved)
+			-- Проверяем ещё раз внутри: игрок мог уйти, пока это сохранение ждало очереди.
+			if releasing[player] and not release then
+				return nil
+			end
 			if sessionOwnedByOther(saved) then
 				-- Прогресс уже открыт другим сервером — не затираем его.
 				stolenSession = true
@@ -279,12 +285,14 @@ local function onPlayerRemoving(player)
 	if profiles[player] then
 		releasing[player] = true
 		pendingRelease[player.UserId] = true
-		DataService.save(player, true)
+		local ok, err = pcall(DataService.save, player, true)
+		if not ok then
+			warn("[DataService] Ошибка финального сохранения", player.Name, err)
+		end
 		pendingRelease[player.UserId] = nil
 	end
 	profiles[player] = nil
 	dirty[player] = nil
-	releasing[player] = nil
 end
 
 function DataService.init()

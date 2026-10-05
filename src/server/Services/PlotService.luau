@@ -408,6 +408,8 @@ local function releasePlot(player)
 	plot.model.Pads:ClearAllChildren()
 	plot.model:SetAttribute("OwnerUserId", nil)
 	plot.model:SetAttribute("LockedUntil", nil)
+	plot.model:SetAttribute("LockKind", nil)
+	plot.model:SetAttribute("LockReadyAt", nil)
 	PlotService.setLockVisual(plot, false, 0)
 	local gui = plot.model.OwnerSign.OwnerGui
 	gui.Label.Text = "Свободная база"

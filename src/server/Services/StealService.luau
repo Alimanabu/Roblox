@@ -47,6 +47,7 @@ local lockKind = {} -- [owner] = "shield" (защита при входе) | "lo
 local lockReadyAt = {} -- [owner] = когда снова можно нажать замок
 local lastSlap = {} -- [player] = os.clock()
 local closing = false -- сервер выключается: новые кражи запрещены
+local holdStart = {} -- [player] = { prompt, os.clock() }: сервер сам проверяет время удержания
 
 local function now()
 	return workspace:GetServerTimeNow()
@@ -199,7 +200,7 @@ local function endCarry(thief, success, reason)
 
 	if success then
 		do
-			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut }
+			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid }
 			thiefData.nextUid += 1
 			table.insert(thiefData.creatures, newEntry)
 			thiefData.index[entry.id] = true
@@ -225,6 +226,9 @@ local function endCarry(thief, success, reason)
 			DataService.markDirty(owner)
 			Remotes.Notify:FireClient(owner, "😭 " .. thief.DisplayName .. " украл твоего " .. name .. "!", BAD)
 			Remotes.Sfx:FireClient(owner, "lose")
+			-- Сразу сохраняем хозяина: в его прошлых сохранениях брейнрот ещё числился,
+			-- и если сервер упадёт, он оказался бы у двоих.
+			task.spawn(DataService.save, owner)
 		end
 		return
 	end
@@ -251,6 +255,18 @@ local function startSteal(thief, prompt)
 	local owner = plotModel and PlotService.ownerOfModel(plotModel)
 	local uid = prompt:GetAttribute("Uid")
 	if closing or not owner or owner == thief or type(uid) ~= "string" then
+		return
+	end
+
+	-- Защита от читеров: клиент мог «нажать» мгновенно или издалека.
+	local hold = holdStart[thief]
+	holdStart[thief] = nil
+	local thiefRoot = rootOf(thief)
+	local body = prompt.Parent
+	if not hold or hold[1] ~= prompt or os.clock() - hold[2] < prompt.HoldDuration - 0.3 then
+		return
+	end
+	if not thiefRoot or not body or (thiefRoot.Position - body.Position).Magnitude > prompt.MaxActivationDistance + 6 then
 		return
 	end
 
@@ -436,6 +452,12 @@ function StealService.init()
 		return extras
 	end)
 
+	ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt, player)
+		if prompt.Name == "StealPrompt" then
+			holdStart[player] = { prompt, os.clock() }
+		end
+	end)
+
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 		if prompt.Name == "StealPrompt" then
 			startSteal(player, prompt)
@@ -491,6 +513,7 @@ function StealService.init()
 		lockedUntil[player] = nil
 		lockKind[player] = nil
 		lockReadyAt[player] = nil
+		holdStart[player] = nil
 		lastSlap[player] = nil
 	end)
 

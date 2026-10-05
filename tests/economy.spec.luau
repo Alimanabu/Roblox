@@ -77,6 +77,20 @@ check(Format.number(2340000) == "2.34M", "2340000 -> " .. Format.number(2340000)
 check(Format.number(67000000) == "67M", "67M -> " .. Format.number(67000000))
 check(Format.coins(25) == "$25", "coins 25")
 
+-- 5b. «Создал и сразу продал» никогда не окупается, даже с огромной удачей.
+local erng = Random.new(5)
+for _, capsule in ipairs(Capsules.List) do
+	for _, luck in ipairs({ 1, 5, 30 }) do
+		local total = 0
+		for _ = 1, 3000 do
+			local r = Formulas.rollRarity(capsule, luck, erng)
+			local c = Formulas.randomCreatureOf(r, erng)
+			total += Formulas.sellValue({ id = c.id, mut = Formulas.rollMutation(luck, erng), paid = capsule.cost })
+		end
+		check(total / 3000 < capsule.cost, capsule.id .. ": продажа выгоднее покупки при удаче " .. luck)
+	end
+end
+
 -- 6. Ивенты.
 local Events = shared_require("Config/Events")
 local hour = 1000 * 3600 -- начало какого-то часа (UTC)
@@ -163,7 +177,7 @@ while t < 6 * 3600 do
 			local luck = Formulas.luck(data, passes, 0)
 			local rarity = Formulas.rollRarity(best, luck, sim)
 			local c = Formulas.randomCreatureOf(rarity, sim)
-			table.insert(data.creatures, { id = c.id, mut = Formulas.rollMutation(luck, sim) })
+			table.insert(data.creatures, { id = c.id, mut = Formulas.rollMutation(luck, sim), paid = best.cost })
 			local xp = Rarities.get(rarity).xp * (data.index[c.id] and 1 or 3)
 			data.index[c.id] = true
 			data.xp += xp

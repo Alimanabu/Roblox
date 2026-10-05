@@ -42,8 +42,10 @@ local function creatureLabel(creatureId, mutationId)
 	return mutation.name .. " " .. creature.name
 end
 
-local function addCreature(player, data, creatureId, mutationId)
-	local entry = { uid = tostring(data.nextUid), id = creatureId, mut = mutationId }
+-- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
+-- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
+local function addCreature(player, data, creatureId, mutationId, paid)
+	local entry = { uid = tostring(data.nextUid), id = creatureId, mut = mutationId, paid = paid }
 	data.nextUid += 1
 	table.insert(data.creatures, entry)
 
@@ -123,7 +125,7 @@ local function craft(player, capsuleId, silent)
 	local creature = Formulas.randomCreatureOf(rarityId, rng)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost)
 	Actions.fire(player, "craft", 1)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
@@ -213,8 +215,14 @@ local function fuse(player, rarityId)
 	table.sort(toRemove, function(a, b)
 		return a > b
 	end)
+	local paid = 0
 	for _, index in ipairs(toRemove) do
-		table.remove(data.creatures, index)
+		local removed = table.remove(data.creatures, index)
+		if paid and removed.paid then
+			paid += removed.paid
+		else
+			paid = nil -- хотя бы один без цены (украден до этого правила) — без ограничения
+		end
 	end
 
 	local passes = MonetizationService.passes(player)
@@ -225,7 +233,7 @@ local function fuse(player, rarityId)
 	data.stats.fused += 1
 	Actions.fire(player, "fuse", 1)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,

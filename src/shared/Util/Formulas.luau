@@ -86,8 +86,14 @@ function Formulas.totalIncome(data, passes, mods)
 	return total * Formulas.incomeMultiplier(data, passes, mods)
 end
 
+Formulas.SELL_PAID_SHARE = 0.6 -- продать можно максимум за 60% от потраченного
+
 function Formulas.sellValue(entry)
-	return math.floor(Formulas.creatureBaseIncome(entry) * Formulas.SELL_SECONDS)
+	local value = math.floor(Formulas.creatureBaseIncome(entry) * Formulas.SELL_SECONDS)
+	if entry.paid then
+		value = math.min(value, math.floor(entry.paid * Formulas.SELL_PAID_SHARE))
+	end
+	return value
 end
 
 -- Шансы редкостей для капсулы с учётом удачи.
