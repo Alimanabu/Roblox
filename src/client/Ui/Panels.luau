@@ -67,7 +67,14 @@ end
 local Factory = { title = "🏭 Фабрика брейнрота" }
 
 function Factory.signature(state)
-	local parts = { state.level, state.rebirths, string.format("%.2f", state.luck), tostring(state.autoCraft), tostring(state.passes.AUTO_CRAFT) }
+	local parts = {
+		state.level,
+		state.rebirths,
+		string.format("%.2f", state.luck),
+		state.mods.secret,
+		tostring(state.autoCraft),
+		tostring(state.passes.AUTO_CRAFT),
+	}
 	for _, capsule in ipairs(Capsules.List) do
 		table.insert(parts, state.coins >= capsule.cost and "1" or "0")
 	end
@@ -126,7 +133,7 @@ function Factory.build(content, state)
 		Theme.label({ Size = UDim2.new(1, 0, 0, 18), Text = capsule.desc, TextColor3 = C.Muted, LayoutOrder = 2, Parent = box })
 
 		local chancesText = {}
-		for _, entry in ipairs(Formulas.rarityChances(capsule, state.luck)) do
+		for _, entry in ipairs(Formulas.rarityChances(capsule, state.luck, state.mods)) do
 			local rarity = Rarities.get(entry.rarity)
 			local name = entry.secret and "??? секрет" or rarity.name
 			table.insert(chancesText, colored(name, rarity.color) .. "  " .. Format.percent(entry.chance))

@@ -14,6 +14,7 @@ local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
 local Reveal = require(script.Parent.Ui.Reveal)
 local StealStatus = require(script.Parent.Ui.StealStatus)
+local EventBanner = require(script.Parent.Ui.EventBanner)
 
 local player = Players.LocalPlayer
 
@@ -84,10 +85,12 @@ end)
 
 -- Статус кражи и замка.
 local status = StealStatus.new(screenGui)
+local eventBanner = EventBanner.new(screenGui)
 task.spawn(function()
 	while true do
 		task.wait(0.2)
 		status:update(player, workspace:FindFirstChild("Plots"))
+		eventBanner:update()
 	end
 end)
 

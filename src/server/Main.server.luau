@@ -15,16 +15,19 @@ local IncomeService = require(Services.IncomeService)
 local PlotService = require(Services.PlotService)
 local StealService = require(Services.StealService)
 local QuestService = require(Services.QuestService)
+local EventService = require(Services.EventService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
 	local passes = MonetizationService.passes(player)
 	local now = os.time()
+	local mods = EventService.mods()
 	return {
 		coins = data.coins,
 		totalEarned = data.totalEarned,
-		income = Formulas.totalIncome(data, passes),
-		incomeMultiplier = Formulas.incomeMultiplier(data, passes),
+		income = Formulas.totalIncome(data, passes, mods),
+		incomeMultiplier = Formulas.incomeMultiplier(data, passes, mods),
+		mods = mods,
 		level = data.level,
 		xp = data.xp,
 		xpNext = Levels.xpToNext(data.level),
@@ -33,8 +36,8 @@ DataService.setSnapshotBuilder(function(player, data)
 		rebirthTitle = Rebirths.titleFor(data.rebirths),
 		creatures = data.creatures,
 		slots = Formulas.slots(data, passes),
-		craftTime = Formulas.craftTime(data, passes),
-		luck = Formulas.luck(data, passes, now),
+		craftTime = Formulas.craftTime(data, passes, mods),
+		luck = Formulas.luck(data, passes, now, mods),
 		luckBoostLeft = math.max(0, (data.boosts.luckUntil or 0) - now),
 		upgrades = data.upgrades,
 		index = data.index,
@@ -46,6 +49,7 @@ DataService.setSnapshotBuilder(function(player, data)
 end)
 
 DataService.init()
+EventService.init()
 MonetizationService.init()
 ProgressionService.init()
 FactoryService.init()

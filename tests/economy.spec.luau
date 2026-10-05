@@ -77,7 +77,42 @@ check(Format.number(2340000) == "2.34M", "2340000 -> " .. Format.number(2340000)
 check(Format.number(67000000) == "67M", "67M -> " .. Format.number(67000000))
 check(Format.coins(25) == "$25", "coins 25")
 
--- 6. Симуляция: игрок крафтит лучшую доступную капсулу и покупает апгрейды.
+-- 6. Ивенты.
+local Events = shared_require("Config/Events")
+local hour = 1000 * 3600 -- начало какого-то часа (UTC)
+check(#Events.active(hour + 5 * 60) == 0, "в 5-ю минуту не должно быть ивентов")
+local m67 = Events.modifiers(hour + 6 * 60 + 30)
+check(m67.secret == 6.7 and m67.mutation67 == 6.7, "Минута 67 не работает")
+check(Events.modifiers(hour + 8 * 60).secret == 1, "Минута 67 должна закончиться в 8:00")
+check(#Events.active(hour + 60) == 1, "в начале часа должен идти случайный ивент")
+check(#Events.active(hour + 3 * 60) == 0, "случайный ивент длится 3 минуты")
+local nextEvent, startsAt = Events.nextEvent(hour + 4 * 60)
+check(nextEvent.id == "minute67" and startsAt == hour + 6 * 60, "следующий ивент после 4:00 — Минута 67")
+local _, startsAt2 = Events.nextEvent(hour + 9 * 60)
+check(startsAt2 == hour + 15 * 60, "после Минуты 67 следующий ивент в :15")
+local seen = {}
+for cycle = 0, 40 do
+	for _, active in ipairs(Events.active(cycle * Events.CYCLE + 1)) do
+		seen[active.event.id] = true
+	end
+end
+for _, event in ipairs(Events.Random) do
+	check(seen[event.id], "ивент " .. event.id .. " никогда не выпадает")
+end
+local Mutations = shared_require("Config/Mutations")
+local plain, boosted = 0, 0
+local mrng = Random.new(1)
+for _ = 1, 100000 do
+	if Formulas.rollMutation(1, mrng) ~= "normal" then
+		plain += 1
+	end
+	if Formulas.rollMutation(1, mrng, { luck = 1, income = 1, mutation = 3, speed = 1, secret = 1, mutation67 = 1 }) ~= "normal" then
+		boosted += 1
+	end
+end
+check(boosted > plain * 2.5, "Мутаген-туман должен утраивать мутации")
+
+-- 7. Симуляция: игрок крафтит лучшую доступную капсулу и покупает апгрейды.
 --    Проверяем, что игра проходима и темп разумный.
 local Upgrades = shared_require("Config/Upgrades")
 local Rebirths = shared_require("Config/Rebirths")

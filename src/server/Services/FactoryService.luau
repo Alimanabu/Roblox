@@ -15,6 +15,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local QuestService = require(script.Parent.QuestService)
+local EventService = require(script.Parent.EventService)
 
 local FactoryService = {}
 
@@ -97,7 +98,8 @@ local function craft(player, capsuleId, silent)
 	end
 	local now = os.clock()
 	-- Небольшой запас на пинг.
-	if lastCraft[player] and now - lastCraft[player] < Formulas.craftTime(data, passes) * 0.9 then
+	local mods = EventService.mods()
+	if lastCraft[player] and now - lastCraft[player] < Formulas.craftTime(data, passes, mods) * 0.9 then
 		return false
 	end
 	if #data.creatures >= Formulas.slots(data, passes) then
@@ -116,10 +118,10 @@ local function craft(player, capsuleId, silent)
 	data.coins -= capsule.cost
 	data.stats.crafted += 1
 
-	local luck = Formulas.luck(data, passes, os.time())
-	local rarityId = Formulas.rollRarity(capsule, luck, rng)
+	local luck = Formulas.luck(data, passes, os.time(), mods)
+	local rarityId = Formulas.rollRarity(capsule, luck, rng, mods)
 	local creature = Formulas.randomCreatureOf(rarityId, rng)
-	local mutationId = Formulas.rollMutation(luck, rng)
+	local mutationId = Formulas.rollMutation(luck, rng, mods)
 
 	local entry, isNew = addCreature(player, data, creature.id, mutationId)
 	QuestService.progress(player, "craft", 1)
@@ -216,9 +218,10 @@ local function fuse(player, rarityId)
 	end
 
 	local passes = MonetizationService.passes(player)
-	local luck = Formulas.luck(data, passes, os.time())
+	local mods = EventService.mods()
+	local luck = Formulas.luck(data, passes, os.time(), mods)
 	local creature = Formulas.randomCreatureOf(nextRarity.id, rng)
-	local mutationId = Formulas.rollMutation(luck, rng)
+	local mutationId = Formulas.rollMutation(luck, rng, mods)
 	data.stats.fused += 1
 	QuestService.progress(player, "fuse", 1)
 
@@ -273,7 +276,7 @@ function FactoryService.init()
 				if data then
 					local passes = MonetizationService.passes(player)
 					local last = lastCraft[player] or 0
-					if os.clock() - last >= Formulas.craftTime(data, passes) then
+					if os.clock() - last >= Formulas.craftTime(data, passes, EventService.mods()) then
 						craft(player, capsuleId, true)
 					end
 				end

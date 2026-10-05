@@ -14,6 +14,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local FactoryService = require(script.Parent.FactoryService)
 local ProgressionService = require(script.Parent.ProgressionService)
+local EventService = require(script.Parent.EventService)
 
 local PlotService = {}
 
@@ -285,7 +286,7 @@ function PlotService.render(player)
 					nameText,
 					rarityHex,
 					rarity.name,
-					Format.coins(Formulas.creatureIncome(entry, data, passes))
+					Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods()))
 				)
 			)
 		end
@@ -413,7 +414,7 @@ function PlotService.init()
 				local data = DataService.get(player)
 				if data then
 					local passes = MonetizationService.passes(player)
-					local key = Formulas.slots(data, passes) .. ":" .. Formulas.incomeMultiplier(data, passes)
+					local key = Formulas.slots(data, passes) .. ":" .. Formulas.incomeMultiplier(data, passes, EventService.mods())
 					if lastKey[player] ~= key then
 						lastKey[player] = key
 						PlotService.render(player)

@@ -11,6 +11,10 @@ local Rebirths = require(Config.Rebirths)
 
 local Formulas = {}
 
+-- mods — множители от ивентов (см. Config/Events). Если не передали — без ивентов.
+local NO_MODS = { luck = 1, income = 1, mutation = 1, speed = 1, secret = 1, mutation67 = 1 }
+Formulas.NO_MODS = NO_MODS
+
 Formulas.START_COINS = 150 -- хватает на первую капсулу
 Formulas.BASE_SLOTS = 8
 Formulas.BIG_BASE_SLOTS = 10
@@ -29,16 +33,19 @@ function Formulas.slots(data, passes)
 	return slots
 end
 
-function Formulas.craftTime(data, passes)
+function Formulas.craftTime(data, passes, mods)
+	mods = mods or NO_MODS
 	local time = Formulas.BASE_CRAFT_TIME * 0.82 ^ (data.upgrades.speed or 0)
 	if passes.FAST_MACHINE then
 		time /= 2
 	end
+	time /= mods.speed
 	return math.max(Formulas.MIN_CRAFT_TIME, time)
 end
 
-function Formulas.luck(data, passes, now)
-	local luck = 1 + 0.08 * (data.upgrades.luck or 0)
+function Formulas.luck(data, passes, now, mods)
+	mods = mods or NO_MODS
+	local luck = (1 + 0.08 * (data.upgrades.luck or 0)) * mods.luck
 	luck *= 1 + Rebirths.LUCK_BONUS * data.rebirths
 	if passes.LUCKY then
 		luck *= 1.5
@@ -49,8 +56,9 @@ function Formulas.luck(data, passes, now)
 	return luck
 end
 
-function Formulas.incomeMultiplier(data, passes)
-	local mult = 1 + Rebirths.INCOME_BONUS * data.rebirths
+function Formulas.incomeMultiplier(data, passes, mods)
+	mods = mods or NO_MODS
+	local mult = (1 + Rebirths.INCOME_BONUS * data.rebirths) * mods.income
 	if passes.VIP then
 		mult *= 2
 	end
@@ -66,16 +74,16 @@ function Formulas.creatureBaseIncome(entry)
 	return creature.income * Mutations.get(entry.mut).mult
 end
 
-function Formulas.creatureIncome(entry, data, passes)
-	return Formulas.creatureBaseIncome(entry) * Formulas.incomeMultiplier(data, passes)
+function Formulas.creatureIncome(entry, data, passes, mods)
+	return Formulas.creatureBaseIncome(entry) * Formulas.incomeMultiplier(data, passes, mods)
 end
 
-function Formulas.totalIncome(data, passes)
+function Formulas.totalIncome(data, passes, mods)
 	local total = 0
 	for _, entry in ipairs(data.creatures) do
 		total += Formulas.creatureBaseIncome(entry)
 	end
-	return total * Formulas.incomeMultiplier(data, passes)
+	return total * Formulas.incomeMultiplier(data, passes, mods)
 end
 
 function Formulas.sellValue(entry)
@@ -86,11 +94,15 @@ end
 -- Удача умножает веса всех редкостей, кроме самой частой в капсуле:
 -- «удача x2» = редкие тренды выпадают примерно в 2 раза чаще.
 -- Возвращает список { rarity = id, chance = 0..1 } от обычных к редким.
-function Formulas.rarityChances(capsule, luck)
+function Formulas.rarityChances(capsule, luck, mods)
+	mods = mods or NO_MODS
 	local entries = {}
 	for _, rarity in ipairs(Rarities.List) do
 		local weight = capsule.weights[rarity.id]
 		if weight and weight > 0 then
+			if rarity.id == "sixseven" then
+				weight *= mods.secret
+			end
 			table.insert(entries, { rarity = rarity.id, weight = weight })
 		end
 	end
@@ -103,7 +115,7 @@ function Formulas.rarityChances(capsule, luck)
 		total += entry.weight
 	end
 
-	local secretChance = math.min(Capsules.SECRET_SIXSEVEN_CHANCE * luck, 0.01)
+	local secretChance = math.min(Capsules.SECRET_SIXSEVEN_CHANCE * luck * mods.secret, 0.01)
 	local hasSixSeven = capsule.weights.sixseven ~= nil
 
 	local result = {}
@@ -120,8 +132,8 @@ function Formulas.rarityChances(capsule, luck)
 	return result
 end
 
-function Formulas.rollRarity(capsule, luck, rng)
-	local chances = Formulas.rarityChances(capsule, luck)
+function Formulas.rollRarity(capsule, luck, rng, mods)
+	local chances = Formulas.rarityChances(capsule, luck, mods)
 	local roll = rng:NextNumber()
 	local accumulated = 0
 	for _, entry in ipairs(chances) do
@@ -133,12 +145,17 @@ function Formulas.rollRarity(capsule, luck, rng)
 	return chances[#chances - (chances[#chances].secret and 1 or 0)].rarity
 end
 
-function Formulas.rollMutation(luck, rng)
-	local luckFactor = math.min(luck, 4)
+function Formulas.rollMutation(luck, rng, mods)
+	mods = mods or NO_MODS
+	local luckFactor = math.min(luck, 4) * mods.mutation
 	-- Проверяем от самой редкой мутации к самой частой.
 	for index = #Mutations.List, 2, -1 do
 		local mutation = Mutations.List[index]
-		if rng:NextNumber() < mutation.chance * luckFactor then
+		local chance = mutation.chance * luckFactor
+		if mutation.id == "sixseven" then
+			chance *= mods.mutation67
+		end
+		if rng:NextNumber() < chance then
 			return mutation.id
 		end
 	end
