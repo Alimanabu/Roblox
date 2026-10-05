@@ -4,10 +4,21 @@
 local Config = script.Parent
 local Creatures = require(Config.Creatures)
 
+-- Сезонные брейнроты в счёт «открой всех» не входят: после сезона их не достать.
+local REGULAR_COUNT = 0
+for _, creature in ipairs(Creatures.List) do
+	if not creature.season then
+		REGULAR_COUNT += 1
+	end
+end
+
 local function indexCount(data)
 	local count = 0
-	for _ in pairs(data.index) do
-		count += 1
+	for id in pairs(data.index) do
+		local creature = Creatures.get(id)
+		if creature and not creature.season then
+			count += 1
+		end
 	end
 	return count
 end
@@ -33,7 +44,7 @@ Achievements.List = {
 	{ id = "craft1000", name = "Фабрика тысячи мемов", desc = "Создай 1000 брейнротов", reward = { coinsMinutes = 20, luckMinutes = 10 }, check = function(d) return stat(d, "crafted") >= 1000 end },
 	{ id = "index10", name = "Коллекционер", desc = "Открой 10 брейнротов в Индексе", reward = { coinsMinutes = 5 }, check = function(d) return indexCount(d) >= 10 end },
 	{ id = "index20", name = "Знаток трендов", desc = "Открой 20 брейнротов в Индексе", reward = { coinsMinutes = 15 }, check = function(d) return indexCount(d) >= 20 end },
-	{ id = "indexAll", name = "Ходячий Индекс", desc = "Открой ВСЕХ брейнротов", reward = { coinsMinutes = 60, luckMinutes = 60 }, check = function(d) return indexCount(d) >= #Creatures.List end },
+	{ id = "indexAll", name = "Ходячий Индекс", desc = "Открой ВСЕХ брейнротов", reward = { coinsMinutes = 60, luckMinutes = 60 }, check = function(d) return indexCount(d) >= REGULAR_COUNT end },
 	{ id = "aura", name = "Аура-фармер", desc = "Получи брейнрота «Аура»", reward = { coinsMinutes = 5 }, check = function(d) return hasRarity(d, "aura") end },
 	{ id = "god", name = "Встреча с Богом", desc = "Получи Брейнрот Бога", reward = { coinsMinutes = 20 }, check = function(d) return hasRarity(d, "god") end },
 	{ id = "sixseven", name = "SIX... SEVEN!!! 🤌", desc = "Получи SIX SEVEN (+ Скин 67)", reward = { coinsMinutes = 67, luckMinutes = 67, skin = "sixseven" }, check = function(d) return hasRarity(d, "sixseven") end },
@@ -51,6 +62,15 @@ Achievements.List = {
 	{ id = "million", name = "Миллионер", desc = "Заработай $1M за всё время", reward = { coinsMinutes = 5 }, check = function(d) return d.totalEarned >= 1e6 end },
 	{ id = "billion", name = "Миллиардер", desc = "Заработай $1B за всё время", reward = { coinsMinutes = 30 }, check = function(d) return d.totalEarned >= 1e9 end },
 	{ id = "trade", name = "Деловой партнёр", desc = "Соверши обмен", reward = { coinsMinutes = 5 }, check = function(d) return stat(d, "trades") >= 1 end },
+	{ id = "halloween", name = "Хэллоуин 2026 🎃", desc = "Получи хэллоуинского брейнрота", reward = { coinsMinutes = 10 }, check = function(d)
+		for id in pairs(d.index) do
+			local creature = Creatures.get(id)
+			if creature and creature.season == "halloween" then
+				return true
+			end
+		end
+		return false
+	end },
 	{ id = "streak7", name = "Верный фанат", desc = "Забери награду 7-го дня", reward = { coinsMinutes = 20 }, check = function(d) return d.daily.streak >= 7 end },
 }
 

@@ -134,6 +134,29 @@ for _, gift in ipairs(DailyCfg.Gifts) do
 	check(gift.reward.creatureRarity == nil or Creatures.ByRarity[gift.reward.creatureRarity] ~= nil, "подарок: нет редкости")
 end
 
+-- 5g. Сезоны: сезонные брейнроты не попадают в обычные пулы, у сезонной капсулы
+-- для каждой редкости есть свои брейнроты.
+local Seasons = shared_require("Config/Seasons")
+for _, creature in ipairs(Creatures.List) do
+	if creature.season then
+		check(Seasons.ById[creature.season] ~= nil, creature.id .. ": неизвестный сезон")
+		for _, other in ipairs(Creatures.ByRarity[creature.rarity] or {}) do
+			check(other ~= creature, creature.id .. " попал в обычный пул")
+		end
+	end
+end
+for _, capsule in ipairs(Capsules.List) do
+	if capsule.season then
+		for rarityId in pairs(capsule.weights) do
+			local pools = Creatures.BySeason[capsule.season]
+			check(pools and pools[rarityId], capsule.id .. ": нет сезонных брейнротов редкости " .. rarityId)
+		end
+		local season = Seasons.ById[capsule.season]
+		check(Formulas.capsuleInSeason(capsule, season.startsAt + 10), "сезонная капсула должна работать в сезон")
+		check(not Formulas.capsuleInSeason(capsule, season.endsAt + 10), "сезонная капсула не должна работать после сезона")
+	end
+end
+
 -- 5f. Гарантия: разумные пороги у каждой капсулы.
 for _, capsule in ipairs(Capsules.List) do
 	local threshold = Formulas.pityThreshold(capsule)
@@ -211,7 +234,7 @@ while t < 6 * 3600 do
 	if t >= nextCraft and not saving then
 		local best
 		for _, c in ipairs(Capsules.List) do
-			if Formulas.capsuleUnlocked(c, data) and data.coins >= c.cost then
+			if not c.season and Formulas.capsuleUnlocked(c, data) and data.coins >= c.cost then
 				best = c
 			end
 		end

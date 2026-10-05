@@ -71,6 +71,16 @@ Capsules.List = {
 		weights = { skibidi = 65, god = 34.33, sixseven = 0.67 },
 	},
 	{
+		id = "halloween_capsule",
+		name = "🎃 Хэллоуинская капсула",
+		desc = "Только до 6 ноября! Эксклюзивные брейнроты.",
+		cost = 120000,
+		level = 8,
+		season = "halloween",
+		color = Color3.fromRGB(255, 140, 0),
+		weights = { rizz = 50, sigma = 35, aura = 13, skibidi = 2 },
+	},
+	{
 		id = "world_trend",
 		name = "Мировой тренд",
 		desc = "Этот мем знает вся планета.",

@@ -8,6 +8,7 @@ local Creatures = require(Config.Creatures)
 local Mutations = require(Config.Mutations)
 local Capsules = require(Config.Capsules)
 local Rebirths = require(Config.Rebirths)
+local Seasons = require(Config.Seasons)
 
 local Formulas = {}
 
@@ -192,9 +193,17 @@ function Formulas.rollMutation(luck, rng, mods)
 	return "normal"
 end
 
-function Formulas.randomCreatureOf(rarityId, rng)
-	local pool = Creatures.ByRarity[rarityId]
+-- season — для сезонной капсулы: берём брейнротов сезона (если такой редкости нет — обычных).
+function Formulas.randomCreatureOf(rarityId, rng, season)
+	local seasonPools = season and Creatures.BySeason[season]
+	local pool = (seasonPools and seasonPools[rarityId]) or Creatures.ByRarity[rarityId]
 	return pool[rng:NextInteger(1, #pool)]
+end
+
+-- Сезонная капсула доступна только во время сезона. now — Unix-время (сервер: os.time,
+-- клиент: workspace:GetServerTimeNow()).
+function Formulas.capsuleInSeason(capsule, now)
+	return capsule.season == nil or Seasons.isActive(capsule.season, now or os.time())
 end
 
 function Formulas.capsuleUnlocked(capsule, data)

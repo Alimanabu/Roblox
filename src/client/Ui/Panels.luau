@@ -123,10 +123,14 @@ function Factory.build(content, state)
 		}),
 	})
 
+	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
+		if not Formulas.capsuleInSeason(capsule, serverNow) then
+			continue -- сезонная капсула вне сезона не показывается
+		end
 		local unlocked = Formulas.capsuleUnlocked(capsule, state)
 		local box = card({
-			LayoutOrder = capsule.order,
+			LayoutOrder = capsule.season and 0 or capsule.order, -- сезонная капсула первой
 			BackgroundColor3 = unlocked and C.Card or C.CardLocked,
 			Parent = grid,
 		}, { Theme.stroke(capsule.color, 3), Theme.padding(8) })
@@ -502,7 +506,7 @@ function Index.build(content, state)
 		Theme.label({
 			Size = UDim2.new(1, 0, 0, 20),
 			Position = UDim2.fromOffset(0, 120),
-			Text = (rarity.secret and not known) and "???" or rarity.name,
+			Text = ((rarity.secret and not known) and "???" or rarity.name) .. (creature.season and " 🎃" or ""),
 			TextColor3 = rarity.color,
 			Parent = box,
 		})

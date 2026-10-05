@@ -50,14 +50,29 @@ Creatures.List = {
 	-- SIX SEVEN (секрет)
 	{ id = "sei_sette", name = "Сей Сетте", rarity = "sixseven", income = 670000, color = Color3.fromRGB(255, 230, 0), size = 5.2, body = "tall", acc = { "hands67", "halo", "shades" }, desc = "Шесть... СЕМЬ! 🤌 Самый редкий брейнрот в мире." },
 	{ id = "dottore_sessantasette", name = "Дотторе Сессантасетте", rarity = "sixseven", income = 676767, color = Color3.fromRGB(255, 80, 0), size = 5.2, body = "block", acc = { "hands67", "shades", "orbit" }, desc = "Доктор наук по числу 67." },
+
+	-- 🎃 ХЭЛЛОУИН (лимитированные: только из сезонной капсулы)
+	{ id = "zucchino_ridente", name = "Цуккино Риденте", rarity = "rizz", season = "halloween", income = 65, color = Color3.fromRGB(255, 130, 20), size = 2.8, body = "ball", acc = { "antenna", "shades" }, desc = "Тыква, которая смеётся над твоими мемами." },
+	{ id = "scheletro_mewing", name = "Скелетро Мьюинг", rarity = "sigma", season = "halloween", income = 330, color = Color3.fromRGB(235, 235, 220), size = 3.2, body = "tall", acc = { "chin", "headband" }, desc = "Скелет, у которого челюсть идеальная. Буквально." },
+	{ id = "fantasma_aurino", name = "Фантазма Аурино", rarity = "aura", season = "halloween", income = 1900, color = Color3.fromRGB(220, 230, 255), size = 3.6, body = "tall", acc = { "halo", "cape" }, desc = "Призрак, который фармит ауру с того света." },
+	{ id = "vampiro_dj", name = "Вампиро Диджеино", rarity = "skibidi", season = "halloween", income = 11500, color = Color3.fromRGB(120, 20, 40), size = 4, body = "ball", acc = { "headphones", "cape", "horns" }, desc = "Вампир-диджей. Играет только ночью, но громко." },
 }
 
 Creatures.ById = {}
+Creatures.BySeason = {} -- [seasonId][rarityId] = { creature, ... }
 Creatures.ByRarity = {}
 for _, creature in ipairs(Creatures.List) do
 	Creatures.ById[creature.id] = creature
-	Creatures.ByRarity[creature.rarity] = Creatures.ByRarity[creature.rarity] or {}
-	table.insert(Creatures.ByRarity[creature.rarity], creature)
+	if creature.season then
+		-- Сезонные не попадают в обычные капсулы.
+		Creatures.BySeason[creature.season] = Creatures.BySeason[creature.season] or {}
+		local pools = Creatures.BySeason[creature.season]
+		pools[creature.rarity] = pools[creature.rarity] or {}
+		table.insert(pools[creature.rarity], creature)
+	else
+		Creatures.ByRarity[creature.rarity] = Creatures.ByRarity[creature.rarity] or {}
+		table.insert(Creatures.ByRarity[creature.rarity], creature)
+	end
 end
 
 function Creatures.get(id)

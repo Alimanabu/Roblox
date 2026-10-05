@@ -117,6 +117,9 @@ local function craft(player, capsuleId, silent)
 	if not Formulas.capsuleUnlocked(capsule, data) then
 		return fail("Эта капсула ещё закрыта!")
 	end
+	if not Formulas.capsuleInSeason(capsule, os.time()) then
+		return fail("Этот сезон закончился 🎃")
+	end
 	local now = os.clock()
 	-- Небольшой запас на пинг.
 	local mods = EventService.mods()
@@ -154,7 +157,7 @@ local function craft(player, capsuleId, silent)
 	end
 	data.pity[capsule.id] = pity
 
-	local creature = Formulas.randomCreatureOf(rarityId, rng)
+	local creature = Formulas.randomCreatureOf(rarityId, rng, capsule.season)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 
 	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost)
