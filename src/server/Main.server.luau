@@ -27,6 +27,7 @@ local SkinService = require(Services.SkinService)
 local SettingsService = require(Services.SettingsService)
 local SocialService = require(Services.SocialService)
 local WheelService = require(Services.WheelService)
+local AnalyticsService = require(Services.AnalyticsService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -87,5 +88,6 @@ SkinService.init()
 SettingsService.init()
 SocialService.init()
 WheelService.init()
+AnalyticsService.init()
 
 print("🧠 Brainrot Factory запущена! 🤌")

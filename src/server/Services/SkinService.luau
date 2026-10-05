@@ -8,6 +8,7 @@ local Remotes = require(Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local PlotService = require(script.Parent.PlotService)
 local TradeService = require(script.Parent.TradeService)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 
 -- Смена скина пересобирает модель (и кнопку «Украсть»), поэтому не чаще раза
 -- в APPLY_COOLDOWN секунд — иначе можно было бы «сбивать» воров.
@@ -38,6 +39,7 @@ local function buy(player, skinId)
 		return
 	end
 	data.coins -= skin.price
+	AnalyticsService.coins(player, false, skin.price, "Skin")
 	data.skins[skin.id] = true
 	Remotes.Notify:FireClient(player, "🎨 Куплен скин " .. skin.name .. "! Надень его на брейнрота", GOOD)
 	Remotes.Sfx:FireClient(player, "success")

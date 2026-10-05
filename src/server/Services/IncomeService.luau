@@ -11,6 +11,7 @@ local Remotes = require(Shared.Remotes)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local EventService = require(script.Parent.EventService)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local IncomeService = {}
 
@@ -29,6 +30,7 @@ local function giveOfflineIncome(player)
 		return
 	end
 	data.coins += amount
+	AnalyticsService.coins(player, true, amount, "Offline")
 	data.totalEarned += amount
 	DataService.markDirty(player)
 	task.delay(2, function()
@@ -57,6 +59,7 @@ function IncomeService.init()
 				if data and #data.creatures > 0 then
 					local income = Formulas.totalIncome(data, MonetizationService.passes(player), mods)
 					data.coins += income
+					AnalyticsService.coins(player, true, income, "Income")
 					data.totalEarned += income
 					DataService.markDirty(player)
 				end

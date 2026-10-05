@@ -15,6 +15,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local Actions = require(script.Parent.Actions)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local EventService = require(script.Parent.EventService)
 
 local FactoryService = {}
@@ -140,6 +141,7 @@ local function craft(player, capsuleId, silent)
 	lastCraft[player] = now
 	fullWarned[player] = nil
 	data.coins -= capsule.cost
+	AnalyticsService.coins(player, false, capsule.cost, "Capsule")
 	data.stats.crafted += 1
 
 	local luck = Formulas.luck(data, passes, os.time(), mods)
@@ -182,6 +184,7 @@ local function sell(player, uid)
 			local value = Formulas.sellValue(entry)
 			table.remove(data.creatures, index)
 			data.coins += value
+			AnalyticsService.coins(player, true, value, "Sell")
 			data.stats.sold += 1
 			Actions.fire(player, "sell", 1)
 			Remotes.Notify:FireClient(player, "Продано за " .. Format.coins(value), GOOD)
@@ -212,6 +215,7 @@ local function sellRarity(player, rarityId)
 		return
 	end
 	data.coins += total
+	AnalyticsService.coins(player, true, total, "Sell")
 	data.stats.sold += count
 	Actions.fire(player, "sell", count)
 	Remotes.Notify:FireClient(player, "Продано " .. count .. " шт. за " .. Format.coins(total), GOOD)

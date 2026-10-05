@@ -13,6 +13,7 @@ local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
 local Actions = require(script.Parent.Actions)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local ProgressionService = {}
 
@@ -69,6 +70,7 @@ local function buyUpgrade(player, upgradeId)
 		return
 	end
 	data.coins -= cost
+	AnalyticsService.coins(player, false, cost, "Upgrade")
 	data.upgrades[upgrade.id] = current + 1
 	Remotes.Notify:FireClient(player, "⬆️ " .. upgrade.name .. ": уровень " .. (current + 1), GOOD)
 	Actions.fire(player, "upgrade", 1)
@@ -96,6 +98,8 @@ local function rebirth(player)
 	end
 
 	data.rebirths += 1
+	AnalyticsService.coins(player, false, data.coins, "Rebirth")
+	AnalyticsService.event(player, "Rebirth", 1)
 	data.coins = Formulas.START_COINS
 	data.creatures = {}
 	data.upgrades = { speed = 0, luck = 0, slots = 0 }

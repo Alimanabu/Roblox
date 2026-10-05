@@ -11,6 +11,7 @@ local Format = require(Shared.Util.Format)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local FactoryService = require(script.Parent.FactoryService)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local RewardService = {}
 
@@ -23,6 +24,7 @@ function RewardService.grant(player, data, reward)
 		coins += Daily.coinsFor(income, reward.coinsMinutes)
 	end
 	if coins > 0 then
+		AnalyticsService.coins(player, true, coins, "Reward")
 		data.coins += coins
 		data.totalEarned += coins
 		table.insert(parts, "💰 " .. Format.coins(coins))
