@@ -190,7 +190,7 @@ end
 local Base = { title = "🧠 Моя база" }
 
 function Base.signature(state)
-	local parts = { state.slots, state.incomeMultiplier }
+	local parts = { state.slots, state.incomeMultiplier, state.social.bonus }
 	for _, entry in ipairs(state.creatures) do
 		table.insert(parts, entry.uid)
 	end
@@ -205,6 +205,21 @@ function Base.build(content, state)
 		Text = string.format("Места: %d/%d  •  Доход: %s/с", #state.creatures, state.slots, Format.coins(state.income)),
 		TextColor3 = C.Coins,
 		LayoutOrder = 0,
+		Parent = content,
+	})
+	local social = state.social
+	local bonusParts = {
+		string.format("👥 Друзья на сервере: %d/4 (+%d%%)", social.friends, social.friends * 10),
+		social.premium and "💎 Premium +10%" or "💎 Premium: +10%",
+	}
+	if social.groupEnabled then
+		table.insert(bonusParts, social.group and "⭐ Группа +10%" or "⭐ Вступи в группу: +10%")
+	end
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 22),
+		Text = table.concat(bonusParts, "   "),
+		TextColor3 = C.Good,
+		LayoutOrder = 1,
 		Parent = content,
 	})
 

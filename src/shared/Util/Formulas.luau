@@ -62,6 +62,8 @@ function Formulas.incomeMultiplier(data, passes, mods)
 	if passes.VIP then
 		mult *= 2
 	end
+	-- Бонус за друзей / группу / Premium (считает сервер, см. SocialService).
+	mult *= 1 + (passes.socialBonus or 0)
 	return mult
 end
 

@@ -29,8 +29,18 @@ local function refreshPasses(player)
 			end
 		end
 	end
+	-- Бонус за друзей хранится в той же таблице — не теряем его при обновлении.
+	owned.socialBonus = ownedPasses[player] and ownedPasses[player].socialBonus or nil
 	ownedPasses[player] = owned
 	DataService.markDirty(player)
+end
+
+function MonetizationService.setSocialBonus(player, bonus)
+	if not player.Parent then
+		return
+	end
+	ownedPasses[player] = ownedPasses[player] or {}
+	ownedPasses[player].socialBonus = bonus > 0 and bonus or nil
 end
 
 -- Выдаёт содержимое разовой покупки. Возвращает true, если выдали.
