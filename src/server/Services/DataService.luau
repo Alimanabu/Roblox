@@ -12,6 +12,11 @@ local DataService = {}
 
 local STORE_NAME = "BrainrotFactory_v1"
 local AUTOSAVE_INTERVAL = 60
+-- Блокировка сессии: пока игрок на одном сервере, другой сервер не может загрузить
+-- его прогресс (защита от дюпа при быстром перезаходе). Если сервер упал и не снял
+-- блокировку, она сама истекает через SESSION_TIMEOUT секунд.
+local SESSION_TIMEOUT = 180
+local SESSION_ATTEMPTS = 8
 local MAX_RECEIPTS = 50
 
 local store = nil
@@ -107,7 +112,15 @@ function DataService.sendNow(player)
 	end
 end
 
-function DataService.save(player)
+local function sessionOwnedByOther(saved)
+	local session = type(saved) == "table" and saved.session
+	return type(session) == "table"
+		and session.jobId ~= game.JobId
+		and os.time() - (session.time or 0) < SESSION_TIMEOUT
+end
+
+-- release = true, когда игрок уходит: снимаем блокировку сессии.
+function DataService.save(player, release)
 	local data = profiles[player]
 	if not data or not store then
 		return
@@ -129,14 +142,60 @@ function DataService.save(player)
 		end
 	end
 
+	toSave.session = if release then nil else { jobId = game.JobId, time = os.time() }
+
+	local stolenSession = false
 	local ok, err = withRetries(function()
-		return store:UpdateAsync(keyFor(player), function()
+		return store:UpdateAsync(keyFor(player), function(saved)
+			if sessionOwnedByOther(saved) then
+				-- Прогресс уже открыт другим сервером — не затираем его.
+				stolenSession = true
+				return nil
+			end
 			return toSave
 		end)
 	end)
 	if not ok then
 		warn("[DataService] Не удалось сохранить", player.Name, err)
+	elseif stolenSession then
+		warn("[DataService] Сессию", player.Name, "занял другой сервер, сохранение пропущено")
 	end
+end
+
+-- Загружает прогресс и ставит блокировку сессии.
+-- Возвращает ok, data (data == nil для нового игрока).
+local function loadWithLock(player)
+	local key = keyFor(player)
+	for attempt = 1, SESSION_ATTEMPTS do
+		local locked = false
+		local loaded = nil
+		local ok, err = pcall(function()
+			store:UpdateAsync(key, function(saved)
+				if sessionOwnedByOther(saved) then
+					locked = true
+					return nil
+				end
+				saved = type(saved) == "table" and saved or {}
+				saved.session = { jobId = game.JobId, time = os.time() }
+				loaded = saved
+				return saved
+			end)
+		end)
+		if ok and not locked then
+			return true, loaded
+		end
+		if not ok then
+			warn("[DataService] Ошибка загрузки", player.Name, err)
+			if RunService:IsStudio() then
+				return false, nil
+			end
+		end
+		if not player.Parent then
+			return false, nil
+		end
+		task.wait(if locked then 5 else attempt * 1.5)
+	end
+	return false, nil
 end
 
 -- Возвращает true, если покупка с этим receiptId уже была выдана.
@@ -154,9 +213,7 @@ end
 local function onPlayerAdded(player)
 	local data
 	if store then
-		local ok, result = withRetries(function()
-			return store:GetAsync(keyFor(player))
-		end)
+		local ok, result = loadWithLock(player)
 		if ok then
 			data = result
 		elseif RunService:IsStudio() then
@@ -165,12 +222,24 @@ local function onPlayerAdded(player)
 			store = nil
 		else
 			-- Не даём играть с пустым профилем, иначе затрём настоящий прогресс.
-			player:Kick("Не получилось загрузить прогресс. Перезайди, пожалуйста!")
+			player:Kick("Не получилось загрузить прогресс (возможно, ты ещё открыт на другом сервере). Перезайди через минуту!")
 			return
 		end
 	end
 
 	if not player.Parent then
+		-- Игрок ушёл, пока грузился: снимаем блокировку, ничего не меняя.
+		if store and data then
+			pcall(function()
+				store:UpdateAsync(keyFor(player), function(saved)
+					if type(saved) == "table" and not sessionOwnedByOther(saved) then
+						saved.session = nil
+						return saved
+					end
+					return nil
+				end)
+			end)
+		end
 		return
 	end
 
@@ -182,7 +251,7 @@ end
 
 local function onPlayerRemoving(player)
 	if profiles[player] then
-		DataService.save(player)
+		DataService.save(player, true)
 	end
 	profiles[player] = nil
 	dirty[player] = nil
@@ -223,7 +292,7 @@ function DataService.init()
 		for player in pairs(profiles) do
 			pending += 1
 			task.spawn(function()
-				DataService.save(player)
+				DataService.save(player, true)
 				pending -= 1
 			end)
 		end
