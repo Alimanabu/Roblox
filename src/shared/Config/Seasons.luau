@@ -28,6 +28,10 @@ for _, season in ipairs(Seasons.List) do
 end
 
 function Seasons.isActive(id, time)
+	-- Сезон, включённый вручную через панель «🛠 Тест».
+	if workspace and workspace:GetAttribute("ForcedSeason") == id then
+		return true
+	end
 	local season = Seasons.ById[id]
 	return season ~= nil and time >= season.startsAt and time < season.endsAt
 end

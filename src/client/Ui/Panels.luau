@@ -55,6 +55,31 @@ local function list(parent, padding)
 	})
 end
 
+-- Кнопка с подтверждением: первое нажатие спрашивает «Точно?», второе (за 3 с) выполняет.
+local function confirmButton(props, confirmText, action)
+	local normalText = props.Text
+	local normalColor = props.Color
+	local button = Theme.button(props)
+	local armedUntil = 0
+	button.Activated:Connect(function()
+		if os.clock() < armedUntil then
+			armedUntil = 0
+			action()
+			return
+		end
+		armedUntil = os.clock() + 3
+		button.Text = confirmText
+		button.BackgroundColor3 = C.Gold
+		task.delay(3, function()
+			if button.Parent and os.clock() >= armedUntil then
+				button.Text = normalText
+				button.BackgroundColor3 = normalColor or C.Accent
+			end
+		end)
+	end)
+	return button
+end
+
 local function creatureName(entry)
 	local creature = Creatures.get(entry.id)
 	local mutation = Mutations.get(entry.mut)
@@ -277,15 +302,21 @@ function Base.build(content, state)
 					Remotes.Fuse:FireServer(rarity.id)
 				end)
 			end
-			Theme.button({
+			local sellAll = function()
+				Remotes.SellRarity:FireServer(rarity.id)
+			end
+			local sellAllProps = {
 				Size = UDim2.new(0.3, -4, 1, 0),
 				Position = UDim2.new(0.7, 4, 0, 0),
 				Text = "💰 Продать всех",
 				Color = C.Bad,
 				Parent = row,
-			}, function()
-				Remotes.SellRarity:FireServer(rarity.id)
-			end)
+			}
+			if rarity.rank >= 5 then
+				confirmButton(sellAllProps, "Точно? Нажми ещё", sellAll)
+			else
+				Theme.button(sellAllProps, sellAll)
+			end
 			row.Parent = content
 		end
 	end
@@ -330,15 +361,22 @@ function Base.build(content, state)
 				TextColor3 = C.Good,
 				Parent = row,
 			})
-			Theme.button({
+			local sell = function()
+				Remotes.Sell:FireServer(entry.uid)
+			end
+			local sellProps = {
 				Size = UDim2.new(0.25, -4, 1, 0),
 				Position = UDim2.new(0.75, 4, 0, 0),
 				Text = "Продать " .. Format.coins(Formulas.sellValue(entry)),
 				Color = C.Bad,
 				Parent = row,
-			}, function()
-				Remotes.Sell:FireServer(entry.uid)
-			end)
+			}
+			-- Редких (Аура и выше) и мутантов продаём только с подтверждением.
+			if rarity.rank >= 5 or entry.mut ~= "normal" then
+				confirmButton(sellProps, "Точно продать?", sell)
+			else
+				Theme.button(sellProps, sell)
+			end
 			row.Parent = content
 		end
 	end
@@ -432,13 +470,13 @@ function Rebirth.build(content, state)
 		LayoutOrder = 1,
 		Parent = content,
 	})
-	Theme.button({
+	confirmButton({
 		Size = UDim2.new(0.6, 0, 0, 56),
 		Text = "♻️ ПЕРЕРОДИТЬСЯ",
 		Color = (levelOk and coinsOk) and C.Purple or C.CardLocked,
 		LayoutOrder = 2,
 		Parent = content,
-	}, function()
+	}, "⚠️ Точно? Нажми ещё раз", function()
 		Remotes.Rebirth:FireServer()
 	end)
 end
@@ -1270,6 +1308,9 @@ local ADMIN_BUTTONS = {
 	{ "🧬 Мутаген", "event", "mutant_fog" },
 	{ "⚡ Турбо", "event", "turbo" },
 	{ "🤌 Минута 67", "event", "minute67" },
+	{ "🎃 Сезон Хэллоуин", "season", "halloween" },
+	{ "🎄 Сезон Новый год", "season", "newyear" },
+	{ "Выключить сезон", "season", "" },
 	{ "📚 Пропустить обучение", "skipTutorial" },
 	{ "🎁 Сбросить награды дня", "resetDaily" },
 	{ "⚠️ СБРОС ПРОГРЕССА", "reset" },

@@ -74,6 +74,20 @@ function COMMANDS.event(player, data, eventId)
 	return "Запущен ивент " .. event.name .. " на 2 минуты"
 end
 
+function COMMANDS.season(player, data, seasonId)
+	if seasonId == "" then
+		workspace:SetAttribute("ForcedSeason", nil)
+		return "Ручной сезон выключен"
+	end
+	local Seasons = require(Shared.Config.Seasons)
+	local season = type(seasonId) == "string" and Seasons.ById[seasonId]
+	if not season then
+		return nil
+	end
+	workspace:SetAttribute("ForcedSeason", season.id)
+	return "Включён сезон " .. season.name .. " (до выключения)"
+end
+
 function COMMANDS.skipTutorial(player, data)
 	data.tutorial.step = 999
 	return "Обучение пропущено"
