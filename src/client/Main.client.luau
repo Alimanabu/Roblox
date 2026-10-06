@@ -212,6 +212,12 @@ RunService.RenderStepped:Connect(function()
 			local ready = (plot:GetAttribute("LockReadyAt") or 0) <= serverNow
 			lockPrompt.Enabled = isMine and ready and (not locked or shieldOnly)
 		end
+		-- Табличка стройки: этажи покупает только хозяин.
+		local buildSign = plot:FindFirstChild("BuildSign")
+		local buildPrompt = buildSign and buildSign:FindFirstChild("BuildPrompt")
+		if buildPrompt then
+			buildPrompt.Enabled = isMine and plot:GetAttribute("CanBuild") == true
+		end
 		local folder = plot:FindFirstChild("Creatures")
 		if folder then
 			for _, model in ipairs(folder:GetChildren()) do

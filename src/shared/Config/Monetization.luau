@@ -7,7 +7,7 @@ local Monetization = {}
 Monetization.GamePasses = {
 	{ key = "VIP", id = 0, name = "VIP", desc = "x2 монет навсегда", price = 199 },
 	{ key = "LUCKY", id = 0, name = "Счастливчик", desc = "x1.5 удачи навсегда", price = 249 },
-	{ key = "BIG_BASE", id = 0, name = "Огромная база", desc = "+10 мест на базе", price = 149 },
+	{ key = "BIG_BASE", id = 0, name = "Огромная база", desc = "1 этаж сразу + 2 этаж за полцены", price = 149 },
 	{ key = "AUTO_CRAFT", id = 0, name = "Авто-фабрика", desc = "Машина сама создаёт брейнротов", price = 299 },
 	{ key = "FAST_MACHINE", id = 0, name = "Турбо-машина", desc = "Машина работает в 2 раза быстрее", price = 99 },
 }

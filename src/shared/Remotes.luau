@@ -10,6 +10,7 @@ local EVENTS = {
 	"SellRarity", -- (rarityId) продать всех этой редкости
 	"Fuse", -- (rarityId) скрестить 3 брейнрота одной редкости
 	"BuyUpgrade", -- (upgradeId)
+	"BuyFloor", -- () построить следующий этаж базы
 	"Rebirth", -- ()
 	"SetAutoCraft", -- (capsuleId | nil)
 	"ClaimDaily", -- () забрать ежедневную награду

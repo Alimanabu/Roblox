@@ -27,14 +27,6 @@ Upgrades.List = {
 		baseCost = 5000,
 		costMult = 5,
 	},
-	{
-		id = "slots",
-		name = "Расширение базы",
-		desc = "+1 место для брейнрота на базе.",
-		maxLevel = 22,
-		baseCost = 200,
-		costMult = 2.2,
-	},
 }
 
 Upgrades.ById = {}

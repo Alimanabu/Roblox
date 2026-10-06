@@ -12,6 +12,7 @@ local Formulas = require(Shared.Util.Formulas)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
+local MonetizationService = require(script.Parent.MonetizationService)
 local Actions = require(script.Parent.Actions)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
@@ -22,6 +23,7 @@ local BAD = Color3.fromRGB(255, 110, 110)
 local GOLD = Color3.fromRGB(255, 220, 80)
 
 ProgressionService.RebirthDone = Instance.new("BindableEvent")
+ProgressionService.FloorBuilt = Instance.new("BindableEvent")
 
 function ProgressionService.addXp(player, data, amount)
 	if data.level >= Levels.MAX_LEVEL then
@@ -77,6 +79,37 @@ local function buyUpgrade(player, upgradeId)
 	DataService.markDirty(player)
 end
 
+-- Постройка следующего этажа базы. Этажи остаются навсегда, даже после перерождения.
+function ProgressionService.buyFloor(player)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	local passes = MonetizationService.passes(player)
+	local floors = Formulas.floors(data, passes)
+	local cost = Formulas.floorCost(floors, passes)
+	if not cost then
+		Remotes.Notify:FireClient(player, "Все этажи уже построены!", BAD)
+		return
+	end
+	if data.coins < cost then
+		Remotes.Notify:FireClient(player, "Не хватает монет: нужно " .. Format.coins(cost), BAD)
+		return
+	end
+	data.coins -= cost
+	data.floors = floors + 1
+	AnalyticsService.coins(player, false, cost, "Floor")
+	local floor = Formulas.Floors[data.floors]
+	Remotes.Notify:FireClient(player, "🏗 Построен " .. floor.name .. "! Теперь мест: " .. Formulas.slots(data, passes), GOOD)
+	Remotes.Sfx:FireClient(player, "levelup")
+	if data.floors >= Formulas.MAX_FLOORS then
+		Remotes.Notify:FireAllClients("🏗 " .. player.DisplayName .. " достроил базу до " .. floor.name .. "а!", GOLD, true)
+	end
+	Actions.fire(player, "floor", data.floors)
+	DataService.markDirty(player)
+	ProgressionService.FloorBuilt:Fire(player)
+end
+
 local function rebirth(player)
 	local data = DataService.get(player)
 	if not data then
@@ -102,7 +135,7 @@ local function rebirth(player)
 	AnalyticsService.event(player, "Rebirth", 1)
 	data.coins = Formulas.START_COINS
 	data.creatures = {}
-	data.upgrades = { speed = 0, luck = 0, slots = 0 }
+	data.upgrades = { speed = 0, luck = 0 }
 
 	local title = Rebirths.titleFor(data.rebirths)
 	Remotes.Notify:FireAllClients("♻️ " .. player.DisplayName .. " переродился и стал «" .. title .. "»!", GOLD, true)
@@ -114,6 +147,7 @@ end
 function ProgressionService.init()
 	Remotes.BuyUpgrade.OnServerEvent:Connect(buyUpgrade)
 	Remotes.Rebirth.OnServerEvent:Connect(rebirth)
+	Remotes.BuyFloor.OnServerEvent:Connect(ProgressionService.buyFloor)
 
 	-- Титул над головой.
 	local function watchCharacter(player)

@@ -98,6 +98,11 @@ function COMMANDS.skipTutorial(player, data)
 	return "Обучение пропущено"
 end
 
+function COMMANDS.removeFloors(player, data)
+	data.floors = 0
+	return "Этажи снесены: снова 5 мест на земле"
+end
+
 function COMMANDS.resetDaily(player, data)
 	data.daily.lastClaimDay = 0
 	data.quests.day = 0

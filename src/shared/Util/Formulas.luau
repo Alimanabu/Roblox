@@ -17,8 +17,6 @@ local NO_MODS = { luck = 1, income = 1, mutation = 1, speed = 1, secret = 1, mut
 Formulas.NO_MODS = NO_MODS
 
 Formulas.START_COINS = 150 -- хватает на первую капсулу
-Formulas.BASE_SLOTS = 8
-Formulas.BIG_BASE_SLOTS = 10
 Formulas.BASE_CRAFT_TIME = 3
 Formulas.MIN_CRAFT_TIME = 0.3
 Formulas.SELL_SECONDS = 20 -- брейнрот продаётся за 20 секунд своего дохода
@@ -26,12 +24,89 @@ Formulas.FUSE_COUNT = 3 -- сколько одинаковых по редкос
 Formulas.OFFLINE_RATE = 0.5 -- 50% дохода, пока игрока нет
 Formulas.OFFLINE_MAX_SECONDS = 3 * 60 * 60
 
-function Formulas.slots(data, passes)
-	local slots = Formulas.BASE_SLOTS + (data.upgrades.slots or 0)
+-- Этажи базы. Сначала брейнроты стоят прямо на земле, потом этажи покупаются.
+-- Сильнейшие брейнроты встают наверх: там больше дохода и их труднее украсть.
+-- hp — сколько раз вор должен шлёпнуть брейнрота, прежде чем его можно схватить.
+Formulas.FLOOR_SLOTS = 10
+Formulas.Floors = {
+	[0] = { name = "Земля", slots = 5, hp = 5, income = 1, stealTime = 1 },
+	{ name = "1 этаж", cost = 100_000, slots = 10, hp = 10, income = 1, stealTime = 1 },
+	{ name = "2 этаж", cost = 100_000_000, slots = 10, hp = 20, income = 2, stealTime = 2 },
+}
+Formulas.MAX_FLOORS = #Formulas.Floors
+
+-- Сколько этажей построено (геймпасс «Огромная база» сразу даёт 1 этаж).
+function Formulas.floors(data, passes)
+	local floors = math.clamp(data.floors or 0, 0, Formulas.MAX_FLOORS)
 	if passes.BIG_BASE then
-		slots += Formulas.BIG_BASE_SLOTS
+		floors = math.max(floors, 1)
+	end
+	return floors
+end
+
+-- Цена следующего этажа (nil — всё построено). С «Огромной базой» 2 этаж за полцены.
+function Formulas.floorCost(floors, passes)
+	local floor = Formulas.Floors[floors + 1]
+	if not floor then
+		return nil
+	end
+	if passes.BIG_BASE and floors + 1 >= 2 then
+		return math.floor(floor.cost / 2)
+	end
+	return floor.cost
+end
+
+local function slotsForFloors(floors)
+	if floors == 0 then
+		return Formulas.Floors[0].slots
+	end
+	local slots = 0
+	for level = 1, floors do
+		slots += Formulas.Floors[level].slots
 	end
 	return slots
+end
+
+function Formulas.slots(data, passes)
+	return slotsForFloors(Formulas.floors(data, passes))
+end
+
+-- Какой этаж у места: места 1..10 — внизу (земля или 1 этаж), 11..20 — на 2 этаже.
+function Formulas.floorOfPad(pad, floors)
+	if pad > Formulas.FLOOR_SLOTS then
+		return 2
+	end
+	return math.min(floors, 1)
+end
+
+-- Раскладка брейнротов по местам. Сильнейшие — наверх.
+-- Возвращает список { entry, pad, floor } (кто не влез — без pad) и сколько мест внизу и наверху.
+-- Внизу мест может быть больше лимита: например, брейнрот вернулся после неудачной кражи.
+function Formulas.layout(creatures, floors)
+	local sorted = table.clone(creatures)
+	table.sort(sorted, function(a, b)
+		local ia, ib = Formulas.creatureBaseIncome(a), Formulas.creatureBaseIncome(b)
+		if ia == ib then
+			return tostring(a.uid) < tostring(b.uid)
+		end
+		return ia > ib
+	end)
+	local upper = floors >= 2 and Formulas.FLOOR_SLOTS or 0
+	local onTop = math.min(#sorted, upper)
+	local lowerSlots = floors == 0 and Formulas.Floors[0].slots or Formulas.FLOOR_SLOTS
+	local lower = math.min(math.max(lowerSlots, #sorted - onTop), Formulas.FLOOR_SLOTS)
+
+	local places = {}
+	for index, entry in ipairs(sorted) do
+		local pad
+		if index <= onTop then
+			pad = Formulas.FLOOR_SLOTS + index
+		elseif index - onTop <= lower then
+			pad = index - onTop
+		end
+		table.insert(places, { entry = entry, pad = pad, floor = pad and Formulas.floorOfPad(pad, floors) or nil })
+	end
+	return places, lower, upper
 end
 
 function Formulas.craftTime(data, passes, mods)
@@ -77,14 +152,18 @@ function Formulas.creatureBaseIncome(entry)
 	return creature.income * Mutations.get(entry.mut).mult
 end
 
-function Formulas.creatureIncome(entry, data, passes, mods)
-	return Formulas.creatureBaseIncome(entry) * Formulas.incomeMultiplier(data, passes, mods)
+-- floor — этаж, на котором стоит брейнрот (наверху доход больше).
+function Formulas.creatureIncome(entry, data, passes, mods, floor)
+	local floorMult = floor and Formulas.Floors[floor].income or 1
+	return Formulas.creatureBaseIncome(entry) * floorMult * Formulas.incomeMultiplier(data, passes, mods)
 end
 
 function Formulas.totalIncome(data, passes, mods)
 	local total = 0
-	for _, entry in ipairs(data.creatures) do
-		total += Formulas.creatureBaseIncome(entry)
+	local places = Formulas.layout(data.creatures, Formulas.floors(data, passes))
+	for _, place in ipairs(places) do
+		local floorMult = place.floor and Formulas.Floors[place.floor].income or 1
+		total += Formulas.creatureBaseIncome(place.entry) * floorMult
 	end
 	return total * Formulas.incomeMultiplier(data, passes, mods)
 end

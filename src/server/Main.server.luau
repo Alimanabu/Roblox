@@ -55,6 +55,8 @@ DataService.setSnapshotBuilder(function(player, data)
 		rebirthTitle = Rebirths.titleFor(data.rebirths),
 		creatures = data.creatures,
 		slots = Formulas.slots(data, passes),
+		floors = Formulas.floors(data, passes),
+		floorCost = Formulas.floorCost(Formulas.floors(data, passes), passes),
 		craftTime = Formulas.craftTime(data, passes, mods),
 		luck = Formulas.luck(data, passes, now, mods),
 		luckBoostLeft = math.max(0, (data.boosts.luckUntil or 0) - now),

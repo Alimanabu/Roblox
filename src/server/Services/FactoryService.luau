@@ -151,7 +151,7 @@ local function craft(player, capsuleId, silent)
 	end
 	if #data.creatures >= Formulas.slots(data, passes) then
 		if not silent or not fullWarned[player] then
-			Remotes.Notify:FireClient(player, "База заполнена! Продай или скрести брейнротов, или расширь базу.", BAD)
+			Remotes.Notify:FireClient(player, "База заполнена! Продай или скрести брейнротов, или построй этаж 🏗", BAD)
 		end
 		fullWarned[player] = true
 		return false

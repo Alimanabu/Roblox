@@ -213,6 +213,69 @@ do
 	check(upsetChance("normie", "god") == 0, "Нормис не должен побеждать Бога")
 end
 
+-- 5j. Этажи: 5 мест на земле, 10 с 1 этажом, 20 с 2 этажом; сильнейшие наверху с x2 доходом.
+do
+	local function fakeData(floors, creatures)
+		return { floors = floors, creatures = creatures, rebirths = 0, upgrades = {} }
+	end
+	check(Formulas.slots(fakeData(0, {}), {}) == 5, "на земле 5 мест")
+	check(Formulas.slots(fakeData(1, {}), {}) == 10, "1 этаж — 10 мест")
+	check(Formulas.slots(fakeData(2, {}), {}) == 20, "2 этаж — 20 мест")
+	check(Formulas.slots(fakeData(0, {}), { BIG_BASE = true }) == 10, "Огромная база сразу даёт 1 этаж")
+	check(Formulas.floorCost(0, {}) == 100_000, "1 этаж стоит $100K")
+	check(Formulas.floorCost(1, {}) == 100_000_000, "2 этаж стоит $100M")
+	check(Formulas.floorCost(1, { BIG_BASE = true }) == 50_000_000, "с Огромной базой 2 этаж за полцены")
+	check(Formulas.floorCost(2, {}) == nil, "больше 2 этажей нет")
+
+	local ids = {}
+	for _, c in ipairs(Creatures.List) do
+		if not c.season then
+			table.insert(ids, c.id)
+		end
+	end
+	local creatures = {}
+	for i = 1, 13 do
+		table.insert(creatures, { uid = tostring(i), id = ids[i], mut = "normal" })
+	end
+	local places, lower, upper = Formulas.layout(creatures, 2)
+	check(upper == 10 and lower == 10, "на 2 этажах по 10 мест")
+	local strongestOnTop = true
+	local usedPads = {}
+	for index, place in ipairs(places) do
+		if index <= 10 then
+			strongestOnTop = strongestOnTop and place.floor == 2 and place.pad > 10
+		else
+			strongestOnTop = strongestOnTop and place.floor == 1 and place.pad <= 10
+		end
+		check(not usedPads[place.pad], "два брейнрота на одном месте")
+		usedPads[place.pad] = true
+		if index > 1 then
+			check(Formulas.creatureBaseIncome(place.entry) <= Formulas.creatureBaseIncome(places[index - 1].entry), "раскладка не по силе")
+		end
+	end
+	check(strongestOnTop, "сильнейшие должны стоять на 2 этаже")
+
+	local plain = 0
+	local bonus = 0
+	for index, place in ipairs(places) do
+		local income = Formulas.creatureBaseIncome(place.entry)
+		plain += income
+		if index <= 10 then
+			bonus += income
+		end
+	end
+	local total = Formulas.totalIncome(fakeData(2, creatures), {})
+	check(math.abs(total - (plain + bonus)) < 1e-6 * total, "наверху доход x2")
+	check(math.abs(Formulas.totalIncome(fakeData(1, creatures), {}) - plain) < 1e-6 * plain, "на 1 этаже доход x1")
+
+	-- Лишние брейнроты (вернули после кражи) тоже видны, пока есть место внизу.
+	local _, groundLower = Formulas.layout({ table.unpack(creatures, 1, 7) }, 0)
+	check(groundLower == 7, "лишние брейнроты на земле получают места")
+	local overflow = Formulas.layout(creatures, 0)
+	check(overflow[11].pad == nil and overflow[10].pad == 10, "больше 10 внизу не помещается")
+	check(Formulas.Floors[2].hp > Formulas.Floors[1].hp and Formulas.Floors[1].hp > Formulas.Floors[0].hp, "наверху больше ❤️")
+end
+
 -- 5f. Гарантия: разумные пороги у каждой капсулы.
 for _, capsule in ipairs(Capsules.List) do
 	local threshold = Formulas.pityThreshold(capsule)
@@ -268,7 +331,7 @@ local Upgrades = shared_require("Config/Upgrades")
 local Rebirths = shared_require("Config/Rebirths")
 local data = {
 	coins = Formulas.START_COINS, level = 1, xp = 0, rebirths = 0, creatures = {},
-	upgrades = { speed = 0, luck = 0, slots = 0 }, boosts = { luckUntil = 0 }, index = {},
+	upgrades = { speed = 0, luck = 0 }, boosts = { luckUntil = 0 }, index = {}, floors = 0,
 }
 local passes = {}
 local t = 0
@@ -291,6 +354,14 @@ while t < 6 * 3600 do
 			data.coins -= Upgrades.cost(upgrade.id, lvl)
 			data.upgrades[upgrade.id] = lvl + 1
 		end
+	end
+
+	-- Этажи: строим, когда стоят меньше половины монет. Перерождение их не сбрасывает.
+	local floorCost = Formulas.floorCost(data.floors, passes)
+	if floorCost and floorCost < data.coins * 0.5 then
+		data.coins -= floorCost
+		data.floors += 1
+		mark("этаж " .. data.floors)
 	end
 
 	local saving = data.level >= Rebirths.levelRequired(data.rebirths)
@@ -331,7 +402,7 @@ while t < 6 * 3600 do
 		data.rebirths += 1
 		data.coins = Formulas.START_COINS
 		data.creatures = {}
-		data.upgrades = { speed = 0, luck = 0, slots = 0 }
+		data.upgrades = { speed = 0, luck = 0 }
 		mark("перерождение " .. data.rebirths)
 	end
 end

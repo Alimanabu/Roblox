@@ -49,7 +49,8 @@ local function defaultData()
 		rebirths = 0,
 		creatures = {}, -- { { uid = "1", id = "bananito_ninjini", mut = "normal" } }
 		nextUid = 1,
-		upgrades = { speed = 0, luck = 0, slots = 0 },
+		upgrades = { speed = 0, luck = 0 },
+		floors = 0, -- построенные этажи базы (см. Formulas.Floors), не сбрасываются перерождением
 		boosts = { luckUntil = 0 },
 		index = {}, -- [creatureId] = true — открытые брейнроты (коллекция)
 		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0, mutants = 0, thievesSlapped = 0 },
@@ -296,7 +297,12 @@ local function onPlayerAdded(player)
 		return
 	end
 
+	-- Сохранения до этажей: там было минимум 8 мест, поэтому сразу дарим 1 этаж.
+	local beforeFloors = type(data) == "table" and data.coins ~= nil and data.floors == nil
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
+	if beforeFloors then
+		data.floors = 1
+	end
 	-- Старые сохранения: брейнроты без «происхождения» считаем своими.
 	for _, entry in ipairs(data.creatures) do
 		if entry.lineage == nil then

@@ -1,7 +1,9 @@
 -- Кража брейнротов с чужих баз.
 --
 -- Как это работает:
---   1. Подходишь к чужому брейнроту и зажимаешь F («Украсть»). Чем реже — тем дольше.
+--   1. Подходишь к чужому брейнроту и шлёпаешь его Шлёпалкой, пока не кончится ❤️
+--      (на земле 5, на 1 этаже 10, на 2 этаже 20). Брейнрот оглушён — зажимаешь F.
+--      Чем реже брейнрот и чем выше этаж — тем дольше держать F.
 --   2. Брейнрот у тебя над головой, ты бежишь медленнее и подсвечен красным.
 --   3. Добеги до своей базы за CARRY_TIME секунд — брейнрот твой.
 --   4. Хозяин может догнать и шлёпнуть Шлёпалкой — брейнрот вернётся к нему.
@@ -38,6 +40,8 @@ StealService.SLAP_RANGE = 9
 StealService.SLAP_COOLDOWN = 0.8
 StealService.SLAP_FORCE = 70
 StealService.TRAP_STUN_PER_LEVEL = 1.5
+StealService.STUN_TIME = 15 -- сколько секунд оглушённого брейнрота можно схватить
+StealService.REGEN_DELAY = 5 -- через сколько секунд без ударов ❤️ начинает восстанавливаться
 
 local BAD = Color3.fromRGB(255, 110, 110)
 local GOOD = Color3.fromRGB(120, 255, 120)
@@ -50,6 +54,10 @@ local lockReadyAt = {} -- [owner] = когда снова можно нажат�
 local lastSlap = {} -- [player] = os.clock()
 local closing = false -- сервер выключается: новые кражи запрещены
 local holdStart = {} -- [player] = { prompt, os.clock() }: сервер сам проверяет время удержания
+local damaged = setmetatable({}, { __mode = "k" }) -- [модель брейнрота] = true: ❤️ не полное
+local lastHit = setmetatable({}, { __mode = "k" }) -- [модель брейнрота] = os.clock() последнего удара
+local hitAlertAt = {} -- [owner] = os.clock(): не спамим хозяину «тебя бьют»
+local hintAt = {} -- [player] = os.clock(): подсказка «сначала шлёпни»
 
 local function now()
 	return workspace:GetServerTimeNow()
@@ -268,6 +276,17 @@ local function startSteal(thief, prompt)
 		return
 	end
 
+	-- Пока у брейнрота есть ❤️, его не схватить: сначала шлёпай.
+	local creatureModel = prompt.Parent and prompt.Parent.Parent
+	if not creatureModel or creatureModel:GetAttribute("StunnedUntil") == nil then
+		holdStart[thief] = nil
+		if not hintAt[thief] or os.clock() - hintAt[thief] > 2 then
+			hintAt[thief] = os.clock()
+			Remotes.Notify:FireClient(thief, "👋 Сначала выбей ❤️: шлёпай его Шлёпалкой!", WARN)
+		end
+		return
+	end
+
 	-- Защита от читеров: клиент мог «нажать» мгновенно или издалека.
 	local hold = holdStart[thief]
 	holdStart[thief] = nil
@@ -387,7 +406,95 @@ local function onLockPrompt(player, prompt)
 	Remotes.Sfx:FireClient(player, "lock")
 end
 
+-- Удар Шлёпалкой по чужому брейнроту: минус 1 ❤️. На нуле брейнрот оглушён и его можно украсть.
+local function hitBrainrot(player, root)
+	if carries[player] then
+		return
+	end
+	local facing = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	if facing.Magnitude < 0.01 then
+		return
+	end
+	facing = facing.Unit
+
+	local target, targetOwner, bestDistance
+	for _, owner in ipairs(Players:GetPlayers()) do
+		local plot = owner ~= player and PlotService.getPlot(owner)
+		if plot and not StealService.isLocked(owner) then
+			for _, model in ipairs(plot.model.Creatures:GetChildren()) do
+				local base = model:GetAttribute("BaseCFrame")
+				if base and (model:GetAttribute("Hp") or 0) > 0 then
+					local offset = base.Position - root.Position
+					local flat = Vector3.new(offset.X, 0, offset.Z)
+					local distance = flat.Magnitude
+					-- По высоте — только свой этаж: с земли до 2 этажа не дотянуться.
+					if
+						distance <= StealService.SLAP_RANGE
+						and math.abs(offset.Y) < 7
+						and (distance < 1 or flat.Unit:Dot(facing) > 0.2)
+						and (not bestDistance or distance < bestDistance)
+					then
+						target, targetOwner, bestDistance = model, owner, distance
+					end
+				end
+			end
+		end
+	end
+	if not target then
+		return
+	end
+
+	local hp = math.max(0, (target:GetAttribute("Hp") or 1) - 1)
+	target:SetAttribute("Hp", hp)
+	damaged[target] = true
+	lastHit[target] = os.clock()
+	Remotes.Sfx:FireClient(player, "slap")
+
+	local prompt = target.PrimaryPart and target.PrimaryPart:FindFirstChild("StealPrompt")
+	local name = prompt and prompt.ObjectText or "брейнрота"
+	if hp == 0 then
+		target:SetAttribute("StunnedUntil", now() + StealService.STUN_TIME)
+		Remotes.Notify:FireClient(player, "💫 " .. name .. " оглушён! Зажми F и хватай!", GOOD)
+		Remotes.Notify:FireClient(targetOwner, "💫 " .. name .. " оглушён, его сейчас украдут! Беги шлёпни вора!", BAD)
+		Remotes.Sfx:FireClient(targetOwner, "alarm")
+	elseif not hitAlertAt[targetOwner] or os.clock() - hitAlertAt[targetOwner] > 8 then
+		hitAlertAt[targetOwner] = os.clock()
+		Remotes.Notify:FireClient(targetOwner, "⚠️ " .. player.DisplayName .. " бьёт твоего " .. name .. "! ❤️ " .. hp, WARN)
+		Remotes.Sfx:FireClient(targetOwner, "alarm")
+	end
+	PlotService.refreshHp(target)
+end
+
+-- ❤️ брейнротов: оглушение проходит, без ударов здоровье восстанавливается.
+local function updateHp(t)
+	local clock = os.clock()
+	for model in pairs(damaged) do
+		if not model.Parent then
+			damaged[model] = nil
+		else
+			local maxHp = model:GetAttribute("MaxHp") or 1
+			local stunnedUntil = model:GetAttribute("StunnedUntil")
+			if stunnedUntil then
+				if t > stunnedUntil then
+					model:SetAttribute("StunnedUntil", nil)
+					model:SetAttribute("Hp", maxHp)
+					damaged[model] = nil
+					PlotService.refreshHp(model)
+				end
+			elseif clock - (lastHit[model] or 0) > StealService.REGEN_DELAY then
+				local hp = math.min(maxHp, (model:GetAttribute("Hp") or maxHp) + 1)
+				model:SetAttribute("Hp", hp)
+				if hp >= maxHp then
+					damaged[model] = nil
+				end
+				PlotService.refreshHp(model)
+			end
+		end
+	end
+end
+
 -- Шлёпалка: отталкивает игроков. Если шлёпнуть вора — он роняет брейнрота.
+-- По чужому брейнроту — снимает ему ❤️.
 local function slap(player)
 	local nowClock = os.clock()
 	if lastSlap[player] and nowClock - lastSlap[player] < StealService.SLAP_COOLDOWN then
@@ -426,12 +533,13 @@ local function slap(player)
 			end
 		end
 	end
+	hitBrainrot(player, root)
 end
 
 local function createSlapper()
 	local tool = Instance.new("Tool")
 	tool.Name = "Шлёпалка"
-	tool.ToolTip = "Шлёпни вора — он уронит брейнрота!"
+	tool.ToolTip = "Шлёпни вора — он уронит брейнрота! Шлёпай чужих брейнротов, чтобы украсть."
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
 
@@ -555,12 +663,15 @@ function StealService.init()
 		lockReadyAt[player] = nil
 		holdStart[player] = nil
 		lastSlap[player] = nil
+		hitAlertAt[player] = nil
+		hintAt[player] = nil
 	end)
 
 	task.spawn(function()
 		while true do
 			task.wait(0.2)
 			local t = now()
+			updateHp(t)
 
 			-- Замки: обновляем забор и выталкиваем чужаков.
 			for _, owner in ipairs(Players:GetPlayers()) do

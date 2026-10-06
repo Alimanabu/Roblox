@@ -263,8 +263,49 @@ end
 ---------------------------------------------------------------------------
 local Base = { title = "🧠 Моя база" }
 
+local function floorSignature(state)
+	return tostring(state.floors) .. ":" .. tostring(state.floorCost and state.coins >= state.floorCost)
+end
+
+-- Карточка этажей: что построено и кнопка «Построить» следующего этажа.
+local function floorCard(content, state, order)
+	local floors = state.floors or 0
+	local cost = state.floorCost
+	local box = card({ Size = UDim2.new(1, -10, 0, 70), LayoutOrder = order }, { Theme.padding(8), Theme.stroke(C.Gold, 2) })
+	local text
+	if cost then
+		local nextFloor = Formulas.Floors[floors + 1]
+		local perks = string.format("%d мест, ❤️%d", Formulas.FLOOR_SLOTS * (floors + 1), nextFloor.hp)
+		if nextFloor.income > 1 then
+			perks ..= ", доход x" .. nextFloor.income
+		end
+		text = string.format("🏗 Сейчас: %s (%d мест)\nДальше %s: %s", Formulas.Floors[floors].name, state.slots, nextFloor.name, perks)
+	else
+		local top = Formulas.Floors[Formulas.MAX_FLOORS]
+		text = string.format("🏆 База построена: %d мест\nНаверху ❤️%d и доход x%d", state.slots, top.hp, top.income)
+	end
+	Theme.label({
+		Size = UDim2.new(cost and 0.62 or 1, 0, 1, 0),
+		Text = text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = box,
+	})
+	if cost then
+		Theme.button({
+			Size = UDim2.new(0.38, -8, 1, 0),
+			Position = UDim2.new(0.62, 8, 0, 0),
+			Text = "Построить " .. Format.coins(cost),
+			Color = state.coins >= cost and C.Good or C.Bad,
+			Parent = box,
+		}, function()
+			Remotes.BuyFloor:FireServer()
+		end)
+	end
+	box.Parent = content
+end
+
 function Base.signature(state)
-	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet) }
+	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet), floorSignature(state) }
 	for _, entry in ipairs(state.creatures) do
 		table.insert(parts, entry.uid .. tostring(entry.nickname))
 	end
@@ -296,13 +337,14 @@ function Base.build(content, state)
 		LayoutOrder = 1,
 		Parent = content,
 	})
+	floorCard(content, state, 2)
 
 	if #state.creatures == 0 then
 		Theme.label({
 			Size = UDim2.new(1, -10, 0, 60),
 			Text = "Тут пусто! Иди на 🏭 Фабрику и создай первого брейнрота.",
 			TextColor3 = C.Muted,
-			LayoutOrder = 1,
+			LayoutOrder = 3,
 			Parent = content,
 		})
 		return
@@ -364,12 +406,11 @@ function Base.build(content, state)
 		Parent = content,
 	})
 
-	-- Список брейнротов, сильные сверху.
-	local sorted = table.clone(state.creatures)
-	table.sort(sorted, function(a, b)
-		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
-	end)
-	for order, entry in ipairs(sorted) do
+	-- Список брейнротов, сильные сверху (они же стоят на верхнем этаже).
+	local places = Formulas.layout(state.creatures, state.floors or 0)
+	for order, place in ipairs(places) do
+		local entry = place.entry
+		local floorInfo = place.floor and Formulas.Floors[place.floor]
 		local creature = Creatures.get(entry.id)
 		if creature then
 			local rarity = Rarities.get(creature.rarity)
@@ -399,14 +440,14 @@ function Base.build(content, state)
 			Theme.label({
 				Size = UDim2.new(0.42, 0, 0.4, 0),
 				Position = UDim2.fromScale(0, 0.6),
-				Text = colored(rarity.name, rarity.color),
+				Text = colored(rarity.name, rarity.color) .. (place.floor == 2 and colored("  ⭐ 2 этаж", C.Gold) or ""),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
 			Theme.label({
 				Size = UDim2.new(0.21, 0, 1, 0),
 				Position = UDim2.fromScale(0.42, 0),
-				Text = "+" .. Format.coins(Formulas.creatureBaseIncome(entry) * state.incomeMultiplier) .. "/с",
+				Text = "+" .. Format.coins(Formulas.creatureBaseIncome(entry) * (floorInfo and floorInfo.income or 1) * state.incomeMultiplier) .. "/с",
 				TextColor3 = C.Good,
 				Parent = row,
 			})
@@ -448,7 +489,7 @@ end
 local UpgradesPanel = { title = "⬆️ Улучшения фабрики" }
 
 function UpgradesPanel.signature(state)
-	local parts = {}
+	local parts = { floorSignature(state) }
 	for _, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
 		table.insert(parts, level .. ":" .. (state.coins >= Upgrades.cost(upgrade.id, level) and 1 or 0))
@@ -458,6 +499,7 @@ end
 
 function UpgradesPanel.build(content, state)
 	list(content, 10)
+	floorCard(content, state, 0)
 	for order, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
 		local maxed = level >= upgrade.maxLevel
@@ -517,7 +559,7 @@ function Rebirth.build(content, state)
 		"",
 		colored("Ты потеряешь:", C.Bad),
 		"монеты, брейнротов на базе и улучшения",
-		colored("(уровень и Индекс остаются)", C.Muted),
+		colored("(уровень, Индекс и этажи базы остаются)", C.Muted),
 		"",
 		(levelOk and "✅" or "❌") .. " Уровень " .. levelRequired .. " (у тебя " .. state.level .. ")",
 		(coinsOk and "✅" or "❌") .. " " .. Format.coins(cost),
@@ -963,11 +1005,12 @@ local Help = { title = "❓ Как играть" }
 local HELP_SECTIONS = {
 	{ "🏭 Фабрика", "Покупай мем-капсулы и создавай брейнротов. Чем популярнее тренд, тем реже он выпадает: Нормис → Лоу-ки → Ризз → Сигма → Аура → Скибиди → Брейнрот Бог → SIX SEVEN 🤌" },
 	{ "🧠 База", "Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий." },
+	{ "🏗 Этажи", "Сначала у тебя 5 мест прямо на земле. Построй 1 этаж за $100K (10 мест), потом 2 этаж за $100M (ещё 10 мест). Наверх встают самые сильные: там доход x2 и их труднее украсть. Строить — у жёлтой таблички на базе или в ⬆️ Улучшениях. Этажи остаются даже после перерождения." },
 	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
 	{ "🦎 Дикие брейнроты", "По карте бегают дикие брейнроты. Подойди и зажми E — кто первый поймал, того и брейнрот! Иногда появляются редкие — об этом узнает весь сервер." },
 	{ "✏️ Имена", "В 🧠 Базе нажми на имя брейнрота и придумай ему своё — его увидят все над твоей базой." },
 	{ "🐾 Питомец", "В 🧠 Базе нажми 🐾 у любого брейнрота — он будет бегать за тобой по всей карте. Пусть все видят твою легендарку!" },
-	{ "🦹 Кража", "Подойди к чужому брейнроту и зажми F. Беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
+	{ "🦹 Кража", "Подойди к чужому брейнроту и шлёпай его Шлёпалкой, пока не кончится ❤️ (на земле 5, на 1 этаже 10, на 2 этаже 20). Когда он оглушён 💫 — зажми F и беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
 	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
 	{ "⚔️ Аура-баттлы", "Вызови игрока или потренируйся с ботом: 3 твоих сильнейших брейнрота против 3 его. Сила зависит от дохода, но бывают апсеты! Ничего не теряешь, за победы — очки ауры, ранги и монеты." },
 	{ "👹 Босс", "Каждый час в :30 на площадь приходит огромный босс-брейнрот. Шлёпайте его всем сервером! Кто ударил больше всех, получит Ауру." },
@@ -1497,6 +1540,7 @@ local ADMIN_BUTTONS = {
 	{ "Выключить сезон", "season", "" },
 	{ "📚 Пропустить обучение", "skipTutorial" },
 	{ "🎁 Сбросить награды дня", "resetDaily" },
+	{ "🏗 Снести этажи", "removeFloors" },
 	{ "⚠️ СБРОС ПРОГРЕССА", "reset" },
 }
 

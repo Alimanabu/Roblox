@@ -2,6 +2,7 @@
 -- Пока всё сделано из простых деталей — позже заменим на нормальные модели и скины.
 
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Creatures = require(Shared.Config.Creatures)
@@ -22,9 +23,15 @@ local PlotService = {}
 local PLOT_COUNT = 8
 local PLOT_SIZE = 90
 local RING_RADIUS = 150
-local COLUMNS = 8
-local SPACING = 9
-local MAX_PADS = 48 -- 6 рядов по 8
+
+-- Здание базы: 1 этаж на земле, 2 этаж над ним. На каждом этаже 2 ряда по 5 мест.
+local FLOOR_HEIGHT = 14 -- на сколько 2 этаж выше земли
+local PAD_X = { -24, -12, 0, 12, 24 }
+local PAD_Z = { -21, -9 }
+local BUILDING_CENTER_Z = -15
+local BUILDING_WIDTH = 68
+local BUILDING_DEPTH = 30
+local RAILING_HEIGHT = 8 -- выше прыжка: с брейнротом через стекло не перепрыгнешь
 
 PlotService.PLOT_SIZE = PLOT_SIZE
 
@@ -162,7 +169,7 @@ local function buildWorld()
 		local ownerSign = part({
 			Name = "OwnerSign",
 			Size = Vector3.new(1, 1, 1),
-			CFrame = cframe * CFrame.new(0, 22, -PLOT_SIZE / 2 + 10),
+			CFrame = cframe * CFrame.new(0, 30, -PLOT_SIZE / 2 + 10),
 			Transparency = 1,
 			CanCollide = false,
 			Parent = model,
@@ -214,6 +221,36 @@ local function buildWorld()
 			})
 		end
 
+		-- Табличка стройки: тут покупаются этажи.
+		part({
+			Name = "BuildPost",
+			Size = Vector3.new(0.8, 6, 0.8),
+			CFrame = cframe * CFrame.new(-40, 4, BUILDING_CENTER_Z),
+			Color = Color3.fromRGB(110, 75, 45),
+			Material = Enum.Material.Wood,
+			Parent = model,
+		})
+		local buildSign = part({
+			Name = "BuildSign",
+			Size = Vector3.new(0.5, 4, 7),
+			CFrame = cframe * CFrame.new(-40, 8, BUILDING_CENTER_Z),
+			Color = Color3.fromRGB(255, 200, 40),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = model,
+		})
+		billboard(buildSign, UDim2.fromOffset(260, 90), Vector3.new(0, 5, 0), "", Color3.fromRGB(255, 220, 80)).Name = "BuildGui"
+		local buildPrompt = Instance.new("ProximityPrompt")
+		buildPrompt.Name = "BuildPrompt"
+		buildPrompt.ActionText = "Построить"
+		buildPrompt.HoldDuration = 0.6
+		buildPrompt.MaxActivationDistance = 12
+		buildPrompt.RequiresLineOfSight = false
+		buildPrompt.Parent = buildSign
+
+		local buildingFolder = Instance.new("Folder")
+		buildingFolder.Name = "Building"
+		buildingFolder.Parent = model
+
 		local padsFolder = Instance.new("Folder")
 		padsFolder.Name = "Pads"
 		padsFolder.Parent = model
@@ -223,19 +260,192 @@ local function buildWorld()
 		creaturesFolder.Parent = model
 
 		model.Parent = plotsFolder
-		table.insert(plots, { model = model, owner = nil, cframe = cframe })
+		table.insert(plots, { model = model, owner = nil, cframe = cframe, color = rimColor })
 	end
 end
 
-local function slotCFrame(plot, index)
-	local column = (index - 1) % COLUMNS
-	local row = math.floor((index - 1) / COLUMNS)
-	local x = (column - (COLUMNS - 1) / 2) * SPACING
-	local z = -PLOT_SIZE / 2 + 26 + row * SPACING
-	return plot.cframe * CFrame.new(x, 1, z)
+-- Место на базе: 1..10 — внизу, 11..20 — на 2 этаже.
+local function padCFrame(plot, pad)
+	local index = (pad - 1) % Formulas.FLOOR_SLOTS
+	local x = PAD_X[index % #PAD_X + 1]
+	local z = PAD_Z[math.floor(index / #PAD_X) + 1]
+	local y = pad > Formulas.FLOOR_SLOTS and 1 + FLOOR_HEIGHT or 1
+	return plot.cframe * CFrame.new(x, y, z)
 end
 
-local function labelText(entry, creature, rarity, mutation, data, passes)
+-- Деталь здания в локальных координатах участка.
+local function buildingPart(plot, name, size, offset, props)
+	local p = part({
+		Name = name,
+		Size = size,
+		CFrame = plot.cframe * offset,
+		Parent = plot.model.Building,
+	})
+	for key, value in pairs(props or {}) do
+		p[key] = value
+	end
+	return p
+end
+
+local function glass(plot, size, offset)
+	buildingPart(plot, "Railing", size, offset, {
+		Color = Color3.fromRGB(170, 220, 255),
+		Material = Enum.Material.Glass,
+		Transparency = 0.7,
+	})
+end
+
+local function floorSign(plot, height, text, color)
+	local anchor = buildingPart(plot, "FloorSign", Vector3.one, CFrame.new(-BUILDING_WIDTH / 2, height, BUILDING_CENTER_Z - BUILDING_DEPTH / 2), {
+		Transparency = 1,
+		CanCollide = false,
+		CanQuery = false,
+	})
+	billboard(anchor, UDim2.fromOffset(220, 44), Vector3.zero, text, color).MaxDistance = 90
+end
+
+-- Строит здание под нужное число этажей. Следующий этаж показан «призраком».
+local function buildBuilding(plot, floors)
+	plot.model.Building:ClearAllChildren()
+	local slab = Vector3.new(BUILDING_WIDTH, 0.4, BUILDING_DEPTH)
+	local center = CFrame.new(0, 0, BUILDING_CENTER_Z)
+	local tint = plot.color:Lerp(Color3.new(1, 1, 1), 0.55)
+
+	if floors >= 1 then
+		buildingPart(plot, "Floor1", slab, center * CFrame.new(0, 1, 0), { Color = tint, Material = Enum.Material.Marble })
+		floorSign(plot, 3.5, "1 ЭТАЖ • ❤️" .. Formulas.Floors[1].hp, Color3.new(1, 1, 1))
+	else
+		buildingPart(plot, "Ghost1", slab, center * CFrame.new(0, 1, 0), {
+			Color = Color3.fromRGB(255, 220, 60),
+			Material = Enum.Material.ForceField,
+			CanCollide = false,
+			CanQuery = false,
+		})
+	end
+
+	if floors < 2 then
+		if floors == 1 then
+			buildingPart(plot, "Ghost2", Vector3.new(BUILDING_WIDTH, 1, BUILDING_DEPTH), center * CFrame.new(0, 0.5 + FLOOR_HEIGHT, 0), {
+				Color = Color3.fromRGB(255, 220, 60),
+				Material = Enum.Material.ForceField,
+				CanCollide = false,
+				CanQuery = false,
+			})
+		end
+		return
+	end
+
+	-- 2 этаж: колонны, пол, стеклянные перила, площадка и пандус справа.
+	local halfW, halfD = BUILDING_WIDTH / 2, BUILDING_DEPTH / 2
+	for _, corner in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
+		buildingPart(
+			plot,
+			"Pillar",
+			Vector3.new(1.6, FLOOR_HEIGHT, 1.6),
+			center * CFrame.new(corner[1] * (halfW - 0.8), 1 + FLOOR_HEIGHT / 2, corner[2] * (halfD - 0.8)),
+			{ Color = plot.color, Material = Enum.Material.Metal }
+		)
+	end
+	local top = 1 + FLOOR_HEIGHT
+	buildingPart(plot, "Floor2", Vector3.new(BUILDING_WIDTH, 1, BUILDING_DEPTH), center * CFrame.new(0, top - 0.5, 0), {
+		Color = Color3.fromRGB(255, 215, 90),
+		Material = Enum.Material.Marble,
+	})
+	-- Площадка у пандуса.
+	buildingPart(plot, "Landing", Vector3.new(8, 1, 8), center * CFrame.new(halfW + 4, top - 0.5, halfD - 6), {
+		Color = Color3.fromRGB(255, 215, 90),
+		Material = Enum.Material.Marble,
+	})
+	-- Пандус от земли (сзади) вверх к площадке.
+	local run, rise = 30, FLOOR_HEIGHT
+	local angle = math.atan2(rise, run)
+	local ramp = buildingPart(
+		plot,
+		"Ramp",
+		Vector3.new(8, 1, math.sqrt(run * run + rise * rise) + 1),
+		center * CFrame.new(halfW + 4, 1 + rise / 2 - 0.5, halfD - 2 + run / 2) * CFrame.Angles(angle, 0, 0),
+		{ Color = tint, Material = Enum.Material.Concrete }
+	)
+	ramp.TopSurface = Enum.SurfaceType.Smooth
+
+	local y = top + RAILING_HEIGHT / 2
+	local h = RAILING_HEIGHT
+	glass(plot, Vector3.new(BUILDING_WIDTH, h, 0.5), center * CFrame.new(0, y, -halfD))
+	glass(plot, Vector3.new(BUILDING_WIDTH, h, 0.5), center * CFrame.new(0, y, halfD))
+	glass(plot, Vector3.new(0.5, h, BUILDING_DEPTH), center * CFrame.new(-halfW, y, 0))
+	-- Справа проход на площадку (последние 8 стадов перед задней стенкой).
+	glass(plot, Vector3.new(0.5, h, BUILDING_DEPTH - 10), center * CFrame.new(halfW, y, -5))
+	glass(plot, Vector3.new(0.5, h, 2), center * CFrame.new(halfW, y, halfD - 1))
+	glass(plot, Vector3.new(0.5, h, 8), center * CFrame.new(halfW + 8, y, halfD - 6))
+	glass(plot, Vector3.new(8, h, 0.5), center * CFrame.new(halfW + 4, y, halfD - 10))
+
+	floorSign(plot, top + RAILING_HEIGHT + 2, "⭐ 2 ЭТАЖ • ❤️" .. Formulas.Floors[2].hp .. " • доход x" .. Formulas.Floors[2].income, Color3.fromRGB(255, 220, 80))
+end
+
+-- Табличка стройки и само здание.
+local function updateBuilding(plot, floors, passes)
+	if plot.builtFloors ~= floors then
+		plot.builtFloors = floors
+		buildBuilding(plot, floors)
+	end
+	local cost = Formulas.floorCost(floors, passes)
+	local label = plot.model.BuildSign.BuildGui.Label
+	local prompt = plot.model.BuildSign.BuildPrompt
+	if cost then
+		local nextFloor = Formulas.Floors[floors + 1]
+		local perks = string.format("%d мест • ❤️%d", Formulas.FLOOR_SLOTS * (floors + 1), nextFloor.hp)
+		if nextFloor.income > 1 then
+			perks ..= " • доход x" .. nextFloor.income
+		end
+		label.Text = string.format("🏗 %s: %s\n%s", nextFloor.name, Format.coins(cost), perks)
+		prompt.ObjectText = nextFloor.name .. " — " .. Format.coins(cost)
+	else
+		label.Text = "🏆 База построена!"
+		prompt.ObjectText = ""
+	end
+	plot.model:SetAttribute("CanBuild", cost ~= nil)
+end
+
+local HP_FULL = Color3.fromRGB(90, 230, 110)
+local HP_LOW = Color3.fromRGB(255, 70, 70)
+local STUNNED = Color3.fromRGB(255, 220, 60)
+
+-- Полоска ❤️ над брейнротом и кнопка кражи. Пока ❤️ есть — красть нельзя, надо шлёпать.
+function PlotService.refreshHp(model)
+	local body = model.PrimaryPart
+	local gui = body and body:FindFirstChild("InfoGui")
+	local prompt = body and body:FindFirstChild("StealPrompt")
+	local hp = model:GetAttribute("Hp") or 0
+	local maxHp = math.max(1, model:GetAttribute("MaxHp") or 1)
+	local stunned = model:GetAttribute("StunnedUntil") ~= nil
+	local bar = gui and gui:FindFirstChild("HpBar")
+	if bar then
+		local ratio = stunned and 1 or hp / maxHp
+		bar.Fill.Size = UDim2.fromScale(ratio, 1)
+		bar.Fill.BackgroundColor3 = stunned and STUNNED or HP_LOW:Lerp(HP_FULL, ratio)
+		bar.Value.Text = stunned and "💫 ОГЛУШЁН!" or string.format("❤️ %d/%d", hp, maxHp)
+	end
+	if prompt then
+		if stunned then
+			prompt.ActionText = "Украсть!"
+			prompt.HoldDuration = model:GetAttribute("StealHold") or 1
+		else
+			prompt.ActionText = string.format("Шлёпни! ❤️%d", hp)
+			prompt.HoldDuration = 0
+		end
+	end
+end
+
+local function setFloor(model, floor, rank)
+	local info = Formulas.Floors[floor]
+	model:SetAttribute("Floor", floor)
+	model:SetAttribute("MaxHp", info.hp)
+	model:SetAttribute("Hp", info.hp)
+	model:SetAttribute("StunnedUntil", nil)
+	model:SetAttribute("StealHold", (0.8 + rank * 0.4) * info.stealTime)
+end
+
+local function labelText(entry, creature, rarity, mutation, data, passes, floor)
 	local nameText = creature.name
 	if mutation.id ~= "normal" then
 		nameText = mutation.name .. " " .. nameText
@@ -250,11 +460,11 @@ local function labelText(entry, creature, rarity, mutation, data, passes)
 		nameText,
 		rarity.color:ToHex(),
 		rarity.name,
-		Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods()))
+		Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods(), floor))
 	)
 end
 
-local function buildCreature(plot, entry, standCFrame, data, passes)
+local function buildCreature(plot, entry, standCFrame, data, passes, floor)
 	local creature = Creatures.get(entry.id)
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(entry.mut)
@@ -266,20 +476,54 @@ local function buildCreature(plot, entry, standCFrame, data, passes)
 	model:SetAttribute("BaseCFrame", standCFrame)
 	local size = model:GetAttribute("Height")
 
-	-- Чужие игроки могут украсть брейнрота. Чем реже — тем дольше красть.
+	-- Чужие игроки могут украсть брейнрота: сначала выбить ❤️ Шлёпалкой, потом зажать F.
+	-- Чем реже брейнрот и чем выше этаж — тем дольше красть.
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "StealPrompt"
-	prompt.ActionText = "Украсть"
 	prompt.ObjectText = creature.name
-	prompt.HoldDuration = 0.8 + rarity.rank * 0.4
 	prompt.MaxActivationDistance = 9
 	prompt.RequiresLineOfSight = false
 	prompt.KeyboardKeyCode = Enum.KeyCode.F
 	prompt:SetAttribute("Uid", entry.uid)
 	prompt.Parent = body
 
-	billboard(body, UDim2.fromOffset(180, 80), Vector3.new(0, size / 2 + 2.4, 0), labelText(entry, creature, rarity, mutation, data, passes)).Name =
-		"InfoGui"
+	local gui = billboard(
+		body,
+		UDim2.fromOffset(180, 100),
+		Vector3.new(0, size / 2 + 2.8, 0),
+		labelText(entry, creature, rarity, mutation, data, passes, floor)
+	)
+	gui.Name = "InfoGui"
+	gui.Label.Size = UDim2.fromScale(1, 0.78)
+	local bar = Instance.new("Frame")
+	bar.Name = "HpBar"
+	bar.AnchorPoint = Vector2.new(0.5, 0)
+	bar.Position = UDim2.fromScale(0.5, 0.8)
+	bar.Size = UDim2.fromScale(0.8, 0.18)
+	bar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	bar.BackgroundTransparency = 0.2
+	bar.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = bar
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.BorderSizePixel = 0
+	fill.Parent = bar
+	corner:Clone().Parent = fill
+	local value = Instance.new("TextLabel")
+	value.Name = "Value"
+	value.BackgroundTransparency = 1
+	value.Size = UDim2.fromScale(1, 1)
+	value.Font = Enum.Font.FredokaOne
+	value.TextScaled = true
+	value.TextColor3 = Color3.new(1, 1, 1)
+	value.TextStrokeTransparency = 0.3
+	value.ZIndex = 2
+	value.Parent = bar
+
+	setFloor(model, floor, rarity.rank)
+	PlotService.refreshHp(model)
 	model.Parent = plot.model.Creatures
 	return model
 end
@@ -293,30 +537,32 @@ function PlotService.render(player)
 		return
 	end
 	local passes = MonetizationService.passes(player)
-	local slots = Formulas.slots(data, passes)
+	local floors = Formulas.floors(data, passes)
+	updateBuilding(plot, floors, passes)
 
-	-- Сильнейшие брейнроты стоят в первом ряду.
-	local sorted = table.clone(data.creatures)
-	table.sort(sorted, function(a, b)
-		local ia, ib = Formulas.creatureBaseIncome(a), Formulas.creatureBaseIncome(b)
-		if ia == ib then
-			return a.uid < b.uid
-		end
-		return ia > ib
-	end)
+	-- Сильнейшие брейнроты стоят наверху (там доход больше и их труднее украсть).
+	local places, lower, upper = Formulas.layout(data.creatures, floors)
 
 	-- Постаменты: пересоздаём только когда меняется их количество.
-	-- Мест может быть меньше, чем брейнротов (например, вернули после неудачной кражи).
-	local pads = math.min(math.max(slots, #sorted), MAX_PADS)
 	local padsFolder = plot.model.Pads
-	if #padsFolder:GetChildren() ~= pads then
+	local padsKey = lower .. ":" .. upper
+	if padsFolder:GetAttribute("Layout") ~= padsKey then
+		padsFolder:SetAttribute("Layout", padsKey)
 		padsFolder:ClearAllChildren()
-		for index = 1, pads do
+		local pads = {}
+		for pad = 1, lower do
+			table.insert(pads, pad)
+		end
+		for pad = Formulas.FLOOR_SLOTS + 1, Formulas.FLOOR_SLOTS + upper do
+			table.insert(pads, pad)
+		end
+		for _, pad in ipairs(pads) do
+			local onTop = pad > Formulas.FLOOR_SLOTS
 			part({
 				Name = "Pad",
 				Size = Vector3.new(7, 0.6, 7),
-				CFrame = slotCFrame(plot, index) * CFrame.new(0, 0.3, 0),
-				Color = Color3.fromRGB(90, 90, 120),
+				CFrame = padCFrame(plot, pad) * CFrame.new(0, 0.3, 0),
+				Color = onTop and Color3.fromRGB(200, 160, 40) or Color3.fromRGB(90, 90, 120),
 				Material = Enum.Material.SmoothPlastic,
 				Parent = padsFolder,
 			})
@@ -333,11 +579,11 @@ function PlotService.render(player)
 		end
 	end
 
-	for index = 1, pads do
-		local entry = sorted[index]
-		local creature = entry and Creatures.get(entry.id)
-		if creature then
-			local standCFrame = slotCFrame(plot, index) * CFrame.new(0, 0.6, 0)
+	for _, place in ipairs(places) do
+		local entry = place.entry
+		local creature = Creatures.get(entry.id)
+		if creature and place.pad then
+			local standCFrame = padCFrame(plot, place.pad) * CFrame.new(0, 0.6, 0)
 			local model = existing[entry.uid]
 			existing[entry.uid] = nil
 			-- Сменили скин — модель надо пересобрать.
@@ -350,12 +596,18 @@ function PlotService.render(player)
 					model:SetAttribute("BaseCFrame", standCFrame)
 					model:PivotTo(standCFrame)
 				end
+				local rarity = Rarities.get(creature.rarity)
+				-- Переехал на другой этаж — там другое ❤️.
+				if model:GetAttribute("Floor") ~= place.floor then
+					setFloor(model, place.floor, rarity.rank)
+					PlotService.refreshHp(model)
+				end
 				local gui = model.PrimaryPart and model.PrimaryPart:FindFirstChild("InfoGui")
 				if gui then
-					gui.Label.Text = labelText(entry, creature, Rarities.get(creature.rarity), Mutations.get(entry.mut), data, passes)
+					gui.Label.Text = labelText(entry, creature, rarity, Mutations.get(entry.mut), data, passes, place.floor)
 				end
 			else
-				buildCreature(plot, entry, standCFrame, data, passes)
+				buildCreature(plot, entry, standCFrame, data, passes, place.floor)
 			end
 		end
 	end
@@ -447,6 +699,11 @@ local function releasePlot(player)
 	plotOf[player] = nil
 	plot.model.Creatures:ClearAllChildren()
 	plot.model.Pads:ClearAllChildren()
+	plot.model.Pads:SetAttribute("Layout", nil)
+	plot.model.Building:ClearAllChildren()
+	plot.builtFloors = nil
+	plot.model.BuildSign.BuildGui.Label.Text = ""
+	plot.model:SetAttribute("CanBuild", nil)
 	plot.model:SetAttribute("OwnerUserId", nil)
 	plot.model:SetAttribute("LockedUntil", nil)
 	plot.model:SetAttribute("LockKind", nil)
@@ -499,6 +756,17 @@ function PlotService.init()
 	DataService.Loaded.Event:Connect(PlotService.render)
 	FactoryService.CreaturesChanged.Event:Connect(PlotService.render)
 	ProgressionService.RebirthDone.Event:Connect(PlotService.render)
+	ProgressionService.FloorBuilt.Event:Connect(PlotService.render)
+
+	-- Табличка стройки: хозяин покупает следующий этаж.
+	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
+		if prompt.Name == "BuildPrompt" then
+			local plotModel = prompt:FindFirstAncestorWhichIsA("Model")
+			if plotModel and PlotService.ownerOfModel(plotModel) == player then
+				ProgressionService.buyFloor(player)
+			end
+		end
+	end)
 
 	-- Перерисовываем раз в несколько секунд: покупка слотов, VIP и т.п.
 	task.spawn(function()
@@ -509,7 +777,12 @@ function PlotService.init()
 				local data = DataService.get(player)
 				if data then
 					local passes = MonetizationService.passes(player)
-					local key = Formulas.slots(data, passes) .. ":" .. Formulas.incomeMultiplier(data, passes, EventService.mods())
+					local floors = Formulas.floors(data, passes)
+					local key = table.concat({
+						Formulas.slots(data, passes),
+						Formulas.incomeMultiplier(data, passes, EventService.mods()),
+						tostring(Formulas.floorCost(floors, passes)),
+					}, ":")
 					if lastKey[player] ~= key then
 						lastKey[player] = key
 						PlotService.render(player)
