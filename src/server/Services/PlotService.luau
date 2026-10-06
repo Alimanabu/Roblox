@@ -86,8 +86,9 @@ local function buildWorld()
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(12, 1, 12)
 	spawn.Position = Vector3.new(0, 0.5, 0)
-	spawn.Color = Color3.fromRGB(255, 230, 0)
-	spawn.Material = Enum.Material.Neon
+	spawn.Color = Color3.fromRGB(255, 210, 60)
+	spawn.Material = Enum.Material.SmoothPlastic
+	spawn.Duration = 0 -- без пузыря силового поля
 	spawn.Parent = workspace
 
 	local sign = part({
@@ -462,7 +463,16 @@ local function teleportHome(player, character)
 		return
 	end
 	local root = character:WaitForChild("HumanoidRootPart", 5)
-	if root then
+	if not root then
+		return
+	end
+	-- Roblox ставит персонажа на точку спавна уже ПОСЛЕ CharacterAdded и перебивает
+	-- телепорт. Ждём, пока персонаж появится в мире, и только потом переносим домой.
+	if not character:IsDescendantOf(workspace) then
+		character.AncestryChanged:Wait()
+	end
+	task.wait(0.2)
+	if character.Parent and plotOf[player] == plot then
 		character:PivotTo(plot.cframe * CFrame.new(0, 5, PLOT_SIZE / 2 - 8))
 	end
 end

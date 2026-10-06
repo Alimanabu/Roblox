@@ -57,33 +57,25 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = coinsFrame,
 	})
 
-	-- Уровень сверху слева.
+	-- Уровень — узкая полоска под монетами (левый верх занимает чат Roblox).
 	local levelFrame = create("Frame", {
 		Name = "Level",
-		Position = UDim2.fromOffset(10, 10),
-		Size = UDim2.fromOffset(260, 86),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 98),
+		Size = UDim2.fromOffset(320, 50),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,
 		Parent = screenGui,
 	}, { Theme.corner(16), Theme.stroke(C.Purple, 3) })
 	self.titleLabel = Theme.label({
-		Size = UDim2.new(1, -16, 0, 28),
-		Position = UDim2.fromOffset(8, 4),
+		Size = UDim2.new(1, -16, 0, 22),
+		Position = UDim2.fromOffset(8, 3),
 		Text = "Нуб • ур. 1",
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Parent = levelFrame,
-	})
-	self.rebirthLabel = Theme.label({
-		Size = UDim2.new(1, -16, 0, 20),
-		Position = UDim2.fromOffset(8, 32),
-		Text = "",
-		TextColor3 = C.Gold,
-		TextXAlignment = Enum.TextXAlignment.Left,
 		Parent = levelFrame,
 	})
 	local bar = create("Frame", {
-		Size = UDim2.new(1, -16, 0, 22),
-		Position = UDim2.fromOffset(8, 56),
+		Size = UDim2.new(1, -16, 0, 18),
+		Position = UDim2.fromOffset(8, 27),
 		BackgroundColor3 = C.Card,
 		Parent = levelFrame,
 	}, { Theme.corner(8) })
@@ -102,8 +94,9 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	-- Кнопка настроек рядом с уровнем.
 	Theme.button({
 		Name = "SettingsButton",
-		Position = UDim2.fromOffset(278, 10),
-		Size = UDim2.fromOffset(48, 48),
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.new(0.5, 168, 0, 8),
+		Size = UDim2.fromOffset(44, 44),
 		Text = "⚙️",
 		Color = C.Background,
 		Parent = screenGui,
@@ -115,7 +108,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	local luckFrame = create("Frame", {
 		Name = "Luck",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 10),
+		Position = UDim2.new(1, -10, 0.3, 0), -- ниже списка игроков Roblox
 		Size = UDim2.fromOffset(200, 60),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,
@@ -140,12 +133,18 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	local menu = create("Frame", {
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 10, 0.5, 20),
-		Size = UDim2.fromOffset(170, #MENU * 43),
+		Position = UDim2.new(0, 10, 0.55, 0),
+		Size = UDim2.fromOffset(255, math.ceil(#MENU / 2) * 43),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
 	}, {
-		create("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }),
+		-- Две колонки: меню короче и меньше перекрывается чатом Roblox.
+		create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(125, 38),
+			CellPadding = UDim2.fromOffset(5, 5),
+			FillDirectionMaxCells = 2,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
 	})
 	self.badges = {}
 	self.buttons = {}
@@ -154,7 +153,6 @@ function Hud.new(screenGui, onMenu, giftsReady)
 			Name = item.id,
 			Text = item.text,
 			Color = item.color,
-			Size = UDim2.new(1, 0, 0, 38),
 			LayoutOrder = order,
 			Parent = menu,
 		}, function()
@@ -190,7 +188,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.notifyFrame = create("Frame", {
 		Name = "Notifications",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 104),
+		Position = UDim2.new(0.5, 0, 0, 156),
 		Size = UDim2.fromOffset(560, 300),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
@@ -217,8 +215,11 @@ function Hud:update(state)
 
 	self.coinsLabel.Text = Format.coins(state.coins)
 	self.incomeLabel.Text = "+" .. Format.coins(state.income) .. "/с"
-	self.titleLabel.Text = state.title .. " • ур. " .. state.level
-	self.rebirthLabel.Text = state.rebirthTitle and ("♻️ " .. state.rebirthTitle .. " (x" .. state.rebirths .. ")") or ""
+	local title = state.title .. " • ур. " .. state.level
+	if state.rebirthTitle then
+		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, state.rebirthTitle)
+	end
+	self.titleLabel.Text = title
 	local progress = state.xpNext > 0 and math.clamp(state.xp / state.xpNext, 0, 1) or 1
 	self.xpFill.Size = UDim2.fromScale(progress, 1)
 	self.xpLabel.Text = Format.number(state.xp) .. " / " .. Format.number(state.xpNext) .. " XP"

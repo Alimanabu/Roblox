@@ -32,7 +32,7 @@ function StealStatus.new(screenGui)
 	self.lock = create("Frame", {
 		Name = "LockStatus",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 78),
+		Position = UDim2.new(1, -10, 0.3, 68),
 		Size = UDim2.fromOffset(200, 40),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,

@@ -16,7 +16,7 @@ function EventBanner.new(screenGui)
 	self.frame = create("Frame", {
 		Name = "EventBanner",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0, 126),
+		Position = UDim2.new(1, -10, 0.3, 116),
 		Size = UDim2.fromOffset(200, 64),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,

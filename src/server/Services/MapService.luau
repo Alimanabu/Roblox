@@ -97,7 +97,7 @@ local function statue()
 		Color = Color3.fromRGB(90, 85, 110),
 		Material = Enum.Material.Marble,
 	})
-	local model = CreatureModel.build("sei_sette", "sixseven", base * CFrame.new(0, 4, 0) * CFrame.Angles(0, math.pi, 0))
+	local model = CreatureModel.build("sei_sette", "golden", base * CFrame.new(0, 4, 0) * CFrame.Angles(0, math.pi, 0))
 	model.Name = "LegendStatue"
 	model:ScaleTo(2.2)
 	model:PivotTo(base * CFrame.new(0, 4, 0) * CFrame.Angles(0, math.pi, 0))
@@ -139,9 +139,9 @@ local function lighting()
 	end
 	if not Lighting:FindFirstChildOfClass("BloomEffect") then
 		local bloom = Instance.new("BloomEffect")
-		bloom.Intensity = 0.4
-		bloom.Size = 20
-		bloom.Threshold = 1.5
+		bloom.Intensity = 0.15
+		bloom.Size = 12
+		bloom.Threshold = 2.2
 		bloom.Parent = Lighting
 	end
 end
