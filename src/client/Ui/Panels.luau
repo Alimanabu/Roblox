@@ -15,6 +15,7 @@ local Monetization = require(Shared.Config.Monetization)
 local Achievements = require(Shared.Config.Achievements)
 local Skins = require(Shared.Config.Skins)
 local Battles = require(Shared.Config.Battles)
+local Daily = require(Shared.Config.Daily)
 local Seasons = require(Shared.Config.Seasons)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
@@ -762,7 +763,27 @@ function Rewards.build(content, state)
 		})
 	end
 
-	-- Колесо удачи.
+	-- Колесо удачи. Шансы показываем ДО вращения: вращения продаются за Robux,
+	-- а Roblox требует раскрывать шансы платных случайных наград.
+	local wheelTotal = 0
+	for _, slot in ipairs(Daily.Wheel) do
+		wheelTotal += slot.weight
+	end
+	local oddsParts = {}
+	for _, slot in ipairs(Daily.Wheel) do
+		table.insert(oddsParts, slot.name .. " " .. Format.percent(slot.weight / wheelTotal))
+	end
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Text = "🎡 Шансы колеса: " .. table.concat(oddsParts, " • "),
+		TextScaled = false,
+		TextSize = 14,
+		TextWrapped = true,
+		TextColor3 = C.Muted,
+		LayoutOrder = 49,
+		Parent = content,
+	})
 	local wheel = state.wheel
 	local wheelRow = create("Frame", {
 		Size = UDim2.new(1, -10, 0, 48),
