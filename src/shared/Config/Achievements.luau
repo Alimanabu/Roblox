@@ -59,7 +59,7 @@ Achievements.List = {
 	{ id = "boss", name = "Охотник на боссов", desc = "Победи босса-брейнрота", reward = { coinsMinutes = 10 }, check = function(d) return stat(d, "bossKills") >= 1 end },
 	{ id = "boss10", name = "Гроза Огайо", desc = "Победи 10 боссов", reward = { coinsMinutes = 40, luckMinutes = 30 }, check = function(d) return stat(d, "bossKills") >= 10 end },
 	{ id = "battle", name = "Первая аура-победа", desc = "Победи в аура-баттле", reward = { coinsMinutes = 5 }, check = function(d) return (d.battles and d.battles.wins or 0) >= 1 end },
-	{ id = "battle25", name = "Аура-чемпион", desc = "Победи в 25 аура-баттлах", reward = { coinsMinutes = 30 }, check = function(d) return (d.battles and d.battles.wins or 0) >= 25 end },
+	{ id = "battle25", name = "Аура-чемпион", desc = "Победи 25 игроков в аура-баттлах", reward = { coinsMinutes = 30 }, check = function(d) return (d.battles and d.battles.pvpWins or 0) >= 25 end },
 	{ id = "auraLegend", name = "Аура-легенда", desc = "Набери 1500 очков ауры", reward = { coinsMinutes = 60, luckMinutes = 60 }, check = function(d) return (d.battles and d.battles.points or 0) >= 1500 end },
 	{ id = "level10", name = "Тиктокер", desc = "Дойди до 10 уровня", reward = { coinsMinutes = 5 }, check = function(d) return d.level >= 10 end },
 	{ id = "level30", name = "Легенда трендов", desc = "Дойди до 30 уровня", reward = { coinsMinutes = 30 }, check = function(d) return d.level >= 30 end },

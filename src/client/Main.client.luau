@@ -104,7 +104,9 @@ local battleView = BattleView.new(screenGui, function(name)
 	Sfx.play(name)
 end)
 Remotes.BattleResult.OnClientEvent:Connect(function(result)
-	panels:close()
+	if panels.openName ~= "Trade" then
+		panels:close()
+	end
 	battleView:show(result)
 end)
 

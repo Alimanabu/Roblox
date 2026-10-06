@@ -64,8 +64,9 @@ end
 
 -- Результат со стороны первого участника.
 local function fight(teamA, teamB)
-	local rounds, winsA, winsB = {}, 0, 0
-	for i = 1, Battles.TEAM_SIZE do
+	-- Раундов столько, сколько брейнротов у большей команды: пустых «0 против 0» не бывает.
+	local rounds, winsA, winsB, totalA, totalB = {}, 0, 0, 0, 0
+	for i = 1, math.max(#teamA, #teamB) do
 		local a, b = teamA[i], teamB[i]
 		local powerA, powerB = roll(a), roll(b)
 		if powerA == powerB then
@@ -77,7 +78,13 @@ local function fight(teamA, teamB)
 		else
 			winsB += 1
 		end
+		totalA += powerA
+		totalB += powerB
 		table.insert(rounds, { a = a, b = b, powerA = powerA, powerB = powerB, aWins = aWins })
+	end
+	-- Ничья по раундам (например, 1:1) — решает суммарная сила.
+	if winsA == winsB then
+		return rounds, totalA > totalB
 	end
 	return rounds, winsA > winsB
 end
@@ -101,6 +108,9 @@ local function settle(player, data, won, vsBot)
 	local rewardText = ""
 	if won then
 		battles.wins += 1
+		if not vsBot then
+			battles.pvpWins = (battles.pvpWins or 0) + 1
+		end
 		if battles.rewardedToday < Battles.REWARDED_PER_DAY then
 			-- И монеты, и очки за бота — только в пределах дневного лимита (иначе накрутка).
 			battles.rewardedToday += 1
@@ -145,6 +155,11 @@ end
 local function runPvp(a, b)
 	local dataA, dataB = DataService.get(a), DataService.get(b)
 	if not dataA or not dataB or #dataA.creatures == 0 or #dataB.creatures == 0 then
+		for _, p in ipairs({ a, b }) do
+			if p.Parent then
+				Remotes.Notify:FireClient(p, "Баттл не начался: у кого-то нет брейнротов", BAD)
+			end
+		end
 		return
 	end
 	local rounds, aWon = fight(teamOf(dataA), teamOf(dataB))
@@ -210,6 +225,11 @@ local function respond(player, fromUserId, accept)
 		return
 	end
 	local key = math.min(player.UserId, from.UserId) .. ":" .. math.max(player.UserId, from.UserId)
+	-- Встречные вызовы не должны обходить паузу между боями с одним соперником.
+	if lastPair[key] and os.clock() - lastPair[key] < Battles.SAME_OPPONENT_COOLDOWN then
+		Remotes.Notify:FireClient(player, "С этим игроком можно снова сразиться через минуту", BAD)
+		return
+	end
 	lastPair[key] = os.clock()
 	runPvp(from, player)
 end
