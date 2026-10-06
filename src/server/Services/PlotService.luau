@@ -239,6 +239,11 @@ local function labelText(entry, creature, rarity, mutation, data, passes)
 	if mutation.id ~= "normal" then
 		nameText = mutation.name .. " " .. nameText
 	end
+	if entry.nickname then
+		-- Подпись с RichText: экранируем, чтобы имя не ломало разметку.
+		local safe = entry.nickname:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+		nameText = "«" .. safe .. "»\n" .. nameText
+	end
 	return string.format(
 		'%s\n<font color="#%s">%s</font>\n<font color="#78ff78">%s/с</font>',
 		nameText,
@@ -272,7 +277,7 @@ local function buildCreature(plot, entry, standCFrame, data, passes)
 	prompt:SetAttribute("Uid", entry.uid)
 	prompt.Parent = body
 
-	billboard(body, UDim2.fromOffset(170, 66), Vector3.new(0, size / 2 + 2, 0), labelText(entry, creature, rarity, mutation, data, passes)).Name =
+	billboard(body, UDim2.fromOffset(180, 80), Vector3.new(0, size / 2 + 2.4, 0), labelText(entry, creature, rarity, mutation, data, passes)).Name =
 		"InfoGui"
 	model.Parent = plot.model.Creatures
 	return model

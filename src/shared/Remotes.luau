@@ -29,6 +29,7 @@ local EVENTS = {
 	"BattleChallenge", -- (targetUserId | "bot") вызвать на аура-баттл
 	"BattleRespond", -- (fromUserId, accept)
 	"SetPet", -- (uid | nil) выбрать питомца
+	"RenameCreature", -- (uid, text) дать брейнроту имя
 
 	-- сервер -> клиент
 	"State", -- (snapshot)

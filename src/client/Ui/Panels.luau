@@ -99,14 +99,24 @@ local function confirmButton(key, props, confirmText, action)
 	return button
 end
 
+local function escape(text)
+	return (text:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"))
+end
+
 local function creatureName(entry)
 	local creature = Creatures.get(entry.id)
 	local mutation = Mutations.get(entry.mut)
-	if mutation.id == "normal" then
-		return creature.name
+	local name = creature.name
+	if mutation.id ~= "normal" then
+		name = colored(mutation.name, mutation.color) .. " " .. name
 	end
-	return colored(mutation.name, mutation.color) .. " " .. creature.name
+	if entry.nickname then
+		name = colored("«" .. escape(entry.nickname) .. "»", C.Gold) .. " " .. name
+	end
+	return name
 end
+
+Panels.onRename = nil -- function(uid, currentName) — задаётся в Main.client
 
 ---------------------------------------------------------------------------
 -- ФАБРИКА
@@ -255,7 +265,7 @@ local Base = { title = "🧠 Моя база" }
 function Base.signature(state)
 	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet) }
 	for _, entry in ipairs(state.creatures) do
-		table.insert(parts, entry.uid)
+		table.insert(parts, entry.uid .. tostring(entry.nickname))
 	end
 	return table.concat(parts, "|")
 end
@@ -368,10 +378,23 @@ function Base.build(content, state)
 			})
 			Theme.label({
 				Size = UDim2.new(0.42, 0, 0.6, 0),
-				Text = creatureName(entry),
+				Text = creatureName(entry) .. " ✏️",
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
+			-- Нажми на имя — можно переименовать.
+			local renameHit = create("TextButton", {
+				Size = UDim2.new(0.42, 0, 1, 0),
+				BackgroundTransparency = 1,
+				Text = "",
+				ZIndex = 3,
+				Parent = row,
+			})
+			renameHit.Activated:Connect(function()
+				if Panels.onRename then
+					Panels.onRename(entry.uid, entry.nickname)
+				end
+			end)
 			Theme.label({
 				Size = UDim2.new(0.42, 0, 0.4, 0),
 				Position = UDim2.fromScale(0, 0.6),
@@ -914,6 +937,7 @@ local HELP_SECTIONS = {
 	{ "🧠 База", "Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий." },
 	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
 	{ "🦎 Дикие брейнроты", "По карте бегают дикие брейнроты. Подойди и зажми E — кто первый поймал, того и брейнрот! Иногда появляются редкие — об этом узнает весь сервер." },
+	{ "✏️ Имена", "В 🧠 Базе нажми на имя брейнрота и придумай ему своё — его увидят все над твоей базой." },
 	{ "🐾 Питомец", "В 🧠 Базе нажми 🐾 у любого брейнрота — он будет бегать за тобой по всей карте. Пусть все видят твою легендарку!" },
 	{ "🦹 Кража", "Подойди к чужому брейнроту и зажми F. Беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
 	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
