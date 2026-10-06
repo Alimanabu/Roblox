@@ -9,6 +9,7 @@ Roblox-симулятор: строишь фабрику мемов, кидае�
 Подробный дизайн игры: [docs/DESIGN.md](docs/DESIGN.md).
 Идеи следующих игр: [docs/IDEAS.md](docs/IDEAS.md).
 Как проверить игру в Studio: [docs/TESTING.md](docs/TESTING.md).
+Как опубликовать (описание, коды, иконка, геймпассы): [docs/LAUNCH.md](docs/LAUNCH.md).
 
 ## Как запустить
 
