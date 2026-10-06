@@ -94,8 +94,9 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	-- Кнопка настроек рядом с уровнем.
 	Theme.button({
 		Name = "SettingsButton",
-		AnchorPoint = Vector2.new(0, 0),
-		Position = UDim2.new(0.5, 168, 0, 8),
+		-- Слева от монет: справа их закрывает список игроков Roblox.
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(0.5, -168, 0, 8),
 		Size = UDim2.fromOffset(44, 44),
 		Text = "⚙️",
 		Color = C.Background,
@@ -134,13 +135,13 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 10, 0.55, 0),
-		Size = UDim2.fromOffset(255, math.ceil(#MENU / 2) * 43),
+		Size = UDim2.fromOffset(295, math.ceil(#MENU / 2) * 43),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
 	}, {
 		-- Две колонки: меню короче и меньше перекрывается чатом Roblox.
 		create("UIGridLayout", {
-			CellSize = UDim2.fromOffset(125, 38),
+			CellSize = UDim2.fromOffset(145, 38),
 			CellPadding = UDim2.fromOffset(5, 5),
 			FillDirectionMaxCells = 2,
 			SortOrder = Enum.SortOrder.LayoutOrder,
