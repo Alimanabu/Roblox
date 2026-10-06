@@ -13,6 +13,8 @@ local Music = require(script.Parent.Music)
 local LegendaryFx = require(script.Parent.LegendaryFx)
 local PetFollow = require(script.Parent.PetFollow)
 local RenameDialog = require(script.Parent.Ui.RenameDialog)
+local DiscoFx = require(script.Parent.DiscoFx)
+local Events = require(Shared.Config.Events)
 local Theme = require(script.Parent.Ui.Theme)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
@@ -176,6 +178,12 @@ task.spawn(function()
 		task.wait(0.2)
 		status:update(player, workspace:FindFirstChild("Plots"))
 		eventBanner:update()
+		-- Минута 67 — дискотека!
+		local disco = false
+		for _, activeEvent in ipairs(Events.active(workspace:GetServerTimeNow())) do
+			disco = disco or activeEvent.event.id == Events.SixSeven.id
+		end
+		DiscoFx.setActive(disco)
 	end
 end)
 
@@ -217,11 +225,20 @@ RunService.RenderStepped:Connect(function()
 					-- Анимируем только тех, кто близко к камере — экономим FPS на телефонах.
 					if base and camera and (base.Position - camera.CFrame.Position).Magnitude < 140 then
 						local phase = base.Position.X * 0.3 + base.Position.Z * 0.2
-						model:PivotTo(
-							base
-								* CFrame.new(0, math.abs(math.sin(t * 2 + phase)) * 0.5, 0)
-								* CFrame.Angles(0, math.sin(t * 0.8 + phase) * 0.35, 0)
-						)
+						if DiscoFx.isActive() then
+							-- Дискотека: прыгают в такт и крутятся.
+							model:PivotTo(
+								base
+									* CFrame.new(0, math.abs(math.sin(t * 6)) * 2.2, 0)
+									* CFrame.Angles(0, t * 4 + phase, math.sin(t * 6) * 0.25)
+							)
+						else
+							model:PivotTo(
+								base
+									* CFrame.new(0, math.abs(math.sin(t * 2 + phase)) * 0.5, 0)
+									* CFrame.Angles(0, math.sin(t * 0.8 + phase) * 0.35, 0)
+							)
+						end
 						if model:GetAttribute("Rainbow") then
 							body.Color = Color3.fromHSV((t * 0.3 + phase * 0.05) % 1, 0.7, 1)
 						end

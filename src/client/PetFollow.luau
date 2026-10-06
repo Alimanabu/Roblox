@@ -70,7 +70,13 @@ function PetFollow.start()
 					local alpha = 1 - math.exp(-dt * 8)
 					pet.cframe = pet.cframe:Lerp(target, alpha)
 					local hop = math.abs(math.sin(t * 6 + player.UserId % 10)) * 0.6
-					pet.model:PivotTo(pet.cframe * CFrame.new(0, hop, 0))
+					local spin = CFrame.identity
+					-- Во время «Минуты 67» (дискотека) питомцы тоже пляшут.
+					if workspace:FindFirstChild("DiscoBall") then
+						hop *= 2.5
+						spin = CFrame.Angles(0, t * 5, 0)
+					end
+					pet.model:PivotTo(pet.cframe * CFrame.new(0, hop, 0) * spin)
 				end
 			end
 		end
