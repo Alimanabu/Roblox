@@ -31,6 +31,7 @@ local AnalyticsService = require(Services.AnalyticsService)
 local MapService = require(Services.MapService)
 local BossService = require(Services.BossService)
 local BattleService = require(Services.BattleService)
+local PetService = require(Services.PetService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -69,6 +70,7 @@ DataService.setSnapshotBuilder(function(player, data)
 		pity = data.pity,
 		wheel = WheelService.snapshot(data),
 		battles = BattleService.snapshot(data),
+		pet = data.pet,
 	}
 end)
 
@@ -82,6 +84,7 @@ PlotService.init()
 MapService.init()
 BossService.init()
 BattleService.init()
+PetService.init()
 StealService.init()
 QuestService.init()
 LeaderboardService.init()

@@ -253,7 +253,7 @@ end
 local Base = { title = "🧠 Моя база" }
 
 function Base.signature(state)
-	local parts = { state.slots, state.incomeMultiplier, state.social.bonus }
+	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet) }
 	for _, entry in ipairs(state.creatures) do
 		table.insert(parts, entry.uid)
 	end
@@ -367,31 +367,42 @@ function Base.build(content, state)
 				Theme.stroke(rarity.color, 2),
 			})
 			Theme.label({
-				Size = UDim2.new(0.5, 0, 0.6, 0),
+				Size = UDim2.new(0.42, 0, 0.6, 0),
 				Text = creatureName(entry),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
 			Theme.label({
-				Size = UDim2.new(0.5, 0, 0.4, 0),
+				Size = UDim2.new(0.42, 0, 0.4, 0),
 				Position = UDim2.fromScale(0, 0.6),
 				Text = colored(rarity.name, rarity.color),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
 			Theme.label({
-				Size = UDim2.new(0.25, 0, 1, 0),
-				Position = UDim2.fromScale(0.5, 0),
+				Size = UDim2.new(0.21, 0, 1, 0),
+				Position = UDim2.fromScale(0.42, 0),
 				Text = "+" .. Format.coins(Formulas.creatureBaseIncome(entry) * state.incomeMultiplier) .. "/с",
 				TextColor3 = C.Good,
 				Parent = row,
 			})
+			-- Питомец: этот брейнрот будет бегать за тобой.
+			local isPet = state.pet == entry.uid
+			Theme.button({
+				Size = UDim2.new(0.11, -4, 1, 0),
+				Position = UDim2.new(0.63, 2, 0, 0),
+				Text = isPet and "🐾✅" or "🐾",
+				Color = isPet and C.Gold or C.Card,
+				Parent = row,
+			}, function()
+				Remotes.SetPet:FireServer(not isPet and entry.uid or nil)
+			end)
 			local sell = function()
 				Remotes.Sell:FireServer(entry.uid)
 			end
 			local sellProps = {
-				Size = UDim2.new(0.25, -4, 1, 0),
-				Position = UDim2.new(0.75, 4, 0, 0),
+				Size = UDim2.new(0.26, -4, 1, 0),
+				Position = UDim2.new(0.74, 4, 0, 0),
 				Text = "Продать " .. Format.coins(Formulas.sellValue(entry)),
 				Color = C.Bad,
 				Parent = row,
@@ -902,6 +913,7 @@ local HELP_SECTIONS = {
 	{ "🏭 Фабрика", "Покупай мем-капсулы и создавай брейнротов. Чем популярнее тренд, тем реже он выпадает: Нормис → Лоу-ки → Ризз → Сигма → Аура → Скибиди → Брейнрот Бог → SIX SEVEN 🤌" },
 	{ "🧠 База", "Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий." },
 	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
+	{ "🐾 Питомец", "В 🧠 Базе нажми 🐾 у любого брейнрота — он будет бегать за тобой по всей карте. Пусть все видят твою легендарку!" },
 	{ "🦹 Кража", "Подойди к чужому брейнроту и зажми F. Беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
 	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
 	{ "⚔️ Аура-баттлы", "Вызови игрока или потренируйся с ботом: 3 твоих сильнейших брейнрота против 3 его. Сила зависит от дохода, но бывают апсеты! Ничего не теряешь, за победы — очки ауры, ранги и монеты." },

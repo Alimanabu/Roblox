@@ -11,6 +11,7 @@ local State = require(script.Parent.State)
 local Sfx = require(script.Parent.Sfx)
 local Music = require(script.Parent.Music)
 local LegendaryFx = require(script.Parent.LegendaryFx)
+local PetFollow = require(script.Parent.PetFollow)
 local Theme = require(script.Parent.Ui.Theme)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
@@ -53,6 +54,7 @@ local reveal = Reveal.new(screenGui)
 local tutorial = TutorialBanner.new(screenGui, hud)
 
 Music.start()
+PetFollow.start()
 local announcementsOn = true
 
 State.onChanged(function(state)

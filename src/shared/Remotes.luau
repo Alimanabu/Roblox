@@ -28,6 +28,7 @@ local EVENTS = {
 	"SpinWheel", -- () крутить колесо удачи
 	"BattleChallenge", -- (targetUserId | "bot") вызвать на аура-баттл
 	"BattleRespond", -- (fromUserId, accept)
+	"SetPet", -- (uid | nil) выбрать питомца
 
 	-- сервер -> клиент
 	"State", -- (snapshot)
