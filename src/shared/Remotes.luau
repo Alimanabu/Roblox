@@ -40,6 +40,7 @@ local EVENTS = {
 	"WheelResult", -- (index) что выпало на колесе
 	"BattleInvite", -- (fromUserId, fromName) тебя вызвали на баттл
 	"BattleResult", -- (result) раунды и итог баттла
+	"LegendaryDrop", -- ({ userId, name, creatureId, mut }) кто-то выбил легендарку — шоу для всех
 }
 
 local Remotes = {}

@@ -75,6 +75,15 @@ local function addCreature(player, data, creatureId, mutationId, paid, lineage)
 		Actions.fire(player, "newIndex", 1)
 	end
 
+	-- Бог, SIX SEVEN или очень редкая мутация — световое шоу на весь сервер.
+	if rarity.rank >= Rarities.get("god").rank or mutation.rank >= 5 then
+		Remotes.LegendaryDrop:FireAllClients({
+			userId = player.UserId,
+			name = player.DisplayName,
+			creatureId = creatureId,
+			mut = mutationId,
+		})
+	end
 	if rarity.announce or mutation.rank >= 4 then
 		Remotes.Notify:FireAllClients(
 			"🚨 " .. player.DisplayName .. " создал " .. creatureLabel(creatureId, mutationId) .. " [" .. rarity.name .. "]!",
