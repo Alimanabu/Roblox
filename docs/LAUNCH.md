@@ -120,6 +120,10 @@ SKIN67 — секретный «Скин 67»
   **Yes** (капсулы/колесо; монеты и вращения продаются за Robux), шансы показаны.
 - **Social:** стандартный чат Roblox; имена брейнротов проходят фильтр Roblox.
 - Алкоголь, наркотики, романтика, ругательства, политика, религия — **No**.
+- **Paid Random Items: Yes**, respects ArePaidRandomItemsRestricted: **Yes** (там, где запрещено,
+  игра не продаёт монеты и вращения колеса — `PolicyService`).
+- **Paid Item Trading: Yes**, respects IsPaidItemTradingAllowed: **Yes** (там обмен отключён).
+- **Media Sharing: No. AI Interaction: No. Cross-Experience: No.**
 
 Детям до 16 игра станет доступна после: проверки возраста/ID создателя, 2FA, взноса
 1000 Robux (возвращается) или Roblox Plus, и 250 «активных» игроков. Для теста раньше —

@@ -34,6 +34,7 @@ local BattleService = require(Services.BattleService)
 local PetService = require(Services.PetService)
 local WildService = require(Services.WildService)
 local NameService = require(Services.NameService)
+local PolicyService = require(Services.PolicyService)
 
 -- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
 DataService.setSnapshotBuilder(function(player, data)
@@ -76,6 +77,7 @@ DataService.setSnapshotBuilder(function(player, data)
 	}
 end)
 
+PolicyService.init()
 DataService.init()
 EventService.init()
 MonetizationService.init()

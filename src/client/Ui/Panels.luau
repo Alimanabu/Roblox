@@ -622,6 +622,7 @@ function Shop.signature(state)
 		table.insert(parts, key)
 	end
 	table.sort(parts)
+	table.insert(parts, tostring(player:GetAttribute("PaidRandomItemsRestricted")))
 	return table.concat(parts, "|")
 end
 
@@ -630,7 +631,7 @@ function Shop.build(content, state)
 	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = "Геймпассы (навсегда)", TextColor3 = C.Gold, LayoutOrder = 0, Parent = content })
 
 	local order = 1
-	local function row(item, owned, onBuy)
+	local function row(item, owned, onBuy, blocked)
 		order += 1
 		local box = card({ Size = UDim2.new(1, -10, 0, 64), LayoutOrder = order }, { Theme.padding(8) })
 		Theme.label({ Size = UDim2.new(0.65, 0, 0.55, 0), Text = item.name, TextXAlignment = Enum.TextXAlignment.Left, Parent = box })
@@ -645,6 +646,8 @@ function Shop.build(content, state)
 		local text, color
 		if owned then
 			text, color = "✅ Куплено", C.CardLocked
+		elseif blocked then
+			text, color = "Недоступно в твоём регионе", C.CardLocked
 		elseif item.id == 0 then
 			text, color = "Скоро", C.CardLocked
 		else
@@ -657,7 +660,7 @@ function Shop.build(content, state)
 			Color = color,
 			Parent = box,
 		}, function()
-			if not owned and item.id ~= 0 then
+			if not owned and not blocked and item.id ~= 0 then
 				onBuy()
 			end
 		end)
@@ -672,10 +675,12 @@ function Shop.build(content, state)
 
 	order += 1
 	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = "Бусты", TextColor3 = C.Gold, LayoutOrder = order, Parent = content })
+	-- Там, где Roblox запрещает платные случайные награды, не продаём то, что к ним ведёт.
+	local randomRestricted = player:GetAttribute("PaidRandomItemsRestricted") ~= false
 	for _, product in ipairs(Monetization.Products) do
 		row(product, false, function()
 			MarketplaceService:PromptProductPurchase(player, product.id)
-		end)
+		end, product.leadsToRandom and randomRestricted)
 	end
 end
 
@@ -804,14 +809,16 @@ function Rewards.build(content, state)
 		end
 	end)
 	local spinsProduct = Monetization.ProductByKey.SPINS_3
+	local spinsBlocked = player:GetAttribute("PaidRandomItemsRestricted") ~= false
 	Theme.button({
 		Size = UDim2.new(0.4, 0, 1, 0),
 		Position = UDim2.new(0.6, 6, 0, 0),
-		Text = spinsProduct.id ~= 0 and ("+3 вращения R$ " .. spinsProduct.price) or "+3 вращения (скоро)",
-		Color = spinsProduct.id ~= 0 and C.Purple or C.CardLocked,
+		Text = spinsBlocked and "Покупка недоступна"
+			or (spinsProduct.id ~= 0 and ("+3 вращения R$ " .. spinsProduct.price) or "+3 вращения (скоро)"),
+		Color = (spinsProduct.id ~= 0 and not spinsBlocked) and C.Purple or C.CardLocked,
 		Parent = wheelRow,
 	}, function()
-		if spinsProduct.id ~= 0 then
+		if spinsProduct.id ~= 0 and not spinsBlocked then
 			MarketplaceService:PromptProductPurchase(player, spinsProduct.id)
 		end
 	end)

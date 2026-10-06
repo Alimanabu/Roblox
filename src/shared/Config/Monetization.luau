@@ -13,11 +13,13 @@ Monetization.GamePasses = {
 }
 
 -- Разовые покупки. kind говорит серверу, что выдать.
+-- leadsToRandom = true — покупка ведёт к случайной награде (монеты → капсулы, вращения
+-- колеса). Таких не продаём там, где Roblox запрещает платные случайные награды.
 Monetization.Products = {
 	{ key = "LUCK_BOOST", id = 0, name = "Буст удачи x2", desc = "x2 удачи на 15 минут", price = 49, kind = "luckBoost", minutes = 15 },
-	{ key = "COINS_SMALL", id = 0, name = "Мешок монет", desc = "10 минут дохода (мин. 5K)", price = 29, kind = "coins", incomeMinutes = 10, minCoins = 5000 },
-	{ key = "SPINS_3", id = 0, name = "3 вращения колеса", desc = "Крути колесо удачи ещё 3 раза", price = 39, kind = "spins", amount = 3 },
-	{ key = "COINS_BIG", id = 0, name = "Сундук монет", desc = "1 час дохода (мин. 50K)", price = 129, kind = "coins", incomeMinutes = 60, minCoins = 50000 },
+	{ key = "COINS_SMALL", id = 0, name = "Мешок монет", desc = "10 минут дохода (мин. 5K)", price = 29, kind = "coins", incomeMinutes = 10, minCoins = 5000, leadsToRandom = true },
+	{ key = "SPINS_3", id = 0, name = "3 вращения колеса", desc = "Крути колесо удачи ещё 3 раза", price = 39, kind = "spins", amount = 3, leadsToRandom = true },
+	{ key = "COINS_BIG", id = 0, name = "Сундук монет", desc = "1 час дохода (мин. 50K)", price = 129, kind = "coins", incomeMinutes = 60, minCoins = 50000, leadsToRandom = true },
 }
 
 Monetization.GamePassByKey = {}

@@ -16,6 +16,7 @@ local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local PlotService = require(script.Parent.PlotService)
 local Actions = require(script.Parent.Actions)
+local PolicyService = require(script.Parent.PolicyService)
 
 local TradeService = {}
 
@@ -101,6 +102,15 @@ local function request(player, targetUserId)
 	if not target or target == player then
 		return
 	end
+	-- В некоторых странах обмен платными предметами запрещён (правила Roblox).
+	if not PolicyService.tradingAllowed(player) then
+		Remotes.Notify:FireClient(player, "Обмен недоступен в твоём регионе", BAD)
+		return
+	end
+	if not PolicyService.tradingAllowed(target) then
+		Remotes.Notify:FireClient(player, "У этого игрока обмен недоступен", BAD)
+		return
+	end
 	local now = os.clock()
 	if lastRequest[player] and now - lastRequest[player] < TradeService.REQUEST_COOLDOWN then
 		Remotes.Notify:FireClient(player, "Подожди немного перед новым приглашением", BAD)
@@ -128,6 +138,9 @@ local function respond(player, fromUserId, accept)
 	end
 	if accept ~= true then
 		Remotes.Notify:FireClient(from, player.DisplayName .. " отклонил обмен", BAD)
+		return
+	end
+	if not PolicyService.tradingAllowed(player) or not PolicyService.tradingAllowed(from) then
 		return
 	end
 	if trades[player] or trades[from] then
