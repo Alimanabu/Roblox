@@ -178,6 +178,41 @@ do
 	check(Formulas.isFromPastLife({ origin = A, gen = 0 }, A, 1), "старый формат origin/gen")
 end
 
+-- 5i. Аура-баттлы: сила растёт с редкостью; соседние редкости иногда побеждают
+-- друг друга (апсеты), а Нормис никогда не побьёт Бога.
+do
+	local Battles = shared_require("Config/Battles")
+	local function avgPower(rarityId)
+		local pool = Creatures.ByRarity[rarityId]
+		local sum = 0
+		for _, c in ipairs(pool) do
+			sum += Battles.power(c.income)
+		end
+		return sum / #pool
+	end
+	local prev = 0
+	for _, rarity in ipairs(Rarities.List) do
+		local p = avgPower(rarity.id)
+		check(p > prev, "сила " .. rarity.id .. " не выше предыдущей")
+		prev = p
+	end
+	local function upsetChance(weak, strong)
+		local s = Battles.RANDOM_SPREAD
+		local wins, n = 0, 20000
+		local brng = Random.new(3)
+		for _ = 1, n do
+			if avgPower(weak) * brng:NextNumber(1 - s, 1 + s) > avgPower(strong) * brng:NextNumber(1 - s, 1 + s) then
+				wins += 1
+			end
+		end
+		return wins / n
+	end
+	local near = upsetChance("sigma", "aura")
+	print(string.format("  баттл: Сигма бьёт Ауру в %.1f%% раундов", near * 100))
+	check(near > 0.01 and near < 0.4, "апсеты между соседними редкостями должны быть, но редко")
+	check(upsetChance("normie", "god") == 0, "Нормис не должен побеждать Бога")
+end
+
 -- 5f. Гарантия: разумные пороги у каждой капсулы.
 for _, capsule in ipairs(Capsules.List) do
 	local threshold = Formulas.pityThreshold(capsule)

@@ -1,4 +1,5 @@
--- Всплывающее приглашение к обмену: «Принять» / «Отклонить».
+-- Всплывающее приглашение (обмен, аура-баттл): «Принять» / «Отклонить».
+-- respondRemote получает (fromUserId, accept).
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
@@ -12,12 +13,13 @@ TradeInvite.__index = TradeInvite
 
 local TIMEOUT = 25
 
-function TradeInvite.new(screenGui)
+function TradeInvite.new(screenGui, respondRemote, yOffset)
 	local self = setmetatable({}, TradeInvite)
+	self.respondRemote = respondRemote or Remotes.TradeRespond
 	self.frame = create("Frame", {
 		Name = "TradeInvite",
 		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -10, 1, -170),
+		Position = UDim2.new(1, -10, 1, -170 - (yOffset or 0)),
 		Size = UDim2.fromOffset(320, 120),
 		BackgroundColor3 = C.Panel,
 		Visible = false,
@@ -50,9 +52,9 @@ function TradeInvite.new(screenGui)
 	return self
 end
 
-function TradeInvite:show(fromUserId, fromName)
+function TradeInvite:show(fromUserId, text)
 	self.fromUserId = fromUserId
-	self.label.Text = "🤝 " .. fromName .. " хочет обменяться брейнротами!"
+	self.label.Text = text
 	self.frame.Visible = true
 	self.token += 1
 	local token = self.token
@@ -65,7 +67,7 @@ end
 
 function TradeInvite:answer(accept)
 	if self.fromUserId then
-		Remotes.TradeRespond:FireServer(self.fromUserId, accept)
+		self.respondRemote:FireServer(self.fromUserId, accept)
 	end
 	self.fromUserId = nil
 	self.token += 1

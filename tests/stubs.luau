@@ -7,7 +7,10 @@ Color3 = {
 
 local RandomClass = {}
 RandomClass.__index = RandomClass
-function RandomClass:NextNumber()
+function RandomClass:NextNumber(min, max)
+	if min and max then
+		return min + math.random() * (max - min)
+	end
 	return math.random()
 end
 function RandomClass:NextInteger(a, b)

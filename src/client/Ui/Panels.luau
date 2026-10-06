@@ -14,6 +14,7 @@ local Rebirths = require(Shared.Config.Rebirths)
 local Monetization = require(Shared.Config.Monetization)
 local Achievements = require(Shared.Config.Achievements)
 local Skins = require(Shared.Config.Skins)
+local Battles = require(Shared.Config.Battles)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -902,6 +903,7 @@ local HELP_SECTIONS = {
 	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
 	{ "🦹 Кража", "Подойди к чужому брейнроту и зажми F. Беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
 	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
+	{ "⚔️ Аура-баттлы", "Вызови игрока или потренируйся с ботом: 3 твоих сильнейших брейнрота против 3 его. Сила зависит от дохода, но бывают апсеты! Ничего не теряешь, за победы — очки ауры, ранги и монеты." },
 	{ "👹 Босс", "Каждый час в :30 на площадь приходит огромный босс-брейнрот. Шлёпайте его всем сервером! Кто ударил больше всех, получит Ауру." },
 	{ "🎉 Ивенты", "Каждые 15 минут идёт ивент: удача, деньги, мутации или турбо. А каждый час в 6-7 минуту наступает МИНУТА 67: шанс SIX SEVEN x6.7!" },
 	{ "♻️ Перерождение", "Сбрасывает монеты и брейнротов, но навсегда даёт +50% дохода, +10% удачи и крутой титул." },
@@ -1266,6 +1268,94 @@ function SkinsPanel.build(content, state, panels)
 end
 
 ---------------------------------------------------------------------------
+-- АУРА-БАТТЛЫ
+---------------------------------------------------------------------------
+local BattlesPanel = { title = "⚔️ Аура-баттлы" }
+
+function BattlesPanel.signature(state)
+	local b = state.battles
+	local parts = { b.points, b.wins, b.losses, b.rewardsLeft, #Players:GetPlayers() }
+	for _, member in ipairs(b.team) do
+		table.insert(parts, member.id .. member.mut .. tostring(member.skin))
+	end
+	return table.concat(parts, "|")
+end
+
+function BattlesPanel.build(content, state)
+	local b = state.battles
+	list(content, 8)
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 30),
+		Text = "✨ " .. b.rank .. " • очки ауры: " .. b.points .. " • побед " .. b.wins .. " / поражений " .. b.losses,
+		TextColor3 = C.Gold,
+		LayoutOrder = 0,
+		Parent = content,
+	})
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 22),
+		Text = "Сражаются 3 твоих сильнейших брейнрота. Ничего не теряешь! Наград за победы сегодня: " .. b.rewardsLeft,
+		TextColor3 = C.Muted,
+		LayoutOrder = 1,
+		Parent = content,
+	})
+
+	local teamRow = create("Frame", {
+		Size = UDim2.new(1, -10, 0, 110),
+		BackgroundTransparency = 1,
+		LayoutOrder = 2,
+		Parent = content,
+	}, {
+		create("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Padding = UDim.new(0, 10),
+		}),
+	})
+	if #b.team == 0 then
+		Theme.label({ Size = UDim2.new(1, 0, 1, 0), Text = "Сначала создай брейнротов на 🏭 Фабрике", TextColor3 = C.Muted, Parent = teamRow })
+	end
+	for _, member in ipairs(b.team) do
+		local creature = Creatures.get(member.id)
+		local box = card({ Size = UDim2.fromOffset(150, 110), Parent = teamRow }, { Theme.padding(4) })
+		Viewport.creature({ Size = UDim2.new(1, 0, 0, 74), Parent = box }, member.id, member.mut, false, member.skin)
+		Theme.label({
+			Size = UDim2.new(1, 0, 0, 26),
+			Position = UDim2.fromOffset(0, 76),
+			Text = "✨ " .. Battles.power(Formulas.creatureBaseIncome(member)),
+			TextColor3 = creature and Rarities.get(creature.rarity).color or C.Text,
+			Parent = box,
+		})
+	end
+
+	Theme.button({
+		Size = UDim2.new(0.6, 0, 0, 46),
+		Text = "🤖 Тренировка с ботом",
+		Color = C.Blue,
+		LayoutOrder = 3,
+		Parent = content,
+	}, function()
+		Remotes.BattleChallenge:FireServer("bot")
+	end)
+
+	for order, other in ipairs(Players:GetPlayers()) do
+		if other ~= player then
+			local row = card({ Size = UDim2.new(1, -10, 0, 50), LayoutOrder = 10 + order }, { Theme.padding(6) })
+			Theme.label({ Size = UDim2.new(0.6, 0, 1, 0), Text = other.DisplayName, TextXAlignment = Enum.TextXAlignment.Left, Parent = row })
+			Theme.button({
+				Size = UDim2.new(0.4, -6, 1, 0),
+				Position = UDim2.new(0.6, 6, 0, 0),
+				Text = "⚔️ Вызвать",
+				Color = C.Accent,
+				Parent = row,
+			}, function()
+				Remotes.BattleChallenge:FireServer(other.UserId)
+			end)
+			row.Parent = content
+		end
+	end
+end
+
+---------------------------------------------------------------------------
 -- ДОСТИЖЕНИЯ
 ---------------------------------------------------------------------------
 local AchievementsPanel = { title = "🏆 Достижения" }
@@ -1383,6 +1473,7 @@ end
 ---------------------------------------------------------------------------
 
 local DEFINITIONS = {
+	Battles = BattlesPanel,
 	Settings = SettingsPanel,
 	Skins = SkinsPanel,
 	Trade = Trade,

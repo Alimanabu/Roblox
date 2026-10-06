@@ -62,6 +62,7 @@ local function defaultData()
 		settings = { music = true, sfx = true, announcements = true },
 		pity = {}, -- [capsuleId] = попыток без самой редкой редкости капсулы
 		wheel = { lastFreeDay = 0, extraSpins = 0 },
+		battles = { points = 0, wins = 0, losses = 0, rewardDay = 0, rewardedToday = 0 },
 		receipts = {}, -- последние обработанные покупки
 		lastOnline = 0,
 	}

@@ -26,6 +26,8 @@ local EVENTS = {
 	"ApplySkin", -- (uid, skinId | nil)
 	"SetSetting", -- (key, bool) настройки игрока
 	"SpinWheel", -- () крутить колесо удачи
+	"BattleChallenge", -- (targetUserId | "bot") вызвать на аура-баттл
+	"BattleRespond", -- (fromUserId, accept)
 
 	-- сервер -> клиент
 	"State", -- (snapshot)
@@ -36,6 +38,8 @@ local EVENTS = {
 	"TradeState", -- (state | nil) состояние обмена
 	"TradeInvite", -- (fromUserId, fromName) тебя зовут обменяться
 	"WheelResult", -- (index) что выпало на колесе
+	"BattleInvite", -- (fromUserId, fromName) тебя вызвали на баттл
+	"BattleResult", -- (result) раунды и итог баттла
 }
 
 local Remotes = {}

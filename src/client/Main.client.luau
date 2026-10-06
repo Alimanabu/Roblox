@@ -19,6 +19,7 @@ local EventBanner = require(script.Parent.Ui.EventBanner)
 local TutorialBanner = require(script.Parent.Ui.TutorialBanner)
 local TradeInvite = require(script.Parent.Ui.TradeInvite)
 local WheelSpin = require(script.Parent.Ui.WheelSpin)
+local BattleView = require(script.Parent.Ui.BattleView)
 
 local player = Players.LocalPlayer
 
@@ -93,10 +94,24 @@ Remotes.WheelResult.OnClientEvent:Connect(function(index)
 	end)
 end)
 
+-- Аура-баттлы.
+local battleInvite = TradeInvite.new(screenGui, Remotes.BattleRespond, 130)
+Remotes.BattleInvite.OnClientEvent:Connect(function(fromUserId, fromName)
+	battleInvite:show(fromUserId, "⚔️ " .. fromName .. " вызывает тебя на аура-баттл!")
+	Sfx.play("alarm")
+end)
+local battleView = BattleView.new(screenGui, function(name)
+	Sfx.play(name)
+end)
+Remotes.BattleResult.OnClientEvent:Connect(function(result)
+	panels:close()
+	battleView:show(result)
+end)
+
 -- Обмен.
 local tradeInvite = TradeInvite.new(screenGui)
 Remotes.TradeInvite.OnClientEvent:Connect(function(fromUserId, fromName)
-	tradeInvite:show(fromUserId, fromName)
+	tradeInvite:show(fromUserId, "🤝 " .. fromName .. " хочет обменяться брейнротами!")
 	Sfx.play("lock")
 end)
 Remotes.TradeState.OnClientEvent:Connect(function(tradeState)

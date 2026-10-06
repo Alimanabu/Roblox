@@ -21,6 +21,7 @@ local MENU = {
 	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
 	{ id = "Achievements", text = "🏆 Достижения", color = Color3.fromRGB(200, 150, 40) },
 	{ id = "Trade", text = "🤝 Обмен", color = Color3.fromRGB(60, 170, 140) },
+	{ id = "Battles", text = "⚔️ Баттлы", color = Color3.fromRGB(200, 60, 90) },
 	{ id = "Skins", text = "🎨 Скины", color = Color3.fromRGB(220, 90, 200) },
 	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
 	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
