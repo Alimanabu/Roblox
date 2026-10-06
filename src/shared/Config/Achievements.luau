@@ -3,6 +3,7 @@
 
 local Config = script.Parent
 local Creatures = require(Config.Creatures)
+local Seasons = require(Config.Seasons)
 
 -- Сезонные брейнроты в счёт «открой всех» не входят: после сезона их не достать.
 local REGULAR_COUNT = 0
@@ -67,26 +68,27 @@ Achievements.List = {
 	{ id = "million", name = "Миллионер", desc = "Заработай $1M за всё время", reward = { coinsMinutes = 5 }, check = function(d) return d.totalEarned >= 1e6 end },
 	{ id = "billion", name = "Миллиардер", desc = "Заработай $1B за всё время", reward = { coinsMinutes = 30 }, check = function(d) return d.totalEarned >= 1e9 end },
 	{ id = "trade", name = "Деловой партнёр", desc = "Соверши обмен", reward = { coinsMinutes = 5 }, check = function(d) return stat(d, "trades") >= 1 end },
-	{ id = "halloween", name = "Хэллоуин 2026 🎃", desc = "Получи хэллоуинского брейнрота", reward = { coinsMinutes = 10 }, check = function(d)
-		for id in pairs(d.index) do
-			local creature = Creatures.get(id)
-			if creature and creature.season == "halloween" then
-				return true
-			end
-		end
-		return false
-	end },
-	{ id = "newyear", name = "Новый год 2027 🎄", desc = "Получи новогоднего брейнрота", reward = { coinsMinutes = 10 }, check = function(d)
-		for id in pairs(d.index) do
-			local creature = Creatures.get(id)
-			if creature and creature.season == "newyear" then
-				return true
-			end
-		end
-		return false
-	end },
 	{ id = "streak7", name = "Верный фанат", desc = "Забери награду 7-го дня", reward = { coinsMinutes = 20 }, check = function(d) return d.daily.streak >= 7 end },
 }
+
+-- По достижению на каждый сезон: «получи брейнрота этого сезона».
+for _, season in ipairs(Seasons.List) do
+	table.insert(Achievements.List, {
+		id = "season_" .. season.id,
+		name = season.name,
+		desc = "Получи брейнрота сезона «" .. season.name .. "»",
+		reward = { coinsMinutes = 10 },
+		check = function(d)
+			for id in pairs(d.index) do
+				local creature = Creatures.get(id)
+				if creature and creature.season == season.id then
+					return true
+				end
+			end
+			return false
+		end,
+	})
+end
 
 for _, achievement in ipairs(Achievements.List) do
 	achievement.badgeId = achievement.badgeId or 0

@@ -60,6 +60,17 @@ Creatures.List = {
 	{ id = "renna_sigmina", name = "Ренна Сигмина", rarity = "sigma", season = "newyear", income = 320, color = Color3.fromRGB(150, 100, 60), size = 3.2, body = "wide", acc = { "horns", "antenna" }, desc = "Олень, который тащит сани в 4 утра." },
 	{ id = "abete_aurella", name = "Абете Аурелла", rarity = "aura", season = "newyear", income = 1850, color = Color3.fromRGB(40, 160, 70), size = 3.6, body = "wedge", acc = { "halo", "glitch" }, desc = "Ёлка с гирляндой ауры." },
 	{ id = "nonno_gelo", name = "Нонно Джело", rarity = "skibidi", season = "newyear", income = 11800, color = Color3.fromRGB(210, 30, 40), size = 4, body = "tall", acc = { "chin", "crown", "cape" }, desc = "Дедушка Мороз из Италии. Дарит только мемы." },
+	-- 💘 ДЕНЬ СВЯТОГО ВАЛЕНТИНА (лимитированные)
+	{ id = "cuore_rizzone", name = "Куоре Риззоне", rarity = "rizz", season = "valentine", income = 66, color = Color3.fromRGB(255, 70, 120), size = 2.8, body = "ball", acc = { "wings", "shades" }, desc = "Сердечко с максимальным риззом. Ой." },
+	{ id = "cupido_sigmino", name = "Купидо Сигмино", rarity = "sigma", season = "valentine", income = 340, color = Color3.fromRGB(255, 200, 220), size = 3.2, body = "tall", acc = { "wings", "halo" }, desc = "Купидон, который стреляет только по сигмам." },
+	{ id = "rosalina_aurina", name = "Розалина Аурина", rarity = "aura", season = "valentine", income = 1950, color = Color3.fromRGB(220, 30, 70), size = 3.6, body = "wedge", acc = { "crown", "spikes" }, desc = "Роза с шипами и бесконечной аурой." },
+	{ id = "cioccolato_amorele", name = "Чоколато Аморе", rarity = "skibidi", season = "valentine", income = 11900, color = Color3.fromRGB(110, 60, 30), size = 4, body = "block", acc = { "headband", "cape" }, desc = "Коробка конфет, которая дарит сама себя." },
+
+	-- ☀️ ЛЕТО (лимитированные)
+	{ id = "anguria_chillino", name = "Ангурия Чиллино", rarity = "rizz", season = "summer", income = 64, color = Color3.fromRGB(80, 190, 80), size = 2.8, body = "wide", acc = { "shades" }, desc = "Арбуз на чилле. Косточки — это ризз." },
+	{ id = "granchio_spiaggino", name = "Гранкьо Спьяджино", rarity = "sigma", season = "summer", income = 310, color = Color3.fromRGB(240, 90, 50), size = 3.2, body = "wide", acc = { "tentacles", "shades" }, desc = "Краб-сигма. Ходит боком, но всегда вперёд." },
+	{ id = "surfero_aurino", name = "Сурферо Аурино", rarity = "aura", season = "summer", income = 1850, color = Color3.fromRGB(60, 180, 255), size = 3.6, body = "ball", acc = { "fin", "headband" }, desc = "Ловит волну и ауру одновременно." },
+	{ id = "sole_dj", name = "Соле Диджейна", rarity = "skibidi", season = "summer", income = 11700, color = Color3.fromRGB(255, 220, 40), size = 4, body = "ball", acc = { "halo", "headphones" }, desc = "Солнце-диджей. Летний сет 24/7." },
 	{ id = "vampiro_dj", name = "Вампиро Диджеино", rarity = "skibidi", season = "halloween", income = 11500, color = Color3.fromRGB(120, 20, 40), size = 4, body = "ball", acc = { "headphones", "cape", "horns" }, desc = "Вампир-диджей. Играет только ночью, но громко." },
 }
 

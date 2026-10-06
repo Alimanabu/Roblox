@@ -15,6 +15,7 @@ local Monetization = require(Shared.Config.Monetization)
 local Achievements = require(Shared.Config.Achievements)
 local Skins = require(Shared.Config.Skins)
 local Battles = require(Shared.Config.Battles)
+local Seasons = require(Shared.Config.Seasons)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -568,7 +569,7 @@ function Index.build(content, state)
 		Theme.label({
 			Size = UDim2.new(1, 0, 0, 20),
 			Position = UDim2.fromOffset(0, 120),
-			Text = ((rarity.secret and not known) and "???" or rarity.name) .. (creature.season == "halloween" and " 🎃" or (creature.season and " 🎄" or "")),
+			Text = ((rarity.secret and not known) and "???" or rarity.name) .. (creature.season and (" " .. Seasons.ById[creature.season].icon) or ""),
 			TextColor3 = rarity.color,
 			Parent = box,
 		})
@@ -1425,6 +1426,8 @@ local ADMIN_BUTTONS = {
 	{ "👹 Босс", "event", "boss" },
 	{ "🎃 Сезон Хэллоуин", "season", "halloween" },
 	{ "🎄 Сезон Новый год", "season", "newyear" },
+	{ "💘 Сезон Валентин", "season", "valentine" },
+	{ "☀️ Сезон Лето", "season", "summer" },
 	{ "Выключить сезон", "season", "" },
 	{ "📚 Пропустить обучение", "skipTutorial" },
 	{ "🎁 Сбросить награды дня", "resetDaily" },
