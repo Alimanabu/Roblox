@@ -380,6 +380,16 @@ function PlotService.isInside(plot, position, margin)
 	return math.abs(localPos.X) <= half and math.abs(localPos.Z) <= half and localPos.Y < 40
 end
 
+-- Стоит ли точка на чьей-нибудь (или свободной) базе.
+function PlotService.isOnAnyPlot(position, margin)
+	for _, plot in ipairs(plots) do
+		if PlotService.isInside(plot, position, margin) then
+			return true
+		end
+	end
+	return false
+end
+
 -- Точка сразу за забором участка, куда выталкиваем чужаков.
 function PlotService.outsideCFrame(plot, position)
 	local localPos = plot.cframe:PointToObjectSpace(position)

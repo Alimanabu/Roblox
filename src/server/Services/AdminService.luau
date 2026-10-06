@@ -88,6 +88,11 @@ function COMMANDS.season(player, data, seasonId)
 	return "Включён сезон " .. season.name .. " (до выключения)"
 end
 
+function COMMANDS.wild(player, data)
+	require(script.Parent.WildService).forceSpawn()
+	return "Появился дикий брейнрот"
+end
+
 function COMMANDS.skipTutorial(player, data)
 	data.tutorial.step = 999
 	return "Обучение пропущено"

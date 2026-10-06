@@ -56,6 +56,8 @@ Achievements.List = {
 	{ id = "thief10", name = "Мастер-вор", desc = "Укради 10 брейнротов", reward = { coinsMinutes = 20 }, check = function(d) return stat(d, "stolen") >= 10 end },
 	{ id = "defender", name = "Защитник базы", desc = "Шлёпни вора", reward = { coinsMinutes = 5 }, check = function(d) return stat(d, "thievesSlapped") >= 1 end },
 	{ id = "defender10", name = "Охранник 80 уровня", desc = "Шлёпни 10 воров", reward = { coinsMinutes = 20 }, check = function(d) return stat(d, "thievesSlapped") >= 10 end },
+	{ id = "wild", name = "Ловец брейнротов", desc = "Поймай дикого брейнрота", reward = { coinsMinutes = 3 }, check = function(d) return stat(d, "wildCaught") >= 1 end },
+	{ id = "wild25", name = "Брейнрот-рейнджер", desc = "Поймай 25 диких брейнротов", reward = { coinsMinutes = 25 }, check = function(d) return stat(d, "wildCaught") >= 25 end },
 	{ id = "boss", name = "Охотник на боссов", desc = "Победи босса-брейнрота", reward = { coinsMinutes = 10 }, check = function(d) return stat(d, "bossKills") >= 1 end },
 	{ id = "boss10", name = "Гроза Огайо", desc = "Победи 10 боссов", reward = { coinsMinutes = 40, luckMinutes = 30 }, check = function(d) return stat(d, "bossKills") >= 10 end },
 	{ id = "battle", name = "Первая аура-победа", desc = "Победи в аура-баттле", reward = { coinsMinutes = 5 }, check = function(d) return (d.battles and d.battles.wins or 0) >= 1 end },

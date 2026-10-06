@@ -64,6 +64,8 @@ function AchievementService.init()
 		end
 		if kind == "mutant" then
 			data.stats.mutants = (data.stats.mutants or 0) + amount
+		elseif kind == "catchWild" then
+			data.stats.wildCaught = (data.stats.wildCaught or 0) + amount
 		elseif kind == "bossKill" then
 			data.stats.bossKills = (data.stats.bossKills or 0) + amount
 		elseif kind == "slapThief" then
