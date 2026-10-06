@@ -1,0 +1,47 @@
+# Автопроверка при каждом пуше: компиляция всех скриптов, тесты баланса,
+# сборка файла игры. Готовый BrainrotFactory.rbxl можно скачать во вкладке
+# Actions → нужный запуск → Artifacts и сразу открыть в Roblox Studio.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Скачать Luau и Rojo
+        run: |
+          mkdir -p tools && cd tools
+          curl -sSL -o luau.zip https://github.com/luau-lang/luau/releases/latest/download/luau-ubuntu.zip
+          unzip -q luau.zip
+          curl -sSL -o rojo.zip https://github.com/rojo-rbx/rojo/releases/download/v7.4.4/rojo-7.4.4-linux-x86_64.zip
+          unzip -q rojo.zip
+          chmod +x luau luau-compile rojo
+
+      - name: Компиляция всех скриптов
+        run: |
+          failed=0
+          for f in $(find src -name '*.luau'); do
+            if ! tools/luau-compile "$f" > /dev/null; then
+              echo "::error file=$f::Ошибка компиляции"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      - name: Тесты баланса и формул
+        run: python3 tests/run.py tools/luau
+
+      - name: Сборка игры
+        run: tools/rojo build . -o BrainrotFactory.rbxl
+
+      - name: Сохранить файл игры
+        uses: actions/upload-artifact@v4
+        with:
+          name: BrainrotFactory
+          path: BrainrotFactory.rbxl

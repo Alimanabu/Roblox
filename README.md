@@ -21,6 +21,10 @@ Roblox-симулятор: строишь фабрику мемов, кидае�
 
 Собрать файл игры без Studio: `rojo build -o BrainrotFactory.rbxl`.
 
+**Без установки Rojo:** при каждом пуше GitHub сам проверяет код и собирает игру.
+Открой на GitHub вкладку **Actions** → последний зелёный запуск → внизу **Artifacts** →
+скачай `BrainrotFactory`, распакуй и открой `BrainrotFactory.rbxl` в Roblox Studio.
+
 ### Перед публикацией
 
 - **Game Settings → Security → Enable Studio Access to API Services**. Без этого в Studio
