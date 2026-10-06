@@ -51,6 +51,9 @@ local function rename(player, uid, text)
 		return
 	end
 
+	if #text > 200 then
+		return
+	end
 	text = text:gsub("[%c]", ""):gsub("^%s+", ""):gsub("%s+$", "")
 	if text == "" then
 		entry.nickname = nil
@@ -68,7 +71,8 @@ local function rename(player, uid, text)
 	end
 	DataService.markDirty(player)
 	PlotService.render(player)
-	Remotes.Notify:FireClient(player, entry.nickname and ("✏️ Теперь его зовут «" .. entry.nickname .. "»") or "Имя убрано", GOOD)
+	local shown = entry.nickname and entry.nickname:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+	Remotes.Notify:FireClient(player, shown and ("✏️ Теперь его зовут «" .. shown .. "»") or "Имя убрано", GOOD)
 end
 
 function NameService.init()

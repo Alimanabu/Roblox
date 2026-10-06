@@ -108,7 +108,10 @@ local function banner(screenGui, text, color)
 	label.Name = "LegendaryBanner"
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
 	label.Position = UDim2.fromScale(0.5, 0.3)
-	label.Size = UDim2.fromOffset(900, 90)
+	label.Size = UDim2.new(0.9, 0, 0, 90)
+	local limit = Instance.new("UISizeConstraint")
+	limit.MaxSize = Vector2.new(900, 90)
+	limit.Parent = label
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.FredokaOne
 	label.TextScaled = true
@@ -133,7 +136,12 @@ local function banner(screenGui, text, color)
 end
 
 -- Белая вспышка + облёт камеры вокруг базы (только у того, кто выбил).
+local cinematicBusy = false
 local function cinematic(screenGui, center)
+	if cinematicBusy then
+		return
+	end
+	cinematicBusy = true
 	local flash = Instance.new("Frame")
 	flash.Size = UDim2.fromScale(1, 1)
 	flash.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -145,6 +153,7 @@ local function cinematic(screenGui, center)
 
 	local camera = workspace.CurrentCamera
 	if not camera then
+		cinematicBusy = false
 		return
 	end
 	local previousType = camera.CameraType
@@ -156,6 +165,7 @@ local function cinematic(screenGui, center)
 		local t = (os.clock() - started) / duration
 		if t >= 1 then
 			connection:Disconnect()
+			cinematicBusy = false
 			camera.CameraType = previousType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or previousType
 			return
 		end

@@ -45,7 +45,11 @@ end
 
 -- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
 -- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
-local function addCreature(player, data, creatureId, mutationId, paid, lineage)
+local SHOWCASE_COOLDOWN = 15 -- не чаще раза в 15 с на игрока
+local lastShowcase = {} -- [player] = os.clock()
+
+-- showcase = true — это действительно редкая находка (см. craft): запускаем шоу.
+local function addCreature(player, data, creatureId, mutationId, paid, lineage, showcase)
 	-- lineage: кто владел брейнротом и в каком «поколении» (см. Formulas.lineageOf).
 	local entry = {
 		uid = tostring(data.nextUid),
@@ -75,8 +79,13 @@ local function addCreature(player, data, creatureId, mutationId, paid, lineage)
 		Actions.fire(player, "newIndex", 1)
 	end
 
-	-- Бог, SIX SEVEN или очень редкая мутация — световое шоу на весь сервер.
-	if rarity.rank >= Rarities.get("god").rank or mutation.rank >= 5 then
+	-- Световое шоу на весь сервер: SIX SEVEN, мутация 67/Космический или «редкая находка»
+	-- (самая редкая редкость своей капсулы — например Бог из Мега-тренда, но не Бог
+	-- из Мирового тренда, где он выпадает почти всегда).
+	local special = rarity.id == "sixseven" or mutation.rank >= 5 or showcase == true
+	local now = os.clock()
+	if special and (not lastShowcase[player] or now - lastShowcase[player] > SHOWCASE_COOLDOWN) then
+		lastShowcase[player] = now
 		Remotes.LegendaryDrop:FireAllClients({
 			userId = player.UserId,
 			name = player.DisplayName,
@@ -103,7 +112,8 @@ function FactoryService.give(player, creatureId, mutationId)
 	if not data or not Creatures.get(creatureId) then
 		return nil
 	end
-	return (addCreature(player, data, creatureId, mutationId or "normal", nil))
+	local rank = Rarities.get(Creatures.get(creatureId).rarity).rank
+	return (addCreature(player, data, creatureId, mutationId or "normal", nil, nil, rank >= Rarities.get("god").rank))
 end
 
 -- Возвращает true, если получилось создать.
@@ -174,7 +184,9 @@ local function craft(player, capsuleId, silent)
 	local creature = Formulas.randomCreatureOf(rarityId, rng, capsule.season)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost)
+	local showcase = Rarities.get(rarityId).rank >= Rarities.get("god").rank
+		and Rarities.get(rarityId).rank >= Rarities.get(pityRarity).rank
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost, nil, showcase)
 	Actions.fire(player, "craft", 1)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
@@ -288,7 +300,7 @@ local function fuse(player, rarityId)
 	data.stats.fused += 1
 	Actions.fire(player, "fuse", 1)
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, lineage)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, lineage, nextRarity.rank >= Rarities.get("god").rank)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,
@@ -326,6 +338,7 @@ function FactoryService.init()
 
 	Players.PlayerRemoving:Connect(function(player)
 		lastCraft[player] = nil
+		lastShowcase[player] = nil
 		autoCraft[player] = nil
 		fullWarned[player] = nil
 	end)

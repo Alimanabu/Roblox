@@ -179,7 +179,7 @@ function WildService.init()
 
 	-- Бродят по карте и через какое-то время убегают.
 	task.spawn(function()
-		local step = 0.15
+		local step = 0.05
 		while true do
 			task.wait(step)
 			local now = os.clock()
@@ -191,7 +191,13 @@ function WildService.init()
 					if offset.Magnitude < 2 then
 						wild.target = randomSpot()
 					else
-						wild.position += offset.Unit * math.min(offset.Magnitude, WildService.SPEED * step)
+						local nextPos = wild.position + offset.Unit * math.min(offset.Magnitude, WildService.SPEED * step)
+						if PlotService.isOnAnyPlot(nextPos, 4) then
+							-- Через базы не ходим — выбираем другую цель.
+							wild.target = randomSpot()
+							continue
+						end
+						wild.position = nextPos
 						local hop = math.abs(math.sin(now * 8)) * 0.8
 						model:PivotTo(CFrame.lookAt(wild.position, wild.position + offset) * CFrame.new(0, hop, 0) * CFrame.Angles(0, math.pi, 0))
 					end
