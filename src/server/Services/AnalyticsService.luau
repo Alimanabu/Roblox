@@ -22,8 +22,9 @@ end
 
 -- Воронка обучения: шаг 1 = зашёл в игру, дальше шаги из Config/Tutorial.
 function AnalyticsService.onboardingStep(player, step)
+	-- Roblox принимает названия шагов не длиннее 50 символов — делаем короткие.
 	local previous = Tutorial.Steps[step - 1]
-	local name = step == 1 and "Зашёл в игру" or (previous and ("Шаг " .. (step - 1) .. ": " .. previous.text) or "Обучение пройдено")
+	local name = step == 1 and "Joined" or (previous and ("Step" .. (step - 1) .. "_" .. previous.action) or "TutorialDone")
 	safe(Analytics.LogOnboardingFunnelStepEvent, player, step, name)
 end
 
