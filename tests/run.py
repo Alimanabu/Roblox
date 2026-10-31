@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Собирает shared-модули в один файл с заглушками Roblox и запускает тесты через luau CLI.
+"""Собирает модули в один файл с заглушками Roblox и запускает тесты через luau CLI.
 Использование: python3 tests/run.py [путь к luau]"""
 import os, subprocess, sys
 
@@ -10,12 +10,33 @@ MODULES = ["Config/Rarities", "Config/Creatures", "Config/Mutations", "Config/Ca
            "Config/Events", "Config/Daily", "Config/Achievements", "Config/Codes", "Config/Skins", "Config/Battles",
            "Util/Format", "Util/Formulas"]
 
-out = [open(os.path.join(ROOT, "tests", "stubs.luau")).read()]
-for name in MODULES:
-    src = open(os.path.join(ROOT, "src", "shared", name + ".luau")).read()
-    out.append(f'__defs["{name}"] = function(script)\n{src}\nend\n')
-out.append(open(os.path.join(ROOT, "tests", "economy.spec.luau")).read())
 
-bundle = os.path.join(ROOT, "tests", ".bundle.luau")
-open(bundle, "w").write("\n".join(out))
-sys.exit(subprocess.call([LUAU, bundle]))
+def read(*path):
+    return open(os.path.join(ROOT, *path)).read()
+
+
+def run(spec, extra=()):
+    out = [read("tests", "stubs.luau")]
+    for name in MODULES:
+        src = read("src", "shared", name + ".luau")
+        out.append(f'__defs["{name}"] = function(script)\n{src}\nend\n')
+    out.extend(extra)
+    out.append(read("tests", spec))
+
+    bundle = os.path.join(ROOT, "tests", ".bundle.luau")
+    open(bundle, "w").write("\n".join(out))
+    return subprocess.call([LUAU, bundle])
+
+
+economy = run("economy.spec.luau")
+
+services = []
+for name in ["DataService", "MonetizationService"]:
+    src = read("src", "server", "Services", name + ".luau")
+    services.append(f'__defs["Services/{name}"] = function(script)\n{src}\nend\n')
+# PlotService строит мир и в тесте не запускается: проверяем только его подписку на покупки.
+plot = read("src", "server", "Services", "PlotService.luau")
+services.append(f"__plotServiceSource = [=====[{plot}]=====]\n")
+purchases = run("purchases.spec.luau", services)
+
+sys.exit(economy or purchases)
