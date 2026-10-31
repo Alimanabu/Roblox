@@ -129,7 +129,7 @@ end
 local total = 0
 for text in pairs(shown) do
 	total += 1
-	check(string.find(text, "{%a+}") == nil, "незаполненный параметр: " .. text)
+	check(string.find(text, "{[%w_]+}") == nil, "незаполненный параметр: " .. text)
 	check(string.find(text, "table: 0x", 1, true) == nil, "таблица вместо текста: " .. text)
 	check(string.find(text, "nil", 1, true) == nil, "nil в тексте: " .. text)
 	if not isRussian then
