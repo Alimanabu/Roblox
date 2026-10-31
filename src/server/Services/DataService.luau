@@ -154,14 +154,15 @@ local function sessionOwnedByOther(saved)
 end
 
 -- release = true, когда игрок уходит: снимаем блокировку сессии.
--- Возвращает true, если сохранение прошло (или сохранять некуда, как в Studio без API).
+-- Возвращает true, если сохранение прошло. Сохранять некуда: в Studio без API это нормально,
+-- а на боевом сервере ответ false, иначе покупка подтвердится без записи.
 function DataService.save(player, release)
 	local data = profiles[player]
 	if not data then
 		return false
 	end
 	if not store then
-		return true
+		return RunService:IsStudio()
 	end
 	-- Игрок уже уходит: обычное сохранение могло бы вернуть блокировку сессии
 	-- после финального, и игрок не смог бы зайти на другой сервер.
@@ -371,6 +372,8 @@ function DataService.init()
 		local pending = 0
 		for player in pairs(profiles) do
 			pending += 1
+			-- До сохранения: чек или автосейв в этот момент вернули бы блокировку сессии.
+			releasing[player] = true
 			task.spawn(function()
 				DataService.save(player, true)
 				pending -= 1
