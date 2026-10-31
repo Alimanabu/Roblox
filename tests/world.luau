@@ -540,10 +540,11 @@ function Inst:PivotTo(target)
 		return
 	end
 	raw(self).pivot = target
-	local shift = target * from:Inverse()
+	-- Заглушке хватает сдвига: повороты деталей внутри модели на расчёты не влияют.
+	local shift = target.Position - from.Position
 	for _, part in ipairs(self:GetDescendants()) do
 		if PARTS[part.ClassName] then
-			part.CFrame = shift * part.CFrame
+			part.CFrame = if part == self.PrimaryPart then target else CFrame.new(part.Position + shift)
 		end
 	end
 end

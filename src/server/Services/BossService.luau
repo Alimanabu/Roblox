@@ -10,6 +10,7 @@ local Events = require(Shared.Config.Events)
 local CreatureModel = require(Shared.Util.CreatureModel)
 local Remotes = require(Shared.Remotes)
 
+local MoveGuardService = require(script.Parent.MoveGuardService)
 local DataService = require(script.Parent.DataService)
 local RewardService = require(script.Parent.RewardService)
 local Actions = require(script.Parent.Actions)
@@ -183,6 +184,7 @@ local function shockwave()
 			local offset = Vector3.new(root.Position.X - center.X, 0, root.Position.Z - center.Z)
 			if offset.Magnitude < boss.radius + BossService.SHOCKWAVE_RADIUS and offset.Magnitude > 0.01 then
 				Remotes.Knockback:FireClient(player, offset.Unit * 60 + Vector3.new(0, 45, 0))
+				MoveGuardService.knockback(player, 60)
 			end
 		end
 	end

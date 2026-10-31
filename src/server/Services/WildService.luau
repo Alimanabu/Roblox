@@ -17,6 +17,7 @@ local MonetizationService = require(script.Parent.MonetizationService)
 local FactoryService = require(script.Parent.FactoryService)
 local PlotService = require(script.Parent.PlotService)
 local Actions = require(script.Parent.Actions)
+local MoveGuardService = require(script.Parent.MoveGuardService)
 
 local WildService = {}
 
@@ -135,7 +136,7 @@ local function catch(player, prompt)
 	if not wild or not data or not root then
 		return
 	end
-	if (root.Position - model:GetPivot().Position).Magnitude > prompt.MaxActivationDistance + 6 then
+	if (root.Position - model:GetPivot().Position).Magnitude > prompt.MaxActivationDistance + 6 or not MoveGuardService.canAct(player) then
 		return
 	end
 	if #data.creatures >= Formulas.slots(data, MonetizationService.passes(player)) then

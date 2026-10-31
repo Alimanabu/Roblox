@@ -28,6 +28,7 @@ local ProgressionService = require(script.Parent.ProgressionService)
 local PlotService = require(script.Parent.PlotService)
 local Actions = require(script.Parent.Actions)
 local BossService = require(script.Parent.BossService)
+local MoveGuardService = require(script.Parent.MoveGuardService)
 
 local StealService = {}
 
@@ -299,6 +300,10 @@ local function startSteal(thief, prompt)
 	if not thiefRoot or not body or (thiefRoot.Position - body.Position).Magnitude > prompt.MaxActivationDistance + 6 then
 		return
 	end
+	if not MoveGuardService.canAct(thief) then
+		Remotes.Notify:FireClient(thief, S.m("steal.too_fast"), BAD)
+		return
+	end
 
 	if StealService.isLocked(owner) then
 		Remotes.Notify:FireClient(thief, S.m("steal.base_locked"), BAD)
@@ -341,6 +346,8 @@ local function startSteal(thief, prompt)
 		deadline = deadline,
 		visual = visual,
 		highlight = highlight,
+		startPosition = thiefRoot.Position,
+		startClock = os.clock(),
 		diedConn = humanoid.Died:Connect(function()
 			endCarry(thief, false, S.m("steal.reason_defeated"))
 		end),
@@ -389,6 +396,11 @@ local function onLockPrompt(player, prompt)
 	local plotModel = prompt:FindFirstAncestorWhichIsA("Model")
 	local owner = plotModel and PlotService.ownerOfModel(plotModel)
 	if owner ~= player then
+		return
+	end
+	-- Замок закрывают только у кнопки: «вернуться домой» телепортом нельзя.
+	local root = rootOf(player)
+	if not root or (root.Position - prompt.Parent.Position).Magnitude > prompt.MaxActivationDistance + 6 or not MoveGuardService.canAct(player) then
 		return
 	end
 	-- Защиту при входе можно «продлить» замком (это шаг обучения), обычный замок — нет.
@@ -505,7 +517,7 @@ local function slap(player)
 	lastSlap[player] = nowClock
 
 	local root = rootOf(player)
-	if not root then
+	if not root or not MoveGuardService.canAct(player) then
 		return
 	end
 	if BossService.tryHit(player, root) then
@@ -523,6 +535,7 @@ local function slap(player)
 					if flat.Unit:Dot(Vector3.new(facing.X, 0, facing.Z).Unit) > 0.2 then
 						local velocity = flat.Unit * StealService.SLAP_FORCE + Vector3.new(0, 35, 0)
 						Remotes.Knockback:FireClient(other, velocity)
+						MoveGuardService.knockback(other, StealService.SLAP_FORCE)
 						Actions.fire(player, "slap", 1)
 						if carries[other] then
 							Actions.fire(player, "slapThief", 1)
@@ -690,6 +703,7 @@ function StealService.init()
 						for _, other in ipairs(Players:GetPlayers()) do
 							local root = other ~= owner and rootOf(other)
 							if root and PlotService.isInside(plot, root.Position) then
+								MoveGuardService.teleported(other)
 								other.Character:PivotTo(PlotService.outsideCFrame(plot, root.Position))
 							end
 						end
@@ -701,7 +715,14 @@ function StealService.init()
 			for thief, carry in pairs(carries) do
 				local plot = PlotService.getPlot(thief)
 				local root = rootOf(thief)
-				if plot and root and PlotService.isInside(plot, root.Position) then
+				if not MoveGuardService.canAct(thief) then
+					endCarry(thief, false, S.m("steal.reason_too_fast"))
+				elseif
+					plot
+					and root
+					and PlotService.isInside(plot, root.Position)
+					and MoveGuardService.couldWalk(carry.startPosition, carry.startClock, root.Position, StealService.CARRY_SPEED)
+				then
 					endCarry(thief, true)
 				elseif t > carry.deadline then
 					endCarry(thief, false, S.m("steal.reason_timeout"))

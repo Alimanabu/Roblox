@@ -13,6 +13,7 @@ local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local CreatureModel = require(Shared.Util.CreatureModel)
 
+local MoveGuardService = require(script.Parent.MoveGuardService)
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
 local FactoryService = require(script.Parent.FactoryService)
@@ -732,6 +733,7 @@ local function teleportHome(player, character)
 	end
 	task.wait(0.2)
 	if character.Parent and plotOf[player] == plot then
+		MoveGuardService.teleported(player)
 		character:PivotTo(plot.cframe * CFrame.new(0, 5, PLOT_SIZE / 2 - 8))
 	end
 end

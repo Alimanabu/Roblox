@@ -417,6 +417,8 @@ steal.reason_shutdown,the server is shutting down,,,сервер выключа�
 steal.shield,🛡️ Your base is protected for {seconds} seconds,,,🛡️ Твоя база защищена {seconds} секунд
 steal.reason_owner_left,the owner left the game,,,хозяин ушёл из игры
 steal.reason_timeout,time ran out,,,время вышло
+steal.too_fast,🚫 You moved too fast! Wait a moment and try again,,,🚫 Слишком быстро! Подожди немного и попробуй снова
+steal.reason_too_fast,you moved too fast,,,ты двигался слишком быстро
 plot.machine,🏭 MACHINE,,,🏭 МАШИНА
 plot.open_factory,Open factory,,,Открыть фабрику
 plot.machine_object,Brainrot Machine,,,Машина брейнрота

@@ -491,6 +491,8 @@ local Source = {
 	["steal.shield"] = "🛡️ Your base is protected for {seconds} seconds",
 	["steal.reason_owner_left"] = "the owner left the game",
 	["steal.reason_timeout"] = "time ran out",
+	["steal.reason_too_fast"] = "you moved too fast",
+	["steal.too_fast"] = "🚫 You moved too fast! Wait a moment and try again",
 
 	-- Надписи на базе
 	["plot.machine"] = "🏭 MACHINE",
