@@ -120,6 +120,24 @@ end
 
 Panels.onRename = nil -- function(uid, currentName) — задаётся в Main.client
 
+-- Roblox запрещает игроку платные случайные награды. Пока ответа нет, считаем, что запрещает.
+local function randomRestricted()
+	return player:GetAttribute("PaidRandomItemsRestricted") ~= false
+end
+
+-- Кнопка окна шансов. Подпись со словом обязательна: один значок Roblox не принимает.
+local function oddsButton(content, panels, order)
+	Theme.button({
+		Size = UDim2.new(1, -10, 0, 34),
+		Text = S.t("odds.open"),
+		Color = C.Accent,
+		LayoutOrder = order,
+		Parent = content,
+	}, function()
+		panels:open("Odds")
+	end)
+end
+
 ---------------------------------------------------------------------------
 -- ФАБРИКА
 ---------------------------------------------------------------------------
@@ -146,7 +164,7 @@ function Factory.signature(state)
 	return table.concat(parts, "|")
 end
 
-function Factory.build(content, state)
+function Factory.build(content, state, panels)
 	list(content, 10)
 
 	Theme.label({
@@ -168,12 +186,20 @@ function Factory.build(content, state)
 		LayoutOrder = 1,
 		Parent = content,
 	})
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 20),
+		Text = S.t("odds.rounded"),
+		TextColor3 = C.Muted,
+		LayoutOrder = 2,
+		Parent = content,
+	})
+	oddsButton(content, panels, 3)
 
 	local grid = create("Frame", {
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
-		LayoutOrder = 2,
+		LayoutOrder = 4,
 		Parent = content,
 	}, {
 		create("UIGridLayout", {
@@ -201,7 +227,7 @@ function Factory.build(content, state)
 		Theme.label({ Size = UDim2.new(1, 0, 0, 18), Text = capsule.desc, TextColor3 = C.Muted, LayoutOrder = 2, Parent = box })
 
 		local chancesText = {}
-		for _, entry in ipairs(Formulas.rarityChances(capsule, state.luck, state.mods)) do
+		for _, entry in ipairs(Formulas.rarityChances(capsule, state.luck, state.mods, state.pity[capsule.id] or 0)) do
 			local rarity = Rarities.get(entry.rarity)
 			local name = entry.secret and S.t("factory.secret") or rarity.name
 			table.insert(chancesText, colored(name, rarity.color) .. "  " .. Format.percent(entry.chance))
@@ -312,7 +338,7 @@ function Base.signature(state)
 	return table.concat(parts, "|")
 end
 
-function Base.build(content, state)
+function Base.build(content, state, panels)
 	list(content, 8)
 
 	Theme.label({
@@ -349,6 +375,8 @@ function Base.build(content, state)
 		})
 		return
 	end
+
+	oddsButton(content, panels, 9)
 
 	-- Группы по редкостям: скрестить / продать всех.
 	local counts = {}
@@ -665,11 +693,54 @@ function Shop.signature(state)
 	end
 	table.sort(parts)
 	table.insert(parts, tostring(player:GetAttribute("PaidRandomItemsRestricted")))
+	table.insert(parts, string.format("%.2f", state.luck))
+	table.insert(parts, tostring(state.luckBoostLeft > 0))
+	table.insert(parts, state.level)
+	table.insert(parts, state.rebirths)
+	table.insert(parts, state.mods.secret)
 	return table.concat(parts, "|")
 end
 
-function Shop.build(content, state)
+-- Как усилители меняют шанс самой редкой редкости лучшей открытой капсулы: числа до покупки.
+local function luckExample(content, state, order)
+	local capsule
+	for _, candidate in ipairs(Capsules.List) do
+		if not candidate.season and Formulas.capsuleUnlocked(candidate, state) then
+			capsule = candidate
+		end
+	end
+	local top = Formulas.pityRarity(capsule)
+	local function odds(luck)
+		for _, entry in ipairs(Formulas.rarityChances(capsule, luck, state.mods)) do
+			if entry.rarity == top then
+				return Format.percent(entry.chance)
+			end
+		end
+		return Format.percent(0)
+	end
+	Theme.label({
+		Size = UDim2.new(1, -10, 0, 22),
+		Text = S.t("odds.example", {
+			capsule = capsule.name,
+			rarity = Rarities.get(top).name,
+			now = odds(state.luck),
+			pass = S.t("pass.LUCKY.name"),
+			lucky = odds(state.passes.LUCKY and state.luck or state.luck * Formulas.LUCKY_MULT),
+			product = S.t("product.LUCK_BOOST.name"),
+			boost = odds(state.luckBoostLeft > 0 and state.luck or state.luck * Formulas.LUCK_BOOST_MULT),
+		}),
+		TextColor3 = C.Muted,
+		LayoutOrder = order,
+		Parent = content,
+	})
+end
+
+function Shop.build(content, state, panels)
 	list(content, 8)
+	if not randomRestricted() then
+		luckExample(content, state, -2)
+		oddsButton(content, panels, -1)
+	end
 	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = S.t("shop.passes"), TextColor3 = C.Gold, LayoutOrder = 0, Parent = content })
 
 	local order = 1
@@ -686,10 +757,10 @@ function Shop.build(content, state)
 			Parent = box,
 		})
 		local text, color
-		if owned then
-			text, color = S.t("shop.owned"), C.CardLocked
-		elseif blocked then
+		if blocked then
 			text, color = S.t("shop.region"), C.CardLocked
+		elseif owned then
+			text, color = S.t("shop.owned"), C.CardLocked
 		elseif item.id == 0 then
 			text, color = S.t("shop.soon"), C.CardLocked
 		else
@@ -709,21 +780,164 @@ function Shop.build(content, state)
 		box.Parent = content
 	end
 
+	-- Там, где Roblox запрещает платные случайные награды, не продаём то, что к ним ведёт.
+	local restricted = randomRestricted()
 	for _, pass in ipairs(Monetization.GamePasses) do
 		row("pass", pass, state.passes[pass.key], function()
 			MarketplaceService:PromptGamePassPurchase(player, pass.id)
-		end)
+		end, pass.leadsToRandom and restricted)
 	end
 
 	order += 1
 	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = S.t("shop.boosts"), TextColor3 = C.Gold, LayoutOrder = order, Parent = content })
-	-- Там, где Roblox запрещает платные случайные награды, не продаём то, что к ним ведёт.
-	local randomRestricted = player:GetAttribute("PaidRandomItemsRestricted") ~= false
 	for _, product in ipairs(Monetization.Products) do
 		row("product", product, false, function()
 			MarketplaceService:PromptProductPurchase(player, product.id)
-		end, product.leadsToRandom and randomRestricted)
+		end, product.leadsToRandom and restricted)
 	end
+end
+
+---------------------------------------------------------------------------
+-- ШАНСЫ: всё, что Roblox требует раскрыть до покупки
+---------------------------------------------------------------------------
+local OddsPanel = { title = S.t("panel.odds") }
+
+function OddsPanel.signature(state)
+	local parts = {
+		string.format("%.2f", state.luck),
+		tostring(state.luckBoostLeft > 0),
+		tostring(state.passes.LUCKY),
+		tostring(randomRestricted()),
+		state.mods.secret,
+		state.mods.mutation,
+		state.mods.mutation67,
+	}
+	local serverNow = workspace:GetServerTimeNow()
+	for _, capsule in ipairs(Capsules.List) do
+		table.insert(parts, (state.pity[capsule.id] or 0) .. tostring(Formulas.capsuleInSeason(capsule, serverNow)))
+	end
+	return table.concat(parts, "|")
+end
+
+-- Удача сейчас и с усилителями, которых у игрока пока нет. Там, где платная удача запрещена,
+-- только «сейчас»: предлагать купить нечего.
+local function luckColumns(state)
+	local columns = { { name = S.t("odds.now"), luck = state.luck } }
+	if randomRestricted() then
+		return columns
+	end
+	local canAddLucky = not state.passes.LUCKY
+	local canAddBoost = state.luckBoostLeft <= 0
+	if canAddLucky then
+		table.insert(columns, { name = S.t("pass.LUCKY.name"), luck = state.luck * Formulas.LUCKY_MULT })
+	end
+	if canAddBoost then
+		table.insert(columns, { name = S.t("product.LUCK_BOOST.name"), luck = state.luck * Formulas.LUCK_BOOST_MULT })
+	end
+	if canAddLucky and canAddBoost then
+		table.insert(columns, { name = S.t("odds.both"), luck = state.luck * Formulas.LUCKY_MULT * Formulas.LUCK_BOOST_MULT })
+	end
+	return columns
+end
+
+local function creatureNames(pool)
+	local names = {}
+	for _, creature in ipairs(pool) do
+		table.insert(names, creature.name)
+	end
+	return table.concat(names, ", ")
+end
+
+function OddsPanel.build(content, state)
+	list(content, 8)
+	local order = 0
+	local function add(text, color)
+		order += 1
+		Theme.label({
+			Size = UDim2.new(1, -10, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Text = text,
+			TextScaled = false,
+			TextSize = 14,
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextColor3 = color,
+			LayoutOrder = order,
+			Parent = content,
+		})
+	end
+
+	local columns = luckColumns(state)
+	add(S.t("odds.intro", { luck = string.format("%.2f", state.luck) }), C.Coins)
+	add(S.t("odds.rule", { secret = Format.percent(Formulas.MAX_SECRET_CHANCE), mutation = Formulas.MAX_MUTATION_LUCK }), C.Muted)
+	if randomRestricted() then
+		add(S.t("odds.region"), C.Bad)
+	else
+		local names = {}
+		for _, column in ipairs(columns) do
+			table.insert(names, column.name)
+		end
+		add(S.t("odds.columns", { columns = table.concat(names, " → ") }), C.Muted)
+	end
+	add(S.t("odds.rounded"), C.Muted)
+
+	-- Одна строка на исход: шанс в каждом столбце удачи.
+	local function odds(chanceIn)
+		local values = {}
+		for _, column in ipairs(columns) do
+			table.insert(values, Format.percent(chanceIn(column.luck)))
+		end
+		return table.concat(values, " → ")
+	end
+
+	local serverNow = workspace:GetServerTimeNow()
+	for _, capsule in ipairs(Capsules.List) do
+		if Formulas.capsuleInSeason(capsule, serverNow) then
+			local pity = state.pity[capsule.id] or 0
+			local lines = { colored(capsule.name, capsule.color) }
+			for index, entry in ipairs(Formulas.rarityChances(capsule, state.luck, state.mods, pity)) do
+				local rarity = Rarities.get(entry.rarity)
+				local count = #Formulas.creaturePool(entry.rarity, capsule.season)
+				local chances = odds(function(luck)
+					return Formulas.rarityChances(capsule, luck, state.mods, pity)[index].chance
+				end)
+				local name = entry.secret and S.t("factory.secret") or rarity.name
+				local pool = S.t("odds.pool", { count = count, each = Format.percent(entry.chance / count) })
+				table.insert(lines, colored(name, rarity.color) .. ": " .. chances .. " (" .. pool .. ")")
+			end
+			add(table.concat(lines, "\n"))
+		end
+	end
+
+	local mutationLines = { S.t("odds.mutations") }
+	for index, entry in ipairs(Formulas.mutationChances(state.luck, state.mods)) do
+		local mutation = Mutations.get(entry.mutation)
+		local chances = odds(function(luck)
+			return Formulas.mutationChances(luck, state.mods)[index].chance
+		end)
+		table.insert(mutationLines, (entry.mutation == "normal" and S.t("odds.no_mutation") or mutation.name) .. ": " .. chances)
+	end
+	add(table.concat(mutationLines, "\n"))
+
+	add(S.t("odds.fuse", { count = Formulas.FUSE_COUNT }))
+	add(S.t("odds.pity"))
+
+	local poolLines = { S.t("odds.pool_title") }
+	for _, rarity in ipairs(Rarities.List) do
+		table.insert(poolLines, colored(rarity.name, rarity.color) .. ": " .. creatureNames(Formulas.creaturePool(rarity.id)))
+	end
+	for _, capsule in ipairs(Capsules.List) do
+		if capsule.season and Formulas.capsuleInSeason(capsule, serverNow) then
+			table.insert(poolLines, colored(capsule.name, capsule.color))
+			for _, rarity in ipairs(Rarities.List) do
+				local pool = Formulas.creaturePool(rarity.id, capsule.season)
+				if capsule.weights[rarity.id] then
+					table.insert(poolLines, colored(rarity.name, rarity.color) .. ": " .. creatureNames(pool))
+				end
+			end
+		end
+	end
+	add(table.concat(poolLines, "\n"))
 end
 
 ---------------------------------------------------------------------------
@@ -757,6 +971,7 @@ function Rewards.signature(state)
 		math.floor(playMinutes(state)),
 		tostring(state.wheel.freeAvailable),
 		state.wheel.extraSpins,
+		tostring(randomRestricted()),
 	}
 	for _, gift in ipairs(state.playtime.gifts) do
 		table.insert(parts, tostring(gift.claimed))
@@ -838,11 +1053,14 @@ function Rewards.build(content, state)
 		LayoutOrder = 50,
 		Parent = content,
 	})
-	local canSpin = wheel.freeAvailable or wheel.extraSpins > 0
+	-- Купленные вращения там, где платные случайные награды запрещены, сервер не потратит.
+	local spinsBlocked = randomRestricted()
+	local paidSpins = wheel.extraSpins > 0 and not spinsBlocked
+	local canSpin = wheel.freeAvailable or paidSpins
 	Theme.button({
 		Size = UDim2.new(0.6, -6, 1, 0),
 		Text = wheel.freeAvailable and S.t("rewards.spin_free")
-			or (wheel.extraSpins > 0 and S.t("rewards.spin", { count = wheel.extraSpins }) or S.t("rewards.spin_tomorrow")),
+			or (paidSpins and S.t("rewards.spin", { count = wheel.extraSpins }) or S.t("rewards.spin_tomorrow")),
 		Color = canSpin and C.Gold or C.CardLocked,
 		Parent = wheelRow,
 	}, function()
@@ -851,7 +1069,6 @@ function Rewards.build(content, state)
 		end
 	end)
 	local spinsProduct = Monetization.ProductByKey.SPINS_3
-	local spinsBlocked = player:GetAttribute("PaidRandomItemsRestricted") ~= false
 	Theme.button({
 		Size = UDim2.new(0.4, 0, 1, 0),
 		Position = UDim2.new(0.6, 6, 0, 0),
@@ -1600,6 +1817,7 @@ local DEFINITIONS = {
 	Rebirth = Rebirth,
 	Index = Index,
 	Shop = Shop,
+	Odds = OddsPanel,
 }
 
 function Panels.new(screenGui)

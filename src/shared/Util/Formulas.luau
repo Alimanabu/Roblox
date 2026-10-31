@@ -124,15 +124,22 @@ function Formulas.craftTime(data, passes, mods)
 	return math.max(Formulas.MIN_CRAFT_TIME, time)
 end
 
-function Formulas.luck(data, passes, now, mods)
+Formulas.LUCKY_MULT = 1.5 -- геймпасс «Счастливчик»
+Formulas.LUCK_BOOST_MULT = 2 -- буст удачи
+Formulas.MAX_SECRET_CHANCE = 0.01 -- выше удача секрет не поднимает
+Formulas.MAX_MUTATION_LUCK = 4 -- удача сильнее этой на мутации не влияет
+
+-- noPaidLuck: Roblox запрещает игроку платные случайные награды, геймпасс на шансы не влияет.
+-- Буст не отключаем: его дают и бесплатно (серия, подарки), а купить его там нельзя.
+function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	mods = mods or NO_MODS
 	local luck = (1 + 0.08 * (data.upgrades.luck or 0)) * mods.luck
 	luck *= 1 + Rebirths.LUCK_BONUS * data.rebirths
-	if passes.LUCKY then
-		luck *= 1.5
+	if passes.LUCKY and not noPaidLuck then
+		luck *= Formulas.LUCKY_MULT
 	end
 	if data.boosts.luckUntil and now < data.boosts.luckUntil then
-		luck *= 2
+		luck *= Formulas.LUCK_BOOST_MULT
 	end
 	return luck
 end
@@ -183,11 +190,30 @@ function Formulas.sellValue(entry)
 	return value
 end
 
+-- Гарантированная попытка: всё, что ниже редкости гарантии, превращается в неё.
+local function withGuarantee(chances, top)
+	local rank = Rarities.get(top).rank
+	local result = {}
+	local guaranteed
+	for _, entry in ipairs(chances) do
+		if Rarities.get(entry.rarity).rank > rank then
+			table.insert(result, entry)
+		elseif guaranteed then
+			guaranteed.chance += entry.chance
+		else
+			guaranteed = { rarity = top, chance = entry.chance }
+			table.insert(result, guaranteed)
+		end
+	end
+	return result
+end
+
 -- Шансы редкостей для капсулы с учётом удачи.
 -- Удача умножает веса всех редкостей, кроме самой частой в капсуле:
 -- «удача x2» = редкие тренды выпадают примерно в 2 раза чаще.
--- Возвращает список { rarity = id, chance = 0..1 } от обычных к редким.
-function Formulas.rarityChances(capsule, luck, mods)
+-- Возвращает список { rarity = id, chance = 0..1 } от обычных к редким, в сумме ровно 1.
+-- pity — попыток без самой редкой редкости капсулы: на гарантированной попытке шансы другие.
+function Formulas.rarityChances(capsule, luck, mods, pity)
 	mods = mods or NO_MODS
 	local entries = {}
 	for _, rarity in ipairs(Rarities.List) do
@@ -208,7 +234,7 @@ function Formulas.rarityChances(capsule, luck, mods)
 		total += entry.weight
 	end
 
-	local secretChance = math.min(Capsules.SECRET_SIXSEVEN_CHANCE * luck * mods.secret, 0.01)
+	local secretChance = math.min(Capsules.SECRET_SIXSEVEN_CHANCE * luck * mods.secret, Formulas.MAX_SECRET_CHANCE)
 	local hasSixSeven = capsule.weights.sixseven ~= nil
 
 	local result = {}
@@ -221,6 +247,9 @@ function Formulas.rarityChances(capsule, luck, mods)
 	end
 	if not hasSixSeven then
 		table.insert(result, { rarity = "sixseven", chance = secretChance, secret = true })
+	end
+	if pity and pity + 1 >= Formulas.pityThreshold(capsule) then
+		return withGuarantee(result, Formulas.pityRarity(capsule))
 	end
 	return result
 end
@@ -260,27 +289,64 @@ function Formulas.pityThreshold(capsule)
 	return math.huge
 end
 
+-- Попытка засчитана: какая редкость выпала в итоге, новый счётчик гарантии и сработала ли она.
+function Formulas.applyPity(capsule, rarityId, pity)
+	local top = Rarities.get(Formulas.pityRarity(capsule)).rank
+	local count = pity + 1
+	local forced = count >= Formulas.pityThreshold(capsule) and Rarities.get(rarityId).rank < top
+	if forced then
+		rarityId = Formulas.pityRarity(capsule)
+	end
+	if Rarities.get(rarityId).rank >= top then
+		count = 0
+	end
+	return rarityId, count, forced
+end
+
+-- Шанс одной проверки мутации: проверка идёт, только если все более редкие не выпали.
+local function mutationRoll(mutation, luck, mods)
+	local chance = mutation.chance * math.min(luck, Formulas.MAX_MUTATION_LUCK) * mods.mutation
+	if mutation.id == "sixseven" then
+		chance *= mods.mutation67
+	end
+	return math.min(chance, 1)
+end
+
 function Formulas.rollMutation(luck, rng, mods)
 	mods = mods or NO_MODS
-	local luckFactor = math.min(luck, 4) * mods.mutation
 	-- Проверяем от самой редкой мутации к самой частой.
 	for index = #Mutations.List, 2, -1 do
 		local mutation = Mutations.List[index]
-		local chance = mutation.chance * luckFactor
-		if mutation.id == "sixseven" then
-			chance *= mods.mutation67
-		end
-		if rng:NextNumber() < chance then
+		if rng:NextNumber() < mutationRoll(mutation, luck, mods) then
 			return mutation.id
 		end
 	end
 	return "normal"
 end
 
+-- Настоящие шансы исходов rollMutation: { mutation = id, chance = 0..1 }, в сумме ровно 1.
+function Formulas.mutationChances(luck, mods)
+	mods = mods or NO_MODS
+	local left = 1
+	local result = {}
+	for index = #Mutations.List, 2, -1 do
+		local mutation = Mutations.List[index]
+		local chance = left * mutationRoll(mutation, luck, mods)
+		left -= chance
+		table.insert(result, 1, { mutation = mutation.id, chance = chance })
+	end
+	table.insert(result, 1, { mutation = "normal", chance = left })
+	return result
+end
+
 -- season — для сезонной капсулы: берём брейнротов сезона (если такой редкости нет — обычных).
-function Formulas.randomCreatureOf(rarityId, rng, season)
+function Formulas.creaturePool(rarityId, season)
 	local seasonPools = season and Creatures.BySeason[season]
-	local pool = (seasonPools and seasonPools[rarityId]) or Creatures.ByRarity[rarityId]
+	return (seasonPools and seasonPools[rarityId]) or Creatures.ByRarity[rarityId]
+end
+
+function Formulas.randomCreatureOf(rarityId, rng, season)
+	local pool = Formulas.creaturePool(rarityId, season)
 	return pool[rng:NextInteger(1, #pool)]
 end
 

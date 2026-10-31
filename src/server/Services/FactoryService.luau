@@ -167,20 +167,16 @@ local function craft(player, capsuleId, silent)
 	AnalyticsService.coins(player, false, capsule.cost, "Capsule")
 	data.stats.crafted += 1
 
-	local luck = Formulas.luck(data, passes, os.time(), mods)
+	local luck = MonetizationService.luck(player, data, os.time(), mods)
 	local rarityId = Formulas.rollRarity(capsule, luck, rng, mods)
 
 	-- Гарантия: долго не везло — самая редкая редкость капсулы выпадает точно.
 	local pityRarity = Formulas.pityRarity(capsule)
-	local pity = (data.pity[capsule.id] or 0) + 1
-	if pity >= Formulas.pityThreshold(capsule) and Rarities.get(rarityId).rank < Rarities.get(pityRarity).rank then
-		rarityId = pityRarity
+	local forced
+	rarityId, data.pity[capsule.id], forced = Formulas.applyPity(capsule, rarityId, data.pity[capsule.id] or 0)
+	if forced then
 		Remotes.Notify:FireClient(player, S.m("factory.pity"), Color3.fromRGB(255, 220, 80))
 	end
-	if rarityId == pityRarity or Rarities.get(rarityId).rank > Rarities.get(pityRarity).rank then
-		pity = 0
-	end
-	data.pity[capsule.id] = pity
 
 	local creature = Formulas.randomCreatureOf(rarityId, rng, capsule.season)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
@@ -293,9 +289,8 @@ local function fuse(player, rarityId)
 		end
 	end
 
-	local passes = MonetizationService.passes(player)
 	local mods = EventService.mods()
-	local luck = Formulas.luck(data, passes, os.time(), mods)
+	local luck = MonetizationService.luck(player, data, os.time(), mods)
 	local creature = Formulas.randomCreatureOf(nextRarity.id, rng)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 	data.stats.fused += 1

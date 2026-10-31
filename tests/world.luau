@@ -753,8 +753,8 @@ local services = {
 		end,
 	}),
 	PolicyService = service("PolicyService", {
-		GetPolicyInfoForPlayerAsync = function()
-			return { ArePaidRandomItemsRestricted = false, IsPaidItemTradingAllowed = true }
+		GetPolicyInfoForPlayerAsync = function(_, player)
+			return { ArePaidRandomItemsRestricted = World.restricted[player.UserId] == true, IsPaidItemTradingAllowed = true }
 		end,
 	}),
 	TextService = service("TextService", {
@@ -775,6 +775,7 @@ local services = {
 }
 
 World.services = services
+World.restricted = {} -- [userId] = true: Roblox запрещает игроку платные случайные награды
 
 local translations = Instance_new("LocalizationTable", "Translations")
 rawget(translations, "__state").props.GetEntries = function()

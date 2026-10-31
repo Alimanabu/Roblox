@@ -36,16 +36,19 @@ function Format.coins(value)
 	return "$" .. Format.number(value)
 end
 
+-- Шанс всегда в процентах: Roblox не принимает «1 к N». Длинные дроби округляем до 4 знаков
+-- после первой значащей цифры, рядом с такими шансами стоит оговорка odds.rounded.
 function Format.percent(fraction)
 	local percent = fraction * 100
-	if percent >= 10 then
-		return string.format("%d%%", math.floor(percent + 0.5))
-	elseif percent >= 1 then
-		return string.format("%.1f%%", percent)
-	elseif percent >= 0.01 then
-		return string.format("%.2f%%", percent)
+	if percent <= 0 then
+		return "0%"
 	end
-	return S.t("format.one_in", { n = Format.number(math.floor(1 / fraction + 0.5)) })
+	local decimals = math.max(0, 4 - math.floor(math.log10(percent)))
+	local text = string.format("%." .. decimals .. "f", percent)
+	if decimals > 0 then
+		text = text:gsub("0+$", ""):gsub("%.$", "")
+	end
+	return text .. "%"
 end
 
 function Format.time(seconds)

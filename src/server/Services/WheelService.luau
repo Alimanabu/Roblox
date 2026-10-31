@@ -6,6 +6,7 @@ local Daily = require(Shared.Config.Daily)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
+local PolicyService = require(script.Parent.PolicyService)
 local RewardService = require(script.Parent.RewardService)
 
 local WheelService = {}
@@ -45,6 +46,11 @@ local function spin(player)
 	if data.wheel.lastFreeDay ~= today then
 		data.wheel.lastFreeDay = today
 	elseif data.wheel.extraSpins > 0 then
+		-- Лишние вращения бывают только купленные: это платная случайная награда.
+		if PolicyService.paidRandomRestricted(player) then
+			Remotes.Notify:FireClient(player, S.m("shop.region"), BAD)
+			return
+		end
 		data.wheel.extraSpins -= 1
 	else
 		Remotes.Notify:FireClient(player, S.m("wheel.no_spins"), BAD)

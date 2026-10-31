@@ -11,6 +11,7 @@ local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
+local PolicyService = require(script.Parent.PolicyService)
 
 local MonetizationService = {}
 
@@ -25,6 +26,11 @@ local uncheckedPasses = {} -- [player] = { VIP = true, ... }: Roblox не отв
 
 function MonetizationService.passes(player)
 	return ownedPasses[player] or {}
+end
+
+-- Удача, с которой сервер бросает шансы. Все броски и показ шансов идут через неё.
+function MonetizationService.luck(player, data, now, mods)
+	return Formulas.luck(data, MonetizationService.passes(player), now, mods, PolicyService.paidRandomRestricted(player))
 end
 
 -- Сбой запроса не значит «не куплено»: нет ответа Roblox, значит nil, а не false.
@@ -133,6 +139,10 @@ local function processReceipt(receiptInfo)
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	local product = Monetization.ProductById[receiptInfo.ProductId]
+	if product and product.leadsToRandom then
+		PolicyService.awaitAnswer(player)
+	end
 	local data = DataService.get(player)
 	if not data then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -140,8 +150,16 @@ local function processReceipt(receiptInfo)
 
 	local receiptId = tostring(receiptInfo.PurchaseId)
 	if not DataService.hasReceipt(data, receiptId) then
-		local product = Monetization.ProductById[receiptInfo.ProductId]
-		if not product or not grantProduct(player, data, product) then
+		if not product then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		-- Кнопки скрывает клиент, но окно покупки читер откроет сам. Покупку не подтверждаем:
+		-- ответ PolicyService мог быть сбоем, тогда чек выдастся при следующем заходе.
+		if product.leadsToRandom and PolicyService.paidRandomRestricted(player) then
+			Remotes.Notify:FireClient(player, S.m("shop.region"), Color3.fromRGB(255, 110, 110))
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		if not grantProduct(player, data, product) then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
 
@@ -167,7 +185,11 @@ function MonetizationService.init()
 				if pass.id == passId then
 					ownedPasses[player] = ownedPasses[player] or {}
 					ownedPasses[player][pass.key] = true
-					Remotes.Notify:FireClient(player, S.m("shop.purchased", { name = S.m("pass." .. pass.key .. ".name") }), Color3.fromRGB(120, 255, 120))
+					if pass.leadsToRandom and PolicyService.paidRandomRestricted(player) then
+						Remotes.Notify:FireClient(player, S.m("shop.region"), Color3.fromRGB(255, 110, 110))
+					else
+						Remotes.Notify:FireClient(player, S.m("shop.purchased", { name = S.m("pass." .. pass.key .. ".name") }), Color3.fromRGB(120, 255, 120))
+					end
 				end
 			end
 			DataService.markDirty(player)

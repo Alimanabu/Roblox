@@ -3,7 +3,6 @@ common.wait,Hold on a couple of seconds,,,Подожди пару секунд
 common.not_enough_coins,Not enough coins: you need {cost},,,Не хватает монет: нужно {cost}
 common.title_level,{title} • lvl {level},,,{title} • ур. {level}
 common.per_second,{coins}/s,,,{coins}/с
-format.one_in,1 in {n},,,1 к {n}
 format.hours,{hours} h {minutes} min,,,{hours} ч {minutes} мин
 hud.rewards,🎁 Rewards,,,🎁 Награды
 hud.factory,🏭 Factory,,,🏭 Фабрика
@@ -28,6 +27,7 @@ panel.index,📖 Brainrot Index,,,📖 Индекс брейнротов
 panel.rewards,🎁 Rewards and Quests,,,🎁 Награды и задания
 panel.trade,🤝 Brainrot Trade,,,🤝 Обмен брейнротами
 panel.settings,⚙️ Settings,,,⚙️ Настройки
+panel.odds,📊 Odds,,,📊 Шансы
 panel.skins,🎨 Brainrot Skins,,,🎨 Скины брейнротов
 panel.admin,🛠 Test Commands,,,🛠 Тест-команды
 factory.announce,🚨 {player} crafted {name} [{rarity}]!,,,🚨 {player} создал {name} [{rarity}]!
@@ -49,6 +49,21 @@ factory.auto_on,🤖 Auto: ON,,,🤖 Авто: ВКЛ
 factory.auto,🤖 Auto,,,🤖 Авто
 factory.need_level,🔒 Level {level},,,🔒 Уровень {level}
 factory.need_rebirths,{need} + {rebirths} rebirths,,,{need} + {rebirths} перерожд.
+odds.open,📊 Odds details,,,📊 Подробнее о шансах
+odds.rounded,"Odds per try. Long numbers are rounded, so the total can differ slightly from 100%.",,,"Шансы на одну попытку. Длинные числа округлены, поэтому сумма может немного отличаться от 100%."
+odds.intro,"Your odds right now, with luck x{luck}. They update live when a boost or event is on.",,,"Твои шансы сейчас, удача x{luck}. Они обновляются, когда действует буст или ивент."
+odds.rule,"How luck works: it multiplies the odds weight of every rarity except the most common one in the capsule, and the secret SIX SEVEN chance (up to {secret}). Mutations grow with luck up to x{mutation}. The wheel doesn't depend on luck.",,,"Как работает удача: она умножает вес всех редкостей капсулы, кроме самой частой, и шанс секретного SIX SEVEN (до {secret}). Мутации растут с удачей до x{mutation}. Колесо от удачи не зависит."
+odds.columns,"Numbers below, left to right: {columns}",,,Числа ниже слева направо: {columns}
+odds.now,now,,,сейчас
+odds.both,both,,,оба
+odds.region,Paid luck doesn't work in your region. Only free bonuses count.,,,Платная удача не действует в твоём регионе. Считаются только бесплатные бонусы.
+odds.pool,"{count} brainrots, {each} each",,,"брейнротов: {count}, каждый {each}"
+odds.mutations,✨ Mutations (rolled for every craft and fusion),,,✨ Мутации (бросок при каждом создании и скрещивании)
+odds.no_mutation,No mutation,,,Без мутации
+odds.fuse,"🧬 Fusion: {count} brainrots of one rarity always give 1 random brainrot of the next rarity, each of them with equal odds, plus a mutation roll. Luck changes only the mutation.",,,"🧬 Скрещивание: {count} брейнрота одной редкости всегда дают 1 случайного брейнрота следующей редкости, у каждого равный шанс, плюс бросок мутации. Удача меняет только мутацию."
+odds.pity,"🎯 Guarantee: after a streak without the capsule's top rarity, the next try gives it. The streak length doesn't depend on luck. On that try the odds here show the guaranteed result.",,,🎯 Гарантия: после серии без самой редкой редкости капсулы следующая попытка даёт её. Длина серии не зависит от удачи. На этой попытке здесь показан гарантированный результат.
+odds.pool_title,"🧠 Brainrots by rarity (equal odds inside a rarity, on the wheel too)",,,"🧠 Брейнроты по редкостям (внутри редкости шансы равны, на колесе тоже)"
+odds.example,"🍀 {capsule}, {rarity}: now {now}, {pass} {lucky}, {product} {boost}",,,"🍀 {capsule}, {rarity}: сейчас {now}, {pass} {lucky}, {product} {boost}"
 base.perks,"{slots} spots, ❤️{hp}",,,"{slots} мест, ❤️{hp}"
 base.perks_income,"{perks}, income x{income}",,,"{perks}, доход x{income}"
 base.floor_now,"🏗 Now: {floor} ({slots} spots)

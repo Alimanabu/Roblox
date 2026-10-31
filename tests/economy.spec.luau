@@ -325,6 +325,122 @@ for _ = 1, 100000 do
 end
 check(boosted > plain * 2.5, "Мутаген-туман должен утраивать мутации")
 
+-- 6б. Платные случайные награды: всё, что меняет шансы, помечено, показанные числа настоящие.
+local Monetization = shared_require("Config/Monetization")
+for _, key in ipairs({ "LUCK_BOOST", "COINS_SMALL", "SPINS_3", "COINS_BIG" }) do
+	check(Monetization.ProductByKey[key].leadsToRandom == true, key .. ": нет метки leadsToRandom")
+end
+check(Monetization.GamePassByKey.LUCKY.leadsToRandom == true, "LUCKY: нет метки leadsToRandom")
+
+local luckData = { upgrades = { luck = 0 }, rebirths = 0, boosts = { luckUntil = 100 } }
+local lucky = { LUCKY = true }
+check(Formulas.luck(luckData, lucky, 200) == 1.5, "LUCKY не даёт x1.5")
+check(Formulas.luck(luckData, lucky, 200, nil, true) == 1, "LUCKY действует там, где запрещено")
+check(Formulas.luck(luckData, lucky, 50) == 3, "LUCKY и буст не умножаются")
+check(Formulas.luck(luckData, lucky, 50, nil, true) == 2, "запрет снял бесплатный буст")
+
+check(Format.percent(0.8) == "80%", "процент: " .. Format.percent(0.8))
+check(Format.percent(0.05) == "5%", "процент: " .. Format.percent(0.05))
+check(Format.percent(1 / 3) == "33.333%", "процент: " .. Format.percent(1 / 3))
+check(Format.percent(0.0002) == "0.02%", "процент: " .. Format.percent(0.0002))
+check(Format.percent(1 / 67000) == "0.0014925%", "процент: " .. Format.percent(1 / 67000))
+check(Format.percent(1) == "100%", "процент: " .. Format.percent(1))
+check(Format.percent(0) == "0%", "процент: " .. Format.percent(0))
+
+-- Сумма настоящих шансов ровно 100 %, а показанных расходится только на округление.
+local EVENT_MODS = { luck = 2, income = 1, mutation = 3, speed = 1, secret = 3, mutation67 = 6.7 }
+local function shownSum(entries)
+	local sum = 0
+	for _, entry in ipairs(entries) do
+		local text = Format.percent(entry.chance)
+		local value = tonumber((text:gsub("%%$", "")))
+		check(value ~= nil, "шанс не в процентах: " .. text)
+		sum += value or 0
+	end
+	return sum
+end
+local function totalOf(entries)
+	local sum = 0
+	for _, entry in ipairs(entries) do
+		sum += entry.chance
+		check(entry.chance >= 0, "отрицательный шанс")
+	end
+	return sum
+end
+for _, capsule in ipairs(Capsules.List) do
+	local threshold = Formulas.pityThreshold(capsule)
+	for _, luck in ipairs({ 1, 1.5, 2, 3, 10, 100 }) do
+		for _, mods in ipairs({ Formulas.NO_MODS, EVENT_MODS }) do
+			for _, pity in ipairs({ 0, threshold - 2, threshold - 1 }) do
+				local chances = Formulas.rarityChances(capsule, luck, mods, pity)
+				check(math.abs(totalOf(chances) - 1) < 1e-9, capsule.id .. ": сумма шансов с гарантией не 100 %")
+				check(math.abs(shownSum(chances) - 100) < 0.01, capsule.id .. ": показанная сумма не 100 %")
+				for _, entry in ipairs(chances) do
+					local count = #Formulas.creaturePool(entry.rarity, capsule.season)
+					check(count > 0, capsule.id .. ": пустой список брейнротов " .. entry.rarity)
+				end
+			end
+		end
+	end
+end
+
+for _, luck in ipairs({ 1, 1.5, 3, 4, 20 }) do
+	for _, mods in ipairs({ Formulas.NO_MODS, EVENT_MODS }) do
+		local chances = Formulas.mutationChances(luck, mods)
+		check(#chances == #Mutations.List, "в шансах мутаций не все исходы")
+		check(math.abs(totalOf(chances) - 1) < 1e-9, "сумма шансов мутаций не 100 %")
+		check(math.abs(shownSum(chances) - 100) < 0.01, "показанная сумма мутаций не 100 %")
+	end
+end
+check(Formulas.mutationChances(4)[2].chance == Formulas.mutationChances(100)[2].chance, "мутации растут выше предела удачи")
+
+-- Показанные шансы мутаций совпадают с настоящими бросками, в том числе с удачей и ивентом.
+for _, case in ipairs({ { 1, Formulas.NO_MODS }, { 3, Formulas.NO_MODS }, { 20, EVENT_MODS } }) do
+	local luck, mods = case[1], case[2]
+	local seen = {}
+	local draws = Random.new(77)
+	for _ = 1, 200000 do
+		local id = Formulas.rollMutation(luck, draws, mods)
+		seen[id] = (seen[id] or 0) + 1
+	end
+	for _, entry in ipairs(Formulas.mutationChances(luck, mods)) do
+		local observed = (seen[entry.mutation] or 0) / 200000
+		check(math.abs(observed - entry.chance) < 0.003, "мутация " .. entry.mutation .. ": " .. observed .. " vs " .. entry.chance)
+	end
+end
+
+-- Гарантия: показанное на каждой попытке совпадает с тем, что выдаст настоящая логика.
+for _, capsuleId in ipairs({ "old_meme", "viral_meme", "capsule_67" }) do
+	local target = Capsules.get(capsuleId)
+	local threshold = Formulas.pityThreshold(target)
+	local top = Formulas.pityRarity(target)
+	for _, pity in ipairs({ 0, threshold - 2, threshold - 1, threshold + 5 }) do
+		local seen = {}
+		local draws = Random.new(99)
+		for _ = 1, 50000 do
+			local rolled = Formulas.applyPity(target, Formulas.rollRarity(target, 2, draws), pity)
+			seen[rolled] = (seen[rolled] or 0) + 1
+		end
+		local total = 0
+		for _, entry in ipairs(Formulas.rarityChances(target, 2, nil, pity)) do
+			local observed = (seen[entry.rarity] or 0) / 50000
+			total += seen[entry.rarity] or 0
+			check(math.abs(observed - entry.chance) < 0.01, capsuleId .. " попытка " .. pity .. " " .. entry.rarity .. ": " .. observed .. " vs " .. entry.chance)
+		end
+		check(total == 50000, capsuleId .. ": выпало то, чего нет в показанных шансах")
+	end
+	local rolled, count, forced = Formulas.applyPity(target, Rarities.List[1].id, threshold - 1)
+	check(rolled == top and count == 0 and forced, capsuleId .. ": гарантия не сработала")
+	rolled, count, forced = Formulas.applyPity(target, Rarities.List[1].id, 0)
+	check(rolled == Rarities.List[1].id and count == 1 and not forced, capsuleId .. ": гарантия сработала раньше срока")
+end
+
+local wheelWeight = 0
+for _, slot in ipairs(DailyCfg.Wheel) do
+	wheelWeight += slot.weight
+end
+check(wheelWeight == 100, "шансы колеса дают не 100 %: " .. wheelWeight)
+
 -- 7. Симуляция: игрок крафтит лучшую доступную капсулу и покупает апгрейды.
 --    Проверяем, что игра проходима и темп разумный.
 local Upgrades = shared_require("Config/Upgrades")

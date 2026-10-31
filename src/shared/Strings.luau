@@ -23,7 +23,6 @@ local Source = {
 	["common.per_second"] = "{coins}/s",
 
 	-- Числа и время
-	["format.one_in"] = "1 in {n}",
 	["format.hours"] = "{hours} h {minutes} min",
 
 	-- Верхняя панель и меню
@@ -52,6 +51,7 @@ local Source = {
 	["panel.rewards"] = "🎁 Rewards and Quests",
 	["panel.trade"] = "🤝 Brainrot Trade",
 	["panel.settings"] = "⚙️ Settings",
+	["panel.odds"] = "📊 Odds",
 	["panel.skins"] = "🎨 Brainrot Skins",
 	["panel.admin"] = "🛠 Test Commands",
 
@@ -75,6 +75,21 @@ local Source = {
 	["factory.auto"] = "🤖 Auto",
 	["factory.need_level"] = "🔒 Level {level}",
 	["factory.need_rebirths"] = "{need} + {rebirths} rebirths",
+	["odds.open"] = "📊 Odds details",
+	["odds.rounded"] = "Odds per try. Long numbers are rounded, so the total can differ slightly from 100%.",
+	["odds.intro"] = "Your odds right now, with luck x{luck}. They update live when a boost or event is on.",
+	["odds.rule"] = "How luck works: it multiplies the odds weight of every rarity except the most common one in the capsule, and the secret SIX SEVEN chance (up to {secret}). Mutations grow with luck up to x{mutation}. The wheel doesn't depend on luck.",
+	["odds.columns"] = "Numbers below, left to right: {columns}",
+	["odds.now"] = "now",
+	["odds.both"] = "both",
+	["odds.region"] = "Paid luck doesn't work in your region. Only free bonuses count.",
+	["odds.pool"] = "{count} brainrots, {each} each",
+	["odds.mutations"] = "✨ Mutations (rolled for every craft and fusion)",
+	["odds.no_mutation"] = "No mutation",
+	["odds.fuse"] = "🧬 Fusion: {count} brainrots of one rarity always give 1 random brainrot of the next rarity, each of them with equal odds, plus a mutation roll. Luck changes only the mutation.",
+	["odds.pity"] = "🎯 Guarantee: after a streak without the capsule's top rarity, the next try gives it. The streak length doesn't depend on luck. On that try the odds here show the guaranteed result.",
+	["odds.pool_title"] = "🧠 Brainrots by rarity (equal odds inside a rarity, on the wheel too)",
+	["odds.example"] = "🍀 {capsule}, {rarity}: now {now}, {pass} {lucky}, {product} {boost}",
 
 	-- Окно базы
 	["base.perks"] = "{slots} spots, ❤️{hp}",

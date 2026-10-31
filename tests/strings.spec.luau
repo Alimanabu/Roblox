@@ -57,7 +57,7 @@ check(S.text(S.join({}, " + ")) == "", "пустая награда не пус�
 check(S.text("Vinny") == "Vinny", "обычная строка изменилась")
 check(S.t("no.such.key") == "no.such.key", "нет ключа: должен показать ключ, а не упасть")
 check(Format.time(3700) == "1 h 01 min", "Format.time: " .. Format.time(3700))
-check(Format.percent(0.00001) == "1 in 100K", "Format.percent: " .. Format.percent(0.00001))
+check(Format.percent(0.00001) == "0.001%", "Format.percent: " .. Format.percent(0.00001))
 
 -- Надпись на табличке: сервер пишет английский и сообщение рядом.
 local label = Instance.new("TextLabel")

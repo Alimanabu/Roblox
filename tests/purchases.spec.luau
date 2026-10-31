@@ -166,8 +166,25 @@ function MarketplaceService:UserOwnsGamePassAsync(userId, passId)
 	return self.owned[key] == true
 end
 
+-- Ответ Roblox о правилах для игрока. restricted: кому запрещены платные случайные награды,
+-- policyFailures: сколько запросов подряд упадёт, policyDelay: сколько секунд идёт ответ.
+local RobloxPolicy = { restricted = {}, policyFailures = {}, policyDelay = 0 }
+
+function RobloxPolicy:GetPolicyInfoForPlayerAsync(player)
+	if self.policyDelay > 0 then
+		task.wait(self.policyDelay)
+	end
+	local left = self.policyFailures[player.UserId] or 0
+	if left > 0 then
+		self.policyFailures[player.UserId] = left - 1
+		error("PolicyService: сбой запроса")
+	end
+	return { ArePaidRandomItemsRestricted = self.restricted[player.UserId] == true, IsPaidItemTradingAllowed = true }
+end
+
 local services = {
 	Players = Players,
+	PolicyService = RobloxPolicy,
 	MarketplaceService = MarketplaceService,
 	DataStoreService = {
 		GetDataStore = function()
@@ -211,6 +228,7 @@ local Monetization = shared_require("Config/Monetization")
 local Formulas = shared_require("Util/Formulas")
 local DataService = shared_require("Services/DataService")
 local MonetizationService = shared_require("Services/MonetizationService")
+local PolicyService = shared_require("Services/PolicyService")
 
 -- В конфиге id = 0 (продукты ещё не созданы), поэтому номера подставляем только в памяти теста.
 for index, pass in ipairs(Monetization.GamePasses) do
@@ -223,6 +241,8 @@ end
 
 local SPINS = Monetization.ProductByKey.SPINS_3
 local COINS = Monetization.ProductByKey.COINS_SMALL
+local BOOST = Monetization.ProductByKey.LUCK_BOOST
+local LUCKY = Monetization.GamePassByKey.LUCKY
 local Decision = Enum.ProductPurchaseDecision
 local nextUserId = 100
 local nextPurchaseId = 500
@@ -233,6 +253,7 @@ DataService.addSaveExtra(function(player)
 	return carriedFrom[player]
 end)
 
+PolicyService.init()
 DataService.init()
 -- Вечные циклы автосейва и рассылки состояния тесту не нужны.
 table.clear(sleeping)
@@ -247,9 +268,15 @@ local function addPlayer(userId)
 		nextUserId += 1
 		userId = nextUserId
 	end
-	local player = { UserId = userId, Name = "Игрок" .. userId, Parent = Players }
+	local player = { UserId = userId, Name = "Игрок" .. userId, Parent = Players, attributes = {} }
 	function player:Kick(message)
 		self.kickMessage = message
+	end
+	function player:SetAttribute(name, value)
+		self.attributes[name] = value
+	end
+	function player:GetAttribute(name)
+		return self.attributes[name]
 	end
 	Players.list[userId] = player
 	Players.PlayerAdded:Fire(player)
@@ -310,6 +337,7 @@ local function withFreshServices(options, body)
 		isStudio = services.RunService.IsStudio,
 		data = cache["Services/DataService"],
 		money = cache["Services/MonetizationService"],
+		policy = cache["Services/PolicyService"],
 	}
 	Players.list, Players.PlayerAdded, Players.PlayerRemoving = {}, newSignal(), newSignal()
 	MarketplaceService.PromptGamePassPurchaseFinished = newSignal()
@@ -321,10 +349,11 @@ local function withFreshServices(options, body)
 			error("DataStore недоступен")
 		end
 	end
-	cache["Services/DataService"], cache["Services/MonetizationService"] = nil, nil
+	cache["Services/DataService"], cache["Services/MonetizationService"], cache["Services/PolicyService"] = nil, nil, nil
 
 	local data = shared_require("Services/DataService")
 	local money = shared_require("Services/MonetizationService")
+	shared_require("Services/PolicyService").init()
 	data.init()
 	money.init()
 	table.clear(sleeping)
@@ -336,6 +365,7 @@ local function withFreshServices(options, body)
 	services.DataStoreService.GetDataStore = saved.getStore
 	services.RunService.IsStudio = saved.isStudio
 	cache["Services/DataService"], cache["Services/MonetizationService"] = saved.data, saved.money
+	cache["Services/PolicyService"] = saved.policy
 	if not ok then
 		error(err, 0)
 	end
@@ -772,6 +802,141 @@ scenario("брейнрот забрали, пока автосейв ждёт п
 	carriedFrom[player] = nil
 	runUntilIdle()
 	check(#savedOf(player).creatures == 0, "несомый брейнрот записан после конца кражи")
+end)
+
+-- Платные случайные награды. Покупка, запрещённая правилами Roblox, не выдаётся и не подтверждается.
+local function resetPolicy()
+	table.clear(RobloxPolicy.restricted)
+	table.clear(RobloxPolicy.policyFailures)
+	RobloxPolicy.policyDelay = 0
+end
+
+local function nothingGranted(player, name)
+	local data = DataService.get(player)
+	check(data.boosts.luckUntil == 0, name .. ": выдан буст удачи")
+	check(data.coins == Formulas.START_COINS, name .. ": выданы монеты: " .. tostring(data.coins))
+	check(data.wheel.extraSpins == 0, name .. ": выданы вращения")
+	check(#data.receipts == 0, name .. ": чек записан как выданный")
+end
+
+scenario("запрет: сервер не выдаёт ничего, что ведёт к случайной награде", function()
+	resetPolicy()
+	local player = addPlayer()
+	RobloxPolicy.restricted[player.UserId] = true
+	player:SetAttribute("PaidRandomItemsRestricted", true)
+	local writes = store.writes
+	for _, product in ipairs(Monetization.Products) do
+		check(product.leadsToRandom == true, product.key .. ": покупка без метки")
+		local decision = receipt(player.UserId, newPurchaseId(), product.id)
+		check(decision == Decision.NotProcessedYet, product.key .. ": покупка подтверждена при запрете")
+	end
+	nothingGranted(player, "запрет")
+	check(store.writes == writes, "запрет: отказ записан в DataStore")
+end)
+
+scenario("разрешено: все покупки выдаются, буст удачи на 15 минут", function()
+	resetPolicy()
+	local player = addPlayer()
+	runUntilIdle()
+	for _, product in ipairs(Monetization.Products) do
+		check(receipt(player.UserId, newPurchaseId(), product.id) == Decision.PurchaseGranted, product.key .. ": покупка не подтверждена")
+	end
+	local data = DataService.get(player)
+	check(data.boosts.luckUntil - os.time() >= 15 * 60 - 5, "разрешено: нет буста удачи")
+	check(data.wheel.extraSpins == 3, "разрешено: нет вращений")
+	check(#data.receipts == #Monetization.Products, "разрешено: записаны не все чеки")
+end)
+
+scenario("чек раньше ответа Roblox: ответ «можно», покупка выдаётся", function()
+	resetPolicy()
+	RobloxPolicy.policyDelay = 4
+	local player = addPlayer()
+	check(player:GetAttribute("PaidRandomItemsRestricted") == nil, "поздний ответ: ответ уже есть")
+	check(PolicyService.paidRandomRestricted(player), "поздний ответ: пока ответа нет, запрет снят")
+	check(receipt(player.UserId, newPurchaseId(), BOOST.id) == Decision.PurchaseGranted, "поздний ответ: покупка не подтверждена")
+	check(DataService.get(player).boosts.luckUntil > 0, "поздний ответ: нет буста")
+	resetPolicy()
+end)
+
+scenario("чек раньше ответа Roblox: ответ «нельзя», покупки нет", function()
+	resetPolicy()
+	RobloxPolicy.policyDelay = 4
+	local userId = nextUserId + 1
+	RobloxPolicy.restricted[userId] = true
+	local player = addPlayer()
+	check(receipt(userId, newPurchaseId(), BOOST.id) == Decision.NotProcessedYet, "поздний запрет: покупка подтверждена")
+	nothingGranted(player, "поздний запрет")
+	resetPolicy()
+end)
+
+scenario("разовый сбой ответа Roblox: повтор снимает запрет", function()
+	resetPolicy()
+	local userId = nextUserId + 1
+	RobloxPolicy.policyFailures[userId] = 2
+	local player = addPlayer()
+	check(receipt(userId, newPurchaseId(), COINS.id) == Decision.PurchaseGranted, "сбой ответа: покупка не подтверждена")
+	check(player:GetAttribute("PaidRandomItemsRestricted") == false, "сбой ответа: запрет не снят")
+	check(table.find(pauses, 1) ~= nil and table.find(pauses, 2) ~= nil, "сбой ответа: паузы не 1 и 2 с")
+end)
+
+scenario("Roblox не отвечает: покупка ждёт следующего захода и выдаётся один раз", function()
+	resetPolicy()
+	local userId = nextUserId + 1
+	RobloxPolicy.policyFailures[userId] = 3
+	local player = addPlayer()
+	local id = newPurchaseId()
+	check(receipt(userId, id, COINS.id) == Decision.NotProcessedYet, "нет ответа: покупка подтверждена")
+	check(player:GetAttribute("PaidRandomItemsRestricted") == true, "нет ответа: запрет не включён")
+	nothingGranted(player, "нет ответа")
+	removePlayer(player)
+	runUntilIdle()
+	local back = addPlayer(userId)
+	runUntilIdle()
+	check(receipt(userId, id, COINS.id) == Decision.PurchaseGranted, "нет ответа: чек не выдан при новом заходе")
+	local coins = DataService.get(back).coins
+	check(coins > Formulas.START_COINS, "нет ответа: монет нет после нового захода")
+	check(receipt(userId, id, COINS.id) == Decision.PurchaseGranted, "нет ответа: повтор чека не подтверждён")
+	check(DataService.get(back).coins == coins, "нет ответа: выдано второй раз")
+end)
+
+scenario("уже выданный чек при запрете подтверждается без второй выдачи", function()
+	resetPolicy()
+	local player = addPlayer()
+	runUntilIdle()
+	local id = newPurchaseId()
+	check(receipt(player.UserId, id, SPINS.id) == Decision.PurchaseGranted, "выданный чек: не подтверждён")
+	player:SetAttribute("PaidRandomItemsRestricted", true)
+	check(receipt(player.UserId, id, SPINS.id) == Decision.PurchaseGranted, "выданный чек: отказ при запрете")
+	check(DataService.get(player).wheel.extraSpins == 3, "выданный чек: выдано второй раз")
+end)
+
+scenario("игрок вышел, пока сервер ждал ответ Roblox: выдачи нет", function()
+	resetPolicy()
+	RobloxPolicy.policyDelay = 4
+	local player = addPlayer()
+	local before = savedOf(player)
+	local call = startReceipt(player.UserId, newPurchaseId(), BOOST.id)
+	removePlayer(player)
+	runUntilIdle()
+	check(call.decision == Decision.NotProcessedYet, "вышел: покупка подтверждена")
+	local saved = savedOf(player) or before
+	check(saved == nil or saved.boosts.luckUntil == 0, "вышел: буст попал в сохранение")
+	resetPolicy()
+end)
+
+scenario("геймпасс LUCKY: при запрете не меняет удачу, без запрета даёт x1.5", function()
+	resetPolicy()
+	local player = addPlayer()
+	runUntilIdle()
+	MarketplaceService.PromptGamePassPurchaseFinished:Fire(player, LUCKY.id, true)
+	runUntilIdle()
+	check(MonetizationService.passes(player).LUCKY == true, "LUCKY: покупка не записана")
+	local data = DataService.get(player)
+	check(MonetizationService.luck(player, data, 0) == 1.5, "LUCKY: без запрета не x1.5")
+	player:SetAttribute("PaidRandomItemsRestricted", true)
+	check(MonetizationService.luck(player, data, 0) == 1, "LUCKY: при запрете меняет удачу")
+	player:SetAttribute("PaidRandomItemsRestricted", nil)
+	check(MonetizationService.luck(player, data, 0) == 1, "LUCKY: пока ответа нет, меняет удачу")
 end)
 
 if failures == 0 then

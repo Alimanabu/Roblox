@@ -59,7 +59,7 @@ DataService.setSnapshotBuilder(function(player, data)
 		floors = Formulas.floors(data, passes),
 		floorCost = Formulas.floorCost(Formulas.floors(data, passes), passes),
 		craftTime = Formulas.craftTime(data, passes, mods),
-		luck = Formulas.luck(data, passes, now, mods),
+		luck = MonetizationService.luck(player, data, now, mods),
 		luckBoostLeft = math.max(0, (data.boosts.luckUntil or 0) - now),
 		upgrades = data.upgrades,
 		index = data.index,
