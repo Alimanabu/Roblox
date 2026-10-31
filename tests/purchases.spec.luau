@@ -97,11 +97,16 @@ end
 -- DataStore копирует данные при чтении и записи, как настоящий.
 -- latency: запрос идёт по сети, поток ждёт и до записи, и после неё.
 -- lostAnswers: сколько запросов подряд запишут данные, но не вернут ответ.
-local store = { saved = {}, writes = 0, failing = false, beforeWrite = nil, latency = 0, lostAnswers = 0 }
+-- failNext: сколько запросов подряд упадут, потом хранилище снова работает.
+local store = { saved = {}, writes = 0, failing = false, beforeWrite = nil, latency = 0, lostAnswers = 0, failNext = 0 }
 
 function store:UpdateAsync(key, transform)
 	if self.failing then
 		error("DataStore: сбой записи")
+	end
+	if self.failNext > 0 then
+		self.failNext -= 1
+		error("DataStore: разовый сбой")
 	end
 	if self.latency > 0 then
 		task.wait(self.latency)
@@ -217,9 +222,16 @@ for index, product in ipairs(Monetization.Products) do
 end
 
 local SPINS = Monetization.ProductByKey.SPINS_3
+local COINS = Monetization.ProductByKey.COINS_SMALL
 local Decision = Enum.ProductPurchaseDecision
 local nextUserId = 100
 local nextPurchaseId = 500
+
+-- Брейнроты, которых сейчас несёт вор: сохранение добавляет их отдельно от живых данных.
+local carriedFrom = {} -- [player] = { entry, ... }
+DataService.addSaveExtra(function(player)
+	return carriedFrom[player]
+end)
 
 DataService.init()
 -- Вечные циклы автосейва и рассылки состояния тесту не нужны.
@@ -361,6 +373,7 @@ local function scenario(name, body)
 	store.beforeWrite = nil
 	store.latency = 0
 	store.lostAnswers = 0
+	store.failNext = 0
 	local before = failures
 	local ok, err = pcall(body)
 	if not ok then
@@ -700,6 +713,65 @@ scenario("запись прошла, ответа нет, чек пришёл с
 	check(DataService.get(back).wheel.extraSpins == 6, "нет ответа: выданное не загрузилось")
 	check(receipt(userId, nextId, SPINS.id) == Decision.PurchaseGranted, "нет ответа: чек после перезахода не подтверждён")
 	check(DataService.get(back).wheel.extraSpins == 6, "нет ответа: выдано второй раз после перезахода")
+end)
+
+-- Сервер падает сразу после сценария: в силе только то, что лежит в DataStore.
+local function autosaveRaceScenario(name, withCarried)
+	scenario(name, function()
+		local player = addPlayer()
+		runUntilIdle()
+		local data = DataService.get(player)
+		local id = newPurchaseId()
+		data.coins, data.totalEarned = 1000, 1000
+		if withCarried then
+			carriedFrom[player] = { { uid = "carried", id = "bananito_ninjini", mut = "normal" } }
+		end
+
+		-- Автосейв упал и ждёт повтора: пока он спит, игрок покупает мешок монет.
+		store.failNext = 1
+		task.spawn(DataService.save, player)
+		check(#sleeping == 1 and pauses[#pauses] == 1.5, name .. ": автосейв не ждёт повтора")
+		local call = startReceipt(player.UserId, id, COINS.id)
+		check(call.decision == Decision.PurchaseGranted, name .. ": чек не подтверждён")
+		check(savedOf(player).coins == 6000, name .. ": чек не записал монеты: " .. tostring(savedOf(player).coins))
+
+		-- Пока автосейв спит, монеты меняются ещё раз: повтор обязан записать самые новые.
+		data.coins -= 250
+		data.wheel.extraSpins = 7
+		runUntilIdle()
+
+		local saved = savedOf(player)
+		check(saved.coins == 5750, name .. ": повтор автосейва записал монеты " .. tostring(saved.coins))
+		check(saved.totalEarned == 6000, name .. ": повтор записал totalEarned " .. tostring(saved.totalEarned))
+		check(saved.wheel.extraSpins == 7, name .. ": повтор записал вращения " .. tostring(saved.wheel.extraSpins))
+		check(isReceiptSaved(player, id), name .. ": чека нет в сохранении")
+		check(#saved.receipts == 1, name .. ": чеков в сохранении не 1")
+		check(saved.session ~= nil and saved.session.jobId == game.JobId, name .. ": повтор потерял блокировку сессии")
+		local carried = 0
+		for _, entry in ipairs(saved.creatures) do
+			if entry.uid == "carried" then
+				carried += 1
+			end
+		end
+		check(carried == (withCarried and 1 or 0), name .. ": несомых брейнротов в сохранении " .. carried)
+		check(#data.creatures == 0, name .. ": несомый брейнрот попал в живые данные")
+		carriedFrom[player] = nil
+	end)
+end
+
+autosaveRaceScenario("автосейв с несомым брейнротом ждёт повтора, чек проходит: монеты не откатываются", true)
+autosaveRaceScenario("автосейв без несомых брейнротов ждёт повтора, чек проходит: монеты не откатываются", false)
+
+scenario("брейнрот забрали, пока автосейв ждёт повтора: он не задвоится", function()
+	local player = addPlayer()
+	runUntilIdle()
+	carriedFrom[player] = { { uid = "carried", id = "bananito_ninjini", mut = "normal" } }
+	store.failNext = 1
+	task.spawn(DataService.save, player)
+	-- Кража закончилась: брейнрот больше не несут, повтор не должен его записать.
+	carriedFrom[player] = nil
+	runUntilIdle()
+	check(#savedOf(player).creatures == 0, "несомый брейнрот записан после конца кражи")
 end)
 
 if failures == 0 then

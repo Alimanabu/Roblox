@@ -154,6 +154,22 @@ local function sessionOwnedByOther(saved)
 		and os.time() - (session.time or 0) < SESSION_TIMEOUT
 end
 
+-- Что пойдёт в запись. Вызывается внутри UpdateAsync, чтобы каждый повтор брал живые данные:
+-- копия из первой попытки записала бы старые монеты рядом с уже подтверждённым чеком.
+local function buildSave(player, data, release)
+	local live = profiles[player] or data
+	live.lastOnline = os.time()
+	local toSave = table.clone(live)
+	toSave.creatures = table.clone(live.creatures)
+	for _, callback in ipairs(saveExtras) do
+		for _, entry in ipairs(callback(player) or {}) do
+			table.insert(toSave.creatures, entry)
+		end
+	end
+	toSave.session = if release then nil else { jobId = game.JobId, time = os.time() }
+	return toSave
+end
+
 -- release = true, когда игрок уходит: снимаем блокировку сессии.
 -- Возвращает true, если сохранение прошло. Сохранять некуда: в Studio без API это нормально,
 -- а на боевом сервере ответ false, иначе покупка подтвердится без записи.
@@ -170,25 +186,6 @@ function DataService.save(player, release)
 	if releasing[player] and not release then
 		return false
 	end
-	data.lastOnline = os.time()
-
-	local toSave = data
-	local extras = {}
-	for _, callback in ipairs(saveExtras) do
-		for _, entry in ipairs(callback(player) or {}) do
-			table.insert(extras, entry)
-		end
-	end
-	if #extras > 0 then
-		toSave = table.clone(data)
-		toSave.creatures = table.clone(data.creatures)
-		for _, entry in ipairs(extras) do
-			table.insert(toSave.creatures, entry)
-		end
-	end
-
-	toSave.session = if release then nil else { jobId = game.JobId, time = os.time() }
-
 	local stolenSession = false
 	local skipped = false
 	local ok, err = withRetries(function()
@@ -203,7 +200,7 @@ function DataService.save(player, release)
 				stolenSession = true
 				return nil
 			end
-			return toSave
+			return buildSave(player, data, release)
 		end)
 	end)
 	if not ok then
