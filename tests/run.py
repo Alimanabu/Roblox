@@ -148,5 +148,6 @@ strings = world("strings.spec.luau", "en-us")
 screens = world("screens.spec.luau", "en-us")
 screens_ru = world("screens.spec.luau", "ru-ru")
 steal = world("steal.spec.luau", "en-us")
+rejoin = world("rejoin.spec.luau", "en-us")
 
-sys.exit(economy or purchases or dictionary or strings or screens or screens_ru or steal)
+sys.exit(economy or purchases or dictionary or strings or screens or screens_ru or steal or rejoin)
