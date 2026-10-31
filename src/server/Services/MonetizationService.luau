@@ -17,29 +17,31 @@ local MonetizationService = {}
 MonetizationService.PassesChanged = Instance.new("BindableEvent")
 
 local PASS_CHECK_ATTEMPTS = 4
+local PASS_RECHECK_INTERVAL = 60
 
 local ownedPasses = {} -- [player] = { VIP = true, ... }
+local uncheckedPasses = {} -- [player] = { VIP = true, ... }: Roblox не ответил, проверим ещё раз
 
 function MonetizationService.passes(player)
 	return ownedPasses[player] or {}
 end
 
--- Сбой запроса не значит «не куплено»: без повтора купленный геймпасс пропал бы до перезахода.
-local function ownsPass(player, pass)
-	for attempt = 1, PASS_CHECK_ATTEMPTS do
+-- Сбой запроса не значит «не куплено»: нет ответа Roblox, значит nil, а не false.
+local function ownsPass(player, pass, attempts)
+	for attempt = 1, attempts do
 		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
 		if ok then
 			return result
 		end
 		warn("[MonetizationService] Не удалось проверить геймпасс", pass.key, "у", player.Name, "попытка", attempt, result)
-		if attempt < PASS_CHECK_ATTEMPTS then
+		if attempt < attempts then
 			task.wait(attempt * 1.5)
 		end
 		if not player.Parent then
-			return false
+			return nil
 		end
 	end
-	return false
+	return nil
 end
 
 local function refreshPasses(player)
@@ -48,11 +50,48 @@ local function refreshPasses(player)
 	local owned = ownedPasses[player] or {}
 	ownedPasses[player] = owned
 	for _, pass in ipairs(Monetization.GamePasses) do
-		if pass.id ~= 0 and player.Parent and ownsPass(player, pass) then
-			owned[pass.key] = true
+		if pass.id ~= 0 and player.Parent then
+			local result = ownsPass(player, pass, PASS_CHECK_ATTEMPTS)
+			if result then
+				owned[pass.key] = true
+			elseif result == nil and player.Parent then
+				uncheckedPasses[player] = uncheckedPasses[player] or {}
+				uncheckedPasses[player][pass.key] = true
+			end
 		end
 	end
 	if player.Parent then
+		DataService.markDirty(player)
+		MonetizationService.PassesChanged:Fire(player)
+	end
+end
+
+-- Фоновая проверка геймпассов, на которые Roblox не ответил при входе. Запрос один:
+-- следующая попытка всё равно будет через PASS_RECHECK_INTERVAL. Геймпасс только
+-- добавляется, поэтому никакой ответ не снимает уже выданное.
+local function recheckPasses(player)
+	local unchecked = uncheckedPasses[player]
+	if not unchecked then
+		return
+	end
+	local changed = false
+	for _, pass in ipairs(Monetization.GamePasses) do
+		if unchecked[pass.key] and player.Parent then
+			local result = ownsPass(player, pass, 1)
+			if result ~= nil then
+				unchecked[pass.key] = nil
+			end
+			local owned = ownedPasses[player]
+			if result and owned and not owned[pass.key] then
+				owned[pass.key] = true
+				changed = true
+			end
+		end
+	end
+	if next(unchecked) == nil and uncheckedPasses[player] == unchecked then
+		uncheckedPasses[player] = nil
+	end
+	if changed and player.Parent then
 		DataService.markDirty(player)
 		MonetizationService.PassesChanged:Fire(player)
 	end
@@ -141,6 +180,16 @@ function MonetizationService.init()
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		ownedPasses[player] = nil
+		uncheckedPasses[player] = nil
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(PASS_RECHECK_INTERVAL)
+			for player in pairs(uncheckedPasses) do
+				task.spawn(recheckPasses, player)
+			end
+		end
 	end)
 end
 
