@@ -12,7 +12,7 @@ MODULES = ["Config/Rarities", "Config/Creatures", "Config/Mutations", "Config/Ca
 
 
 def read(*path):
-    return open(os.path.join(ROOT, *path)).read()
+    return open(os.path.join(ROOT, *path), encoding="utf-8").read()
 
 
 def run(spec, extra=()):
@@ -24,7 +24,7 @@ def run(spec, extra=()):
     out.append(read("tests", spec))
 
     bundle = os.path.join(ROOT, "tests", ".bundle.luau")
-    open(bundle, "w").write("\n".join(out))
+    open(bundle, "w", encoding="utf-8").write("\n".join(out))
     return subprocess.call([LUAU, bundle])
 
 

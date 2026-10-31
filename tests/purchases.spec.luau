@@ -95,11 +95,16 @@ local function deepCopy(value)
 end
 
 -- DataStore копирует данные при чтении и записи, как настоящий.
-local store = { saved = {}, writes = 0, failing = false, beforeWrite = nil }
+-- latency: запрос идёт по сети, поток ждёт и до записи, и после неё.
+-- lostAnswers: сколько запросов подряд запишут данные, но не вернут ответ.
+local store = { saved = {}, writes = 0, failing = false, beforeWrite = nil, latency = 0, lostAnswers = 0 }
 
 function store:UpdateAsync(key, transform)
 	if self.failing then
 		error("DataStore: сбой записи")
+	end
+	if self.latency > 0 then
+		task.wait(self.latency)
 	end
 	local hook = self.beforeWrite
 	self.beforeWrite = nil
@@ -110,6 +115,13 @@ function store:UpdateAsync(key, transform)
 	if result ~= nil then
 		self.saved[key] = deepCopy(result)
 		self.writes += 1
+	end
+	if self.latency > 0 then
+		task.wait(self.latency)
+	end
+	if self.lostAnswers > 0 then
+		self.lostAnswers -= 1
+		error("DataStore: запись прошла, ответа нет")
 	end
 	return result
 end
@@ -169,9 +181,13 @@ local services = {
 	},
 }
 
+local closeCallback = nil
+
 game = {
 	JobId = "test-server",
-	BindToClose = function() end,
+	BindToClose = function(_, callback)
+		closeCallback = callback
+	end,
 	GetService = function(_, name)
 		return assert(services[name], "нет заглушки сервиса " .. name)
 	end,
@@ -206,8 +222,12 @@ local nextUserId = 100
 local nextPurchaseId = 500
 
 DataService.init()
-MonetizationService.init()
 -- Вечные циклы автосейва и рассылки состояния тесту не нужны.
+table.clear(sleeping)
+MonetizationService.init()
+-- Фоновую проверку геймпассов сценарии будят сами, по одному обороту (см. passRecheckTick).
+local passLoop = table.remove(sleeping, 1)
+local passLoopPause = passLoop and passLoop.at - clock
 table.clear(sleeping)
 
 local function addPlayer(userId)
@@ -228,17 +248,82 @@ local function removePlayer(player)
 end
 
 -- Вызов чека так, как его делает Roblox: в отдельном потоке, который может ждать.
-local function receipt(userId, purchaseId, productId)
-	local decision
+local function startReceipt(userId, purchaseId, productId)
+	local call = {}
 	task.spawn(function()
-		decision = MarketplaceService.ProcessReceipt({
+		call.decision = MarketplaceService.ProcessReceipt({
 			PlayerId = userId,
 			PurchaseId = purchaseId,
 			ProductId = productId,
 		})
 	end)
+	return call
+end
+
+local function receipt(userId, purchaseId, productId)
+	local call = startReceipt(userId, purchaseId, productId)
 	runUntilIdle()
-	return decision
+	return call.decision
+end
+
+-- Один оборот настоящего цикла фоновой проверки. Его новый сон убираем: цикл вечный,
+-- и runUntilIdle иначе не закончится.
+local function passRecheckTick()
+	if not passLoop then
+		return
+	end
+	resume(passLoop.thread)
+	for index, sleeper in ipairs(sleeping) do
+		if sleeper.thread == passLoop.thread then
+			table.remove(sleeping, index)
+			break
+		end
+	end
+	runUntilIdle()
+end
+
+-- Вторая пара сервисов со своим состоянием: нужна, когда сценарий выключает хранилище или
+-- весь сервер. run.py склеивает stubs и spec в один файл, поэтому cache здесь виден.
+local function withFreshServices(options, body)
+	local saved = {
+		list = Players.list,
+		added = Players.PlayerAdded,
+		removing = Players.PlayerRemoving,
+		prompt = MarketplaceService.PromptGamePassPurchaseFinished,
+		process = MarketplaceService.ProcessReceipt,
+		getStore = services.DataStoreService.GetDataStore,
+		isStudio = services.RunService.IsStudio,
+		data = cache["Services/DataService"],
+		money = cache["Services/MonetizationService"],
+	}
+	Players.list, Players.PlayerAdded, Players.PlayerRemoving = {}, newSignal(), newSignal()
+	MarketplaceService.PromptGamePassPurchaseFinished = newSignal()
+	services.RunService.IsStudio = function()
+		return options.studio == true
+	end
+	if options.noStore then
+		services.DataStoreService.GetDataStore = function()
+			error("DataStore недоступен")
+		end
+	end
+	cache["Services/DataService"], cache["Services/MonetizationService"] = nil, nil
+
+	local data = shared_require("Services/DataService")
+	local money = shared_require("Services/MonetizationService")
+	data.init()
+	money.init()
+	table.clear(sleeping)
+	local ok, err = pcall(body, data, money)
+
+	Players.list, Players.PlayerAdded, Players.PlayerRemoving = saved.list, saved.added, saved.removing
+	MarketplaceService.PromptGamePassPurchaseFinished = saved.prompt
+	MarketplaceService.ProcessReceipt = saved.process
+	services.DataStoreService.GetDataStore = saved.getStore
+	services.RunService.IsStudio = saved.isStudio
+	cache["Services/DataService"], cache["Services/MonetizationService"] = saved.data, saved.money
+	if not ok then
+		error(err, 0)
+	end
 end
 
 local function newPurchaseId()
@@ -254,6 +339,16 @@ local function isReceiptSaved(player, id)
 	return table.find(savedOf(player).receipts or {}, id) ~= nil
 end
 
+local function countChanges(player)
+	local changes = { count = 0 }
+	MonetizationService.PassesChanged.Event:Connect(function(changed)
+		if changed == player then
+			changes.count += 1
+		end
+	end)
+	return changes
+end
+
 local function scenario(name, body)
 	scenarios += 1
 	table.clear(warnings)
@@ -261,6 +356,8 @@ local function scenario(name, body)
 	table.clear(sleeping)
 	store.failing = false
 	store.beforeWrite = nil
+	store.latency = 0
+	store.lostAnswers = 0
 	local before = failures
 	local ok, err = pcall(body)
 	if not ok then
@@ -427,6 +524,175 @@ scenario("игрок ушёл во время паузы: повторов бо�
 	runUntilIdle()
 	MarketplaceService.failures[userId .. ":" .. vip.id] = nil
 	check(MarketplaceService.calls[userId .. ":" .. vip.id] == 1, "уход в паузе: запросы продолжились")
+end)
+
+scenario("нет DataStore на боевом сервере: покупка не подтверждается", function()
+	withFreshServices({ noStore = true, studio = false }, function(data)
+		local player = addPlayer()
+		runUntilIdle()
+		local id = newPurchaseId()
+		local writes = store.writes
+		check(receipt(player.UserId, id, SPINS.id) == Decision.NotProcessedYet, "нет хранилища: подтверждено без записи")
+		check(receipt(player.UserId, id, SPINS.id) == Decision.NotProcessedYet, "нет хранилища: повтор чека подтверждён без записи")
+		check(data.get(player).wheel.extraSpins == 3, "нет хранилища: повтор чека выдан второй раз")
+		check(store.writes == writes, "нет хранилища: запись в DataStore")
+	end)
+end)
+
+scenario("нет DataStore в Studio: тестовая покупка работает", function()
+	withFreshServices({ noStore = true, studio = true }, function(data)
+		local player = addPlayer()
+		runUntilIdle()
+		check(receipt(player.UserId, newPurchaseId(), SPINS.id) == Decision.PurchaseGranted, "Studio: тестовая покупка не подтверждена")
+		check(data.get(player).wheel.extraSpins == 3, "Studio: нет 3 вращений")
+	end)
+end)
+
+scenario("фоновая проверка: геймпасс возвращается без перезахода", function()
+	local vip = Monetization.GamePassByKey.VIP
+	local lucky = Monetization.GamePassByKey.LUCKY
+	local userId = nextUserId + 1
+	local vipKey = userId .. ":" .. vip.id
+	MarketplaceService.owned[vipKey] = true
+	MarketplaceService.failures[vipKey] = 1000
+
+	local player = addPlayer()
+	runUntilIdle()
+	local changes = countChanges(player)
+	check(passLoopPause == 60, "фоновая проверка: цикл не раз в 60 с")
+	check(MonetizationService.passes(player).VIP == nil, "фоновая проверка: VIP выдан без ответа Roblox")
+	check(MarketplaceService.calls[vipKey] == 4, "фоновая проверка: при входе запросов VIP не 4")
+
+	passRecheckTick()
+	check(MarketplaceService.calls[vipKey] == 5, "фоновая проверка: Roblox молчит, а запрос не один")
+	check(MonetizationService.passes(player).VIP == nil, "фоновая проверка: сбой засчитан как покупка")
+	check(changes.count == 0, "фоновая проверка: PassesChanged при сбое")
+
+	MarketplaceService.failures[vipKey] = nil
+	passRecheckTick()
+	check(MonetizationService.passes(player).VIP == true, "фоновая проверка: VIP не вернулся")
+	check(changes.count == 1, "фоновая проверка: нет PassesChanged после успеха")
+	check(MarketplaceService.calls[vipKey] == 6, "фоновая проверка: запросов VIP не 6")
+
+	passRecheckTick()
+	check(MarketplaceService.calls[vipKey] == 6, "фоновая проверка: проверенный геймпасс запрошен снова")
+	check(MarketplaceService.calls[userId .. ":" .. lucky.id] == 1, "фоновая проверка: лишний запрос геймпасса с ответом")
+	check(changes.count == 1, "фоновая проверка: лишний PassesChanged")
+end)
+
+scenario("фоновая проверка: сбой и ответ «нет» не снимают купленное", function()
+	local vip = Monetization.GamePassByKey.VIP
+	local userId = nextUserId + 1
+	local vipKey = userId .. ":" .. vip.id
+	MarketplaceService.failures[vipKey] = 1000
+
+	local player = addPlayer()
+	runUntilIdle()
+	-- Roblox молчит, но покупка прошла прямо в игре.
+	MarketplaceService.PromptGamePassPurchaseFinished:Fire(player, vip.id, true)
+	local changes = countChanges(player)
+
+	passRecheckTick()
+	check(MonetizationService.passes(player).VIP == true, "снятие покупки: сбой запроса снял геймпасс")
+
+	-- Сервис ожил, но ещё не знает о покупке.
+	MarketplaceService.failures[vipKey] = nil
+	passRecheckTick()
+	check(MonetizationService.passes(player).VIP == true, "снятие покупки: ответ «нет» снял геймпасс")
+	check(MarketplaceService.calls[vipKey] == 6, "снятие покупки: запросов VIP не 6")
+	check(changes.count == 0, "снятие покупки: PassesChanged без изменений")
+
+	passRecheckTick()
+	check(MarketplaceService.calls[vipKey] == 6, "снятие покупки: геймпасс с ответом запрошен снова")
+end)
+
+scenario("фоновая проверка: игрок ушёл, запросов больше нет", function()
+	local vip = Monetization.GamePassByKey.VIP
+	local userId = nextUserId + 1
+	local vipKey = userId .. ":" .. vip.id
+	MarketplaceService.failures[vipKey] = 1000
+	local player = addPlayer()
+	runUntilIdle()
+	check(MarketplaceService.calls[vipKey] == 4, "уход: при входе запросов VIP не 4")
+	removePlayer(player)
+	runUntilIdle()
+	passRecheckTick()
+	MarketplaceService.failures[vipKey] = nil
+	check(MarketplaceService.calls[vipKey] == 4, "уход: фоновая проверка спрашивает про ушедшего")
+end)
+
+-- Сервер выключается, финальная запись ещё идёт, и в этот момент что-то снова сохраняет игрока.
+local function shutdownScenario(name, interfere)
+	scenario(name, function()
+		withFreshServices({}, function(data)
+			local player = addPlayer()
+			runUntilIdle()
+			store.latency = 1
+			task.spawn(closeCallback)
+			interfere(data, player)
+			runUntilIdle()
+			check(savedOf(player).session == nil, name .. ": блокировка сессии вернулась")
+		end)
+	end)
+end
+
+shutdownScenario("выключение сервера: автосейв не возвращает блокировку", function(data, player)
+	task.spawn(data.save, player)
+end)
+
+shutdownScenario("выключение сервера: чек не возвращает блокировку", function(_, player)
+	local call = startReceipt(player.UserId, newPurchaseId(), SPINS.id)
+	runUntilIdle()
+	check(call.decision == Decision.NotProcessedYet, "выключение: чек подтверждён на уходящем сервере")
+end)
+
+scenario("два чека подряд до конца первой записи: выдача одна", function()
+	local player = addPlayer()
+	runUntilIdle()
+	local id = newPurchaseId()
+	local writes = store.writes
+	store.latency = 1
+
+	local first = startReceipt(player.UserId, id, SPINS.id)
+	local second = startReceipt(player.UserId, id, SPINS.id)
+	check(first.decision == nil, "два чека: первый подтверждён до записи")
+	check(second.decision == nil, "два чека: второй подтверждён до записи")
+	check(store.writes == writes, "два чека: заглушка не ждёт записи")
+
+	runUntilIdle()
+	check(first.decision == Decision.PurchaseGranted, "два чека: первый не подтверждён")
+	check(second.decision == Decision.PurchaseGranted, "два чека: второй не подтверждён")
+	check(DataService.get(player).wheel.extraSpins == 3, "два чека: выдано не один раз")
+	check(savedOf(player).wheel.extraSpins == 3, "два чека: в сохранении выдано не один раз")
+	check(#savedOf(player).receipts == 1, "два чека: чек записан не один раз")
+end)
+
+scenario("запись прошла, ответа нет, чек пришёл снова: выдача одна", function()
+	local player = addPlayer()
+	runUntilIdle()
+	local userId = player.UserId
+	local id = newPurchaseId()
+	local writes = store.writes
+	store.lostAnswers = 4 -- все попытки withRetries
+	check(receipt(userId, id, SPINS.id) == Decision.NotProcessedYet, "нет ответа: подтверждено без ответа")
+	check(store.writes == writes + 4, "нет ответа: заглушка не записала данные")
+	check(isReceiptSaved(player, id), "нет ответа: чека нет в сохранении")
+
+	check(receipt(userId, id, SPINS.id) == Decision.PurchaseGranted, "нет ответа: повтор чека не подтверждён")
+	check(DataService.get(player).wheel.extraSpins == 3, "нет ответа: выдано второй раз")
+	check(savedOf(player).wheel.extraSpins == 3, "нет ответа: в сохранении выдано второй раз")
+
+	-- То же, но чек приходит уже на следующем заходе: выданное читается из сохранения.
+	local nextId = newPurchaseId()
+	store.lostAnswers = 4
+	check(receipt(userId, nextId, SPINS.id) == Decision.NotProcessedYet, "нет ответа: второй чек подтверждён без ответа")
+	removePlayer(player)
+	runUntilIdle()
+	local back = addPlayer(userId)
+	runUntilIdle()
+	check(DataService.get(back).wheel.extraSpins == 6, "нет ответа: выданное не загрузилось")
+	check(receipt(userId, nextId, SPINS.id) == Decision.PurchaseGranted, "нет ответа: чек после перезахода не подтверждён")
+	check(DataService.get(back).wheel.extraSpins == 6, "нет ответа: выдано второй раз после перезахода")
 end)
 
 if failures == 0 then
