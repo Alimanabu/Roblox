@@ -793,7 +793,10 @@ local Source = {
 
 Strings.Source = Source
 
-local translations = {} -- [язык] = { [ключ] = перевод }
+local TRANSLATIONS_RETRY = 30 -- секунд до новой попытки, если таблица ещё не загрузилась
+
+local translations = {} -- [язык] = { [ключ] = перевод }, только загруженные таблицы
+local retryAt = {} -- [язык] = когда снова пробовать загрузить таблицу
 
 -- Язык определяем один раз: на сервере и в тестах игрока нет, там английский.
 local function detectLanguage()
@@ -808,21 +811,30 @@ local function translationsFor(language)
 	if language == "en" then
 		return nil
 	end
-	if not translations[language] then
-		local map = {}
-		local ok, err = pcall(function()
-			local localization = game:GetService("LocalizationService")
-			local localizationTable = localization:WaitForChild("Translations", 5)
-			for _, entry in ipairs(localizationTable:GetEntries()) do
-				local value = entry.Values[language]
-				if value and value ~= "" then
-					map[entry.Key] = value
-				end
+	if translations[language] or os.clock() < (retryAt[language] or 0) then
+		return translations[language]
+	end
+	local firstTry = retryAt[language] == nil
+	retryAt[language] = os.clock() + TRANSLATIONS_RETRY
+	local map = {}
+	local ok, err = pcall(function()
+		local localization = game:GetService("LocalizationService")
+		-- Ждём только при загрузке: потом запрос идёт из отрисовки, её нельзя останавливать.
+		local localizationTable = if firstTry
+			then localization:WaitForChild("Translations", 5)
+			else localization:FindFirstChild("Translations")
+		for _, entry in ipairs(localizationTable:GetEntries()) do
+			local value = entry.Values[language]
+			if value and value ~= "" then
+				map[entry.Key] = value
 			end
-		end)
-		if not ok then
-			warn("[Strings] Таблица перевода недоступна:", err)
 		end
+	end)
+	if not ok then
+		warn("[Strings] Таблица перевода недоступна:", err)
+	end
+	-- Пустой результат не запоминаем: таблица могла ещё не дойти до клиента.
+	if next(map) then
 		translations[language] = map
 	end
 	return translations[language]

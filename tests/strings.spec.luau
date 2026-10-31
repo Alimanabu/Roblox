@@ -86,6 +86,18 @@ __translationEntries = nil
 S.setLanguage("fr")
 check(S.t("factory.sold", { coins = "$5" }) == "Sold for $5", "пустая таблица: должен быть английский")
 
+-- Таблица дошла до клиента не сразу: пустой результат не запоминается на всю сессию.
+__translationEntries = {}
+S.setLanguage("es")
+check(S.t("plot.free_base") == "Free base", "таблица ещё пуста: должен быть английский")
+__translationEntries = { { Key = "plot.free_base", Source = "Free base", Values = { es = "Base libre" } } }
+check(S.t("plot.free_base") == "Free base", "таблицу не должны читать на каждом кадре")
+World.advance(31)
+check(S.t("plot.free_base") == "Base libre", "таблица не перечитана позже")
+__translationEntries = {}
+World.advance(31)
+check(S.t("plot.free_base") == "Base libre", "загруженная таблица потеряна")
+
 -- Сообщение при выгоне приходит до клиента, поэтому язык берётся у игрока на сервере.
 __translationEntries = nil
 check(S.forPlayer({ LocaleId = "en-us" }, "plot.free_base") == "Free base", "forPlayer: английский")
