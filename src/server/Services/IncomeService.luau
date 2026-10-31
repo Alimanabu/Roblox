@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -37,7 +38,7 @@ local function giveOfflineIncome(player)
 		if player.Parent then
 			Remotes.Notify:FireClient(
 				player,
-				"💤 Пока тебя не было, брейнроты заработали " .. Format.coins(amount),
+				S.m("income.offline", { coins = Format.coins(amount) }),
 				Color3.fromRGB(255, 220, 80)
 			)
 		end

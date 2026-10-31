@@ -2,6 +2,8 @@
 -- Награды в монетах считаются в «минутах дохода», чтобы они были полезны
 -- и новичку, и прокачанному игроку.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Daily = {}
 
 Daily.MIN_COINS_PER_MINUTE = 250 -- минимум монет за «минуту дохода»
@@ -20,17 +22,17 @@ Daily.Rewards = {
 -- kind — какое действие считается:
 --   craft, fuse, sell, steal, slap, slapThief, lock, mutant, sigmaPlus, newIndex
 Daily.QuestPool = {
-	{ id = "craft25", kind = "craft", target = 25, text = "Создай 25 брейнротов", minutes = 5 },
-	{ id = "craft80", kind = "craft", target = 80, text = "Создай 80 брейнротов", minutes = 12 },
-	{ id = "fuse3", kind = "fuse", target = 3, text = "Скрести брейнротов 3 раза", minutes = 8 },
-	{ id = "sell10", kind = "sell", target = 10, text = "Продай 10 брейнротов", minutes = 4 },
-	{ id = "steal1", kind = "steal", target = 1, text = "Укради 1 брейнрота", minutes = 15 },
-	{ id = "slap3", kind = "slap", target = 3, text = "Шлёпни 3 игроков", minutes = 4 },
-	{ id = "slapThief", kind = "slapThief", target = 1, text = "Шлёпни вора", minutes = 10 },
-	{ id = "lock3", kind = "lock", target = 3, text = "Закрой базу замком 3 раза", minutes = 4 },
-	{ id = "mutant1", kind = "mutant", target = 1, text = "Получи брейнрота с мутацией", minutes = 8 },
-	{ id = "sigma5", kind = "sigmaPlus", target = 5, text = "Получи 5 брейнротов «Сигма» или реже", minutes = 10 },
-	{ id = "index1", kind = "newIndex", target = 1, text = "Открой нового брейнрота в Индексе", minutes = 10 },
+	{ id = "craft25", kind = "craft", target = 25, minutes = 5 },
+	{ id = "craft80", kind = "craft", target = 80, minutes = 12 },
+	{ id = "fuse3", kind = "fuse", target = 3, minutes = 8 },
+	{ id = "sell10", kind = "sell", target = 10, minutes = 4 },
+	{ id = "steal1", kind = "steal", target = 1, minutes = 15 },
+	{ id = "slap3", kind = "slap", target = 3, minutes = 4 },
+	{ id = "slapThief", kind = "slapThief", target = 1, minutes = 10 },
+	{ id = "lock3", kind = "lock", target = 3, minutes = 4 },
+	{ id = "mutant1", kind = "mutant", target = 1, minutes = 8 },
+	{ id = "sigma5", kind = "sigmaPlus", target = 5, minutes = 10 },
+	{ id = "index1", kind = "newIndex", target = 1, minutes = 10 },
 }
 
 -- Подарки за время в игре (считается с момента захода, сбрасывается при перезаходе).
@@ -45,19 +47,23 @@ Daily.Gifts = {
 
 -- Колесо удачи: 1 бесплатное вращение в день + купленные. weight — относительный шанс.
 Daily.Wheel = {
-	{ weight = 30, name = "💰 5 мин дохода", reward = { coinsMinutes = 5 } },
-	{ weight = 20, name = "🍀 x2 удачи 10 мин", reward = { luckMinutes = 10 } },
-	{ weight = 18, name = "💰 15 мин дохода", reward = { coinsMinutes = 15 } },
-	{ weight = 14, name = "🧠 Сигма", reward = { creatureRarity = "sigma" } },
-	{ weight = 9, name = "🍀 x2 удачи 30 мин", reward = { luckMinutes = 30 } },
-	{ weight = 6, name = "🧠 Аура", reward = { creatureRarity = "aura" } },
-	{ weight = 2, name = "🔥 Огненный скин", reward = { skin = "fire", coinsMinutes = 5 } },
-	{ weight = 1, name = "🧠 СКИБИДИ!", reward = { creatureRarity = "skibidi" } },
+	{ weight = 30, reward = { coinsMinutes = 5 } },
+	{ weight = 20, reward = { luckMinutes = 10 } },
+	{ weight = 18, reward = { coinsMinutes = 15 } },
+	{ weight = 14, reward = { creatureRarity = "sigma" } },
+	{ weight = 9, reward = { luckMinutes = 30 } },
+	{ weight = 6, reward = { creatureRarity = "aura" } },
+	{ weight = 2, reward = { skin = "fire", coinsMinutes = 5 } },
+	{ weight = 1, reward = { creatureRarity = "skibidi" } },
 }
 
 Daily.QuestById = {}
 for _, quest in ipairs(Daily.QuestPool) do
+	S.fill(quest, "quest." .. quest.id, "text")
 	Daily.QuestById[quest.id] = quest
+end
+for index, slot in ipairs(Daily.Wheel) do
+	S.fill(slot, "wheel." .. index, "name")
 end
 
 function Daily.today(time)

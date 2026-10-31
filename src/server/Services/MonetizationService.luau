@@ -4,6 +4,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Monetization = require(Shared.Config.Monetization)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
@@ -110,11 +111,11 @@ local function grantProduct(player, data, product)
 	if product.kind == "luckBoost" then
 		local now = os.time()
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, now) + product.minutes * 60
-		Remotes.Notify:FireClient(player, "🍀 Буст удачи x2 активирован!", Color3.fromRGB(120, 255, 120))
+		Remotes.Notify:FireClient(player, S.m("shop.luck_boost_on"), Color3.fromRGB(120, 255, 120))
 		return true
 	elseif product.kind == "spins" then
 		data.wheel.extraSpins += product.amount
-		Remotes.Notify:FireClient(player, "🎡 +" .. product.amount .. " вращения колеса!", Color3.fromRGB(120, 255, 120))
+		Remotes.Notify:FireClient(player, S.m("shop.spins_added", { count = product.amount }), Color3.fromRGB(120, 255, 120))
 		return true
 	elseif product.kind == "coins" then
 		local income = Formulas.totalIncome(data, MonetizationService.passes(player))
@@ -166,7 +167,7 @@ function MonetizationService.init()
 				if pass.id == passId then
 					ownedPasses[player] = ownedPasses[player] or {}
 					ownedPasses[player][pass.key] = true
-					Remotes.Notify:FireClient(player, "✅ Куплено: " .. pass.name, Color3.fromRGB(120, 255, 120))
+					Remotes.Notify:FireClient(player, S.m("shop.purchased", { name = S.m("pass." .. pass.key .. ".name") }), Color3.fromRGB(120, 255, 120))
 				end
 			end
 			DataService.markDirty(player)

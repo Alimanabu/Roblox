@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Admins = require(Shared.Config.Admins)
 local Creatures = require(Shared.Config.Creatures)
 local Events = require(Shared.Config.Events)
@@ -46,7 +47,7 @@ function COMMANDS.levels(player, data, amount)
 	data.level = math.min(Levels.MAX_LEVEL, data.level + amount)
 	data.xp = 0
 	ProgressionService.updateOverhead(player)
-	return "Уровень " .. data.level
+	return S.m("admin.level", { level = data.level })
 end
 
 function COMMANDS.creature(player, data, rarityId)
@@ -55,13 +56,13 @@ function COMMANDS.creature(player, data, rarityId)
 	end
 	local creature = randomOfRarity(rarityId)
 	FactoryService.give(player, creature.id, "normal")
-	return "Выдан " .. creature.name
+	return S.m("admin.given", { name = S.m(creature.nameKey) })
 end
 
 function COMMANDS.mutant(player, data)
 	local creature = randomOfRarity("aura")
 	FactoryService.give(player, creature.id, "sixseven")
-	return "Выдан мутант 67: " .. creature.name
+	return S.m("admin.given_mutant", { name = S.m(creature.nameKey) })
 end
 
 function COMMANDS.event(player, data, eventId)
@@ -71,13 +72,13 @@ function COMMANDS.event(player, data, eventId)
 	end
 	workspace:SetAttribute("ForcedEvent", event.id)
 	workspace:SetAttribute("ForcedEventUntil", os.time() + 120)
-	return "Запущен ивент " .. event.name .. " на 2 минуты"
+	return S.m("admin.event", { name = S.m(event.nameKey) })
 end
 
 function COMMANDS.season(player, data, seasonId)
 	if seasonId == "" then
 		workspace:SetAttribute("ForcedSeason", nil)
-		return "Ручной сезон выключен"
+		return S.m("admin.season_off")
 	end
 	local Seasons = require(Shared.Config.Seasons)
 	local season = type(seasonId) == "string" and Seasons.ById[seasonId]
@@ -85,34 +86,34 @@ function COMMANDS.season(player, data, seasonId)
 		return nil
 	end
 	workspace:SetAttribute("ForcedSeason", season.id)
-	return "Включён сезон " .. season.name .. " (до выключения)"
+	return S.m("admin.season_on", { name = S.m("season." .. season.id .. ".name") })
 end
 
 function COMMANDS.wild(player, data)
 	require(script.Parent.WildService).forceSpawn()
-	return "Появился дикий брейнрот"
+	return S.m("admin.wild")
 end
 
 function COMMANDS.skipTutorial(player, data)
 	data.tutorial.step = 999
-	return "Обучение пропущено"
+	return S.m("admin.tutorial_skipped")
 end
 
 function COMMANDS.removeFloors(player, data)
 	data.floors = 0
-	return "Этажи снесены: снова 5 мест на земле"
+	return S.m("admin.floors_removed")
 end
 
 function COMMANDS.resetDaily(player, data)
 	data.daily.lastClaimDay = 0
 	data.quests.day = 0
-	return "Ежедневные награды и задания сброшены"
+	return S.m("admin.daily_reset")
 end
 
 function COMMANDS.reset(player)
 	DataService.reset(player)
 	ProgressionService.updateOverhead(player)
-	return "Прогресс сброшен"
+	return S.m("admin.progress_reset")
 end
 
 local function onAdmin(player, command, arg)
@@ -128,7 +129,7 @@ local function onAdmin(player, command, arg)
 	if result then
 		DataService.markDirty(player)
 		PlotService.render(player)
-		Remotes.Notify:FireClient(player, "🛠 " .. result, INFO)
+		Remotes.Notify:FireClient(player, S.m("admin.result", { text = result }), INFO)
 	end
 end
 

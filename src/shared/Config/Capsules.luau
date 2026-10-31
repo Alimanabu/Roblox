@@ -3,13 +3,13 @@
 -- level — с какого уровня игрока открывается капсула.
 -- rebirths — сколько перерождений нужно.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Capsules = {}
 
 Capsules.List = {
 	{
 		id = "old_meme",
-		name = "Старый мем",
-		desc = "Мем из 2016-го. Кринж, но работает.",
 		cost = 100,
 		level = 1,
 		color = Color3.fromRGB(150, 150, 150),
@@ -17,8 +17,6 @@ Capsules.List = {
 	},
 	{
 		id = "chat_meme",
-		name = "Мем из чата",
-		desc = "Кто-то скинул в чат класса.",
 		cost = 750,
 		level = 3,
 		color = Color3.fromRGB(90, 200, 90),
@@ -26,8 +24,6 @@ Capsules.List = {
 	},
 	{
 		id = "viral_meme",
-		name = "Вирусный мем",
-		desc = "Уже 1 млн просмотров!",
 		cost = 10000,
 		level = 6,
 		color = Color3.fromRGB(60, 140, 255),
@@ -35,8 +31,6 @@ Capsules.List = {
 	},
 	{
 		id = "trend_sound",
-		name = "Трендовый звук",
-		desc = "Этот звук играет в каждом втором видео.",
 		cost = 150000,
 		level = 10,
 		color = Color3.fromRGB(170, 80, 255),
@@ -44,8 +38,6 @@ Capsules.List = {
 	},
 	{
 		id = "mega_trend",
-		name = "Мега-тренд",
-		desc = "Про это говорят даже родители.",
 		cost = 2000000,
 		level = 15,
 		color = Color3.fromRGB(255, 180, 40),
@@ -53,8 +45,6 @@ Capsules.List = {
 	},
 	{
 		id = "brainrot_core",
-		name = "Брейнрот-ядро",
-		desc = "Чистый концентрированный брейнрот.",
 		cost = 25000000,
 		level = 22,
 		color = Color3.fromRGB(255, 70, 110),
@@ -62,8 +52,6 @@ Capsules.List = {
 	},
 	{
 		id = "capsule_67",
-		name = "Капсула 67",
-		desc = "Шесть... семь... 🤌",
 		cost = 670000000,
 		level = 30,
 		rebirths = 1,
@@ -72,8 +60,6 @@ Capsules.List = {
 	},
 	{
 		id = "halloween_capsule",
-		name = "🎃 Хэллоуинская капсула",
-		desc = "Только до 6 ноября! Эксклюзивные брейнроты.",
 		cost = 120000,
 		level = 8,
 		season = "halloween",
@@ -82,8 +68,6 @@ Capsules.List = {
 	},
 	{
 		id = "newyear_capsule",
-		name = "🎄 Новогодняя капсула",
-		desc = "Только до 10 января! Эксклюзивные брейнроты.",
 		cost = 300000,
 		level = 10,
 		season = "newyear",
@@ -92,8 +76,6 @@ Capsules.List = {
 	},
 	{
 		id = "valentine_capsule",
-		name = "💘 Валентинка",
-		desc = "Только до 15 февраля! Эксклюзивные брейнроты.",
 		cost = 400000,
 		level = 10,
 		season = "valentine",
@@ -102,8 +84,6 @@ Capsules.List = {
 	},
 	{
 		id = "summer_capsule",
-		name = "☀️ Летняя капсула",
-		desc = "Только до 10 июля! Эксклюзивные брейнроты.",
 		cost = 1000000,
 		level = 12,
 		season = "summer",
@@ -112,8 +92,6 @@ Capsules.List = {
 	},
 	{
 		id = "world_trend",
-		name = "Мировой тренд",
-		desc = "Этот мем знает вся планета.",
 		cost = 10000000000,
 		level = 40,
 		rebirths = 3,
@@ -122,8 +100,6 @@ Capsules.List = {
 	},
 	{
 		id = "ultra_brainrot",
-		name = "Ультра-брейнрот",
-		desc = "Финальная форма интернета. 🤌",
 		cost = 1000000000000,
 		level = 50,
 		rebirths = 5,
@@ -137,6 +113,7 @@ Capsules.SECRET_SIXSEVEN_CHANCE = 1 / 67000
 
 Capsules.ById = {}
 for index, capsule in ipairs(Capsules.List) do
+	S.fill(capsule, "capsule." .. capsule.id, "name", "desc")
 	capsule.order = index
 	capsule.rebirths = capsule.rebirths or 0
 	Capsules.ById[capsule.id] = capsule

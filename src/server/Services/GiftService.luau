@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
 local Remotes = require(Shared.Remotes)
 
@@ -31,12 +32,12 @@ local function claimGift(player, index)
 		return
 	end
 	if elapsedMinutes(player) < gift.minutes then
-		Remotes.Notify:FireClient(player, "Этот подарок ещё не готов ⏰", BAD)
+		Remotes.Notify:FireClient(player, S.m("gift.not_ready"), BAD)
 		return
 	end
 	claimed[player][index] = true
 	local text = RewardService.grant(player, data, gift.reward)
-	Remotes.Notify:FireClient(player, "🎁 Подарок за " .. gift.minutes .. " мин: " .. text, GOLD)
+	Remotes.Notify:FireClient(player, S.m("gift.claimed", { minutes = gift.minutes, reward = text }), GOLD)
 	Remotes.Sfx:FireClient(player, "coins")
 	DataService.markDirty(player)
 end

@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Battles = require(Shared.Config.Battles)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
@@ -120,7 +121,7 @@ local function settle(player, data, won, vsBot)
 			if not vsBot then
 				battles.points += Battles.WIN_POINTS
 			end
-			rewardText = "лимит наград на сегодня"
+			rewardText = S.m("battle.reward_limit")
 		end
 		Actions.fire(player, "battleWin", 1)
 	else
@@ -146,7 +147,7 @@ end
 
 local function canFight(player, data)
 	if not data or #data.creatures == 0 then
-		Remotes.Notify:FireClient(player, "Нужен хотя бы один брейнрот на базе", BAD)
+		Remotes.Notify:FireClient(player, S.m("battle.need_brainrot"), BAD)
 		return false
 	end
 	return true
@@ -157,7 +158,7 @@ local function runPvp(a, b)
 	if not dataA or not dataB or #dataA.creatures == 0 or #dataB.creatures == 0 then
 		for _, p in ipairs({ a, b }) do
 			if p.Parent then
-				Remotes.Notify:FireClient(p, "Баттл не начался: у кого-то нет брейнротов", BAD)
+				Remotes.Notify:FireClient(p, S.m("battle.not_started"), BAD)
 			end
 		end
 		return
@@ -169,7 +170,7 @@ local function runPvp(a, b)
 	send(b, a.DisplayName, flip(rounds), not aWon, rewardB, dataB)
 	local winner = aWon and a or b
 	local loser = aWon and b or a
-	Remotes.Notify:FireAllClients("⚔️ " .. winner.DisplayName .. " победил " .. loser.DisplayName .. " в аура-баттле!", INFO, true)
+	Remotes.Notify:FireAllClients(S.m("battle.result", { winner = winner.DisplayName, loser = loser.DisplayName }), INFO, true)
 end
 
 local function challenge(player, target)
@@ -179,7 +180,7 @@ local function challenge(player, target)
 	end
 	local now = os.clock()
 	if lastChallenge[player] and now - lastChallenge[player] < Battles.CHALLENGE_COOLDOWN then
-		Remotes.Notify:FireClient(player, "Отдышись пару секунд 😮‍💨", BAD)
+		Remotes.Notify:FireClient(player, S.m("battle.cooldown"), BAD)
 		return
 	end
 
@@ -188,7 +189,7 @@ local function challenge(player, target)
 		local team = teamOf(data)
 		local rounds, won = fight(team, botTeam(team))
 		local rewardText = settle(player, data, won, true)
-		send(player, "🤖 Тренер Брейнрот", rounds, won, rewardText, data)
+		send(player, S.m("battle.bot_name"), rounds, won, rewardText, data)
 		return
 	end
 
@@ -198,14 +199,14 @@ local function challenge(player, target)
 	end
 	local key = math.min(player.UserId, other.UserId) .. ":" .. math.max(player.UserId, other.UserId)
 	if lastPair[key] and now - lastPair[key] < Battles.SAME_OPPONENT_COOLDOWN then
-		Remotes.Notify:FireClient(player, "С этим игроком можно снова сразиться через минуту", BAD)
+		Remotes.Notify:FireClient(player, S.m("battle.rematch_wait"), BAD)
 		return
 	end
 	lastChallenge[player] = now
 	invites[other] = invites[other] or {}
 	invites[other][player.UserId] = now
 	Remotes.BattleInvite:FireClient(other, player.UserId, player.DisplayName)
-	Remotes.Notify:FireClient(player, "⚔️ Вызов отправлен: " .. other.DisplayName, INFO)
+	Remotes.Notify:FireClient(player, S.m("battle.challenge_sent", { name = other.DisplayName }), INFO)
 end
 
 local function respond(player, fromUserId, accept)
@@ -218,7 +219,7 @@ local function respond(player, fromUserId, accept)
 		return
 	end
 	if accept ~= true then
-		Remotes.Notify:FireClient(from, player.DisplayName .. " не принял вызов", BAD)
+		Remotes.Notify:FireClient(from, S.m("battle.declined", { name = player.DisplayName }), BAD)
 		return
 	end
 	if not canFight(player, DataService.get(player)) then
@@ -227,7 +228,7 @@ local function respond(player, fromUserId, accept)
 	local key = math.min(player.UserId, from.UserId) .. ":" .. math.max(player.UserId, from.UserId)
 	-- Встречные вызовы не должны обходить паузу между боями с одним соперником.
 	if lastPair[key] and os.clock() - lastPair[key] < Battles.SAME_OPPONENT_COOLDOWN then
-		Remotes.Notify:FireClient(player, "С этим игроком можно снова сразиться через минуту", BAD)
+		Remotes.Notify:FireClient(player, S.m("battle.rematch_wait"), BAD)
 		return
 	end
 	lastPair[key] = os.clock()

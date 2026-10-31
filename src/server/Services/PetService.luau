@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
@@ -56,7 +57,7 @@ local function setPet(player, uid)
 	DataService.markDirty(player)
 	PetService.refresh(player)
 	if uid then
-		Remotes.Notify:FireClient(player, "🐾 Теперь этот брейнрот ходит за тобой!", Color3.fromRGB(120, 255, 120))
+		Remotes.Notify:FireClient(player, S.m("pet.following"), Color3.fromRGB(120, 255, 120))
 	end
 end
 

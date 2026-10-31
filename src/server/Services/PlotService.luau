@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
@@ -66,7 +67,7 @@ local function billboard(parent, size, offset, text, color)
 	label.RichText = true
 	label.TextColor3 = color or Color3.new(1, 1, 1)
 	label.TextStrokeTransparency = 0.2
-	label.Text = text
+	S.apply(label, "Text", text)
 	label.Parent = gui
 	return gui
 end
@@ -155,12 +156,12 @@ local function buildWorld()
 			Material = Enum.Material.Neon,
 			Parent = model,
 		})
-		billboard(machine, UDim2.fromOffset(240, 60), Vector3.new(0, 8, 0), "🏭 МАШИНА", Color3.new(1, 1, 1))
+		billboard(machine, UDim2.fromOffset(240, 60), Vector3.new(0, 8, 0), S.m("plot.machine"), Color3.new(1, 1, 1))
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "FactoryPrompt"
-		prompt.ActionText = "Открыть фабрику"
-		prompt.ObjectText = "Машина брейнрота"
+		S.apply(prompt, "ActionText", S.m("plot.open_factory"))
+		S.apply(prompt, "ObjectText", S.m("plot.machine_object"))
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 14
 		prompt.RequiresLineOfSight = false
@@ -174,7 +175,7 @@ local function buildWorld()
 			CanCollide = false,
 			Parent = model,
 		})
-		billboard(ownerSign, UDim2.fromOffset(400, 80), Vector3.zero, "Свободная база", Color3.fromRGB(200, 200, 200)).Name =
+		billboard(ownerSign, UDim2.fromOffset(400, 80), Vector3.zero, S.m("plot.free_base"), Color3.fromRGB(200, 200, 200)).Name =
 			"OwnerGui"
 
 		-- Кнопка замка: закрывает базу от воров.
@@ -186,11 +187,11 @@ local function buildWorld()
 			Material = Enum.Material.Neon,
 			Parent = model,
 		})
-		billboard(lockButton, UDim2.fromOffset(200, 50), Vector3.new(0, 4, 0), "🔓 Замок", Color3.new(1, 1, 1)).Name = "LockGui"
+		billboard(lockButton, UDim2.fromOffset(200, 50), Vector3.new(0, 4, 0), S.m("plot.lock"), Color3.new(1, 1, 1)).Name = "LockGui"
 		local lockPrompt = Instance.new("ProximityPrompt")
 		lockPrompt.Name = "LockPrompt"
-		lockPrompt.ActionText = "Закрыть базу"
-		lockPrompt.ObjectText = "Замок"
+		S.apply(lockPrompt, "ActionText", S.m("plot.lock_action"))
+		S.apply(lockPrompt, "ObjectText", S.m("plot.lock_object"))
 		lockPrompt.HoldDuration = 0
 		lockPrompt.MaxActivationDistance = 10
 		lockPrompt.RequiresLineOfSight = false
@@ -241,7 +242,7 @@ local function buildWorld()
 		billboard(buildSign, UDim2.fromOffset(260, 90), Vector3.new(0, 5, 0), "", Color3.fromRGB(255, 220, 80)).Name = "BuildGui"
 		local buildPrompt = Instance.new("ProximityPrompt")
 		buildPrompt.Name = "BuildPrompt"
-		buildPrompt.ActionText = "Построить"
+		S.apply(buildPrompt, "ActionText", S.m("plot.build"))
 		buildPrompt.HoldDuration = 0.6
 		buildPrompt.MaxActivationDistance = 12
 		buildPrompt.RequiresLineOfSight = false
@@ -313,7 +314,7 @@ local function buildBuilding(plot, floors)
 
 	if floors >= 1 then
 		buildingPart(plot, "Floor1", slab, center * CFrame.new(0, 1, 0), { Color = tint, Material = Enum.Material.Marble })
-		floorSign(plot, 3.5, "1 ЭТАЖ • ❤️" .. Formulas.Floors[1].hp, Color3.new(1, 1, 1))
+		floorSign(plot, 3.5, S.m("plot.floor1_sign", { hp = Formulas.Floors[1].hp }), Color3.new(1, 1, 1))
 	else
 		buildingPart(plot, "Ghost1", slab, center * CFrame.new(0, 1, 0), {
 			Color = Color3.fromRGB(255, 220, 60),
@@ -379,7 +380,7 @@ local function buildBuilding(plot, floors)
 	glass(plot, Vector3.new(0.5, h, 8), center * CFrame.new(halfW + 8, y, halfD - 6))
 	glass(plot, Vector3.new(8, h, 0.5), center * CFrame.new(halfW + 4, y, halfD - 10))
 
-	floorSign(plot, top + RAILING_HEIGHT + 2, "⭐ 2 ЭТАЖ • ❤️" .. Formulas.Floors[2].hp .. " • доход x" .. Formulas.Floors[2].income, Color3.fromRGB(255, 220, 80))
+	floorSign(plot, top + RAILING_HEIGHT + 2, S.m("plot.floor2_sign", { hp = Formulas.Floors[2].hp, income = Formulas.Floors[2].income }), Color3.fromRGB(255, 220, 80))
 end
 
 -- Табличка стройки и само здание.
@@ -393,15 +394,16 @@ local function updateBuilding(plot, floors, passes)
 	local prompt = plot.model.BuildSign.BuildPrompt
 	if cost then
 		local nextFloor = Formulas.Floors[floors + 1]
-		local perks = string.format("%d мест • ❤️%d", Formulas.FLOOR_SLOTS * (floors + 1), nextFloor.hp)
+		local perks = S.m("plot.perks", { slots = Formulas.FLOOR_SLOTS * (floors + 1), hp = nextFloor.hp })
 		if nextFloor.income > 1 then
-			perks ..= " • доход x" .. nextFloor.income
+			perks = S.m("plot.perks_income", { perks = perks, income = nextFloor.income })
 		end
-		label.Text = string.format("🏗 %s: %s\n%s", nextFloor.name, Format.coins(cost), perks)
-		prompt.ObjectText = nextFloor.name .. " — " .. Format.coins(cost)
+		local price = Format.coins(cost)
+		S.apply(label, "Text", S.m("plot.build_sign", { floor = S.m(nextFloor.nameKey), price = price, perks = perks }))
+		S.apply(prompt, "ObjectText", S.m("plot.build_object", { floor = S.m(nextFloor.nameKey), price = price }))
 	else
-		label.Text = "🏆 База построена!"
-		prompt.ObjectText = ""
+		S.apply(label, "Text", S.m("plot.built"))
+		S.apply(prompt, "ObjectText", "")
 	end
 	plot.model:SetAttribute("CanBuild", cost ~= nil)
 end
@@ -423,14 +425,14 @@ function PlotService.refreshHp(model)
 		local ratio = stunned and 1 or hp / maxHp
 		bar.Fill.Size = UDim2.fromScale(ratio, 1)
 		bar.Fill.BackgroundColor3 = stunned and STUNNED or HP_LOW:Lerp(HP_FULL, ratio)
-		bar.Value.Text = stunned and "💫 ОГЛУШЁН!" or string.format("❤️ %d/%d", hp, maxHp)
+		S.apply(bar.Value, "Text", if stunned then S.m("plot.stunned") else S.m("plot.hp", { hp = hp, max = maxHp }))
 	end
 	if prompt then
 		if stunned then
-			prompt.ActionText = "Украсть!"
+			S.apply(prompt, "ActionText", S.m("plot.steal"))
 			prompt.HoldDuration = model:GetAttribute("StealHold") or 1
 		else
-			prompt.ActionText = string.format("Шлёпни! ❤️%d", hp)
+			S.apply(prompt, "ActionText", S.m("plot.slap", { hp = hp }))
 			prompt.HoldDuration = 0
 		end
 	end
@@ -446,22 +448,21 @@ local function setFloor(model, floor, rank)
 end
 
 local function labelText(entry, creature, rarity, mutation, data, passes, floor)
-	local nameText = creature.name
+	local nameText = S.m(creature.nameKey)
 	if mutation.id ~= "normal" then
-		nameText = mutation.name .. " " .. nameText
+		nameText = S.m("creature.mutated", { mutation = S.m(mutation.nameKey), name = nameText })
 	end
 	if entry.nickname then
 		-- Подпись с RichText: экранируем, чтобы имя не ломало разметку.
 		local safe = entry.nickname:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
-		nameText = "«" .. safe .. "»\n" .. nameText
+		nameText = S.m("plot.nickname", { nickname = safe, name = nameText })
 	end
-	return string.format(
-		'%s\n<font color="#%s">%s</font>\n<font color="#78ff78">%s/с</font>',
-		nameText,
-		rarity.color:ToHex(),
-		rarity.name,
-		Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods(), floor))
-	)
+	return S.m("plot.creature_label", {
+		name = nameText,
+		color = rarity.color:ToHex(),
+		rarity = S.m(rarity.nameKey),
+		income = Format.coins(Formulas.creatureIncome(entry, data, passes, EventService.mods(), floor)),
+	})
 end
 
 local function buildCreature(plot, entry, standCFrame, data, passes, floor)
@@ -480,7 +481,8 @@ local function buildCreature(plot, entry, standCFrame, data, passes, floor)
 	-- Чем реже брейнрот и чем выше этаж — тем дольше красть.
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "StealPrompt"
-	prompt.ObjectText = creature.name
+	S.apply(prompt, "ObjectText", S.m(creature.nameKey))
+	prompt:SetAttribute("CreatureId", entry.id)
 	prompt.MaxActivationDistance = 9
 	prompt.RequiresLineOfSight = false
 	prompt.KeyboardKeyCode = Enum.KeyCode.F
@@ -667,10 +669,10 @@ function PlotService.setLockVisual(plot, locked, secondsLeft)
 	end
 	local label = plot.model.LockButton.LockGui.Label
 	if locked then
-		label.Text = string.format("🔒 %d с", math.ceil(secondsLeft))
+		S.apply(label, "Text", S.m("plot.locked_seconds", { seconds = math.ceil(secondsLeft) }))
 		label.TextColor3 = Color3.fromRGB(255, 120, 120)
 	else
-		label.Text = "🔓 Замок"
+		S.apply(label, "Text", S.m("plot.lock"))
 		label.TextColor3 = Color3.new(1, 1, 1)
 	end
 end
@@ -681,7 +683,7 @@ local function claimPlot(player)
 			plot.owner = player
 			plotOf[player] = plot
 			local gui = plot.model.OwnerSign.OwnerGui
-			gui.Label.Text = "База " .. player.DisplayName
+			S.apply(gui.Label, "Text", S.m("plot.owner_base", { name = player.DisplayName }))
 			gui.Label.TextColor3 = Color3.fromRGB(255, 230, 0)
 			plot.model:SetAttribute("OwnerUserId", player.UserId)
 			return plot
@@ -702,7 +704,7 @@ local function releasePlot(player)
 	plot.model.Pads:SetAttribute("Layout", nil)
 	plot.model.Building:ClearAllChildren()
 	plot.builtFloors = nil
-	plot.model.BuildSign.BuildGui.Label.Text = ""
+	S.apply(plot.model.BuildSign.BuildGui.Label, "Text", "")
 	plot.model:SetAttribute("CanBuild", nil)
 	plot.model:SetAttribute("OwnerUserId", nil)
 	plot.model:SetAttribute("LockedUntil", nil)
@@ -710,7 +712,7 @@ local function releasePlot(player)
 	plot.model:SetAttribute("LockReadyAt", nil)
 	PlotService.setLockVisual(plot, false, 0)
 	local gui = plot.model.OwnerSign.OwnerGui
-	gui.Label.Text = "Свободная база"
+	S.apply(gui.Label, "Text", S.m("plot.free_base"))
 	gui.Label.TextColor3 = Color3.fromRGB(200, 200, 200)
 end
 

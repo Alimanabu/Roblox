@@ -1,23 +1,23 @@
 -- Ивенты на весь сервер. Время берётся по UTC, поэтому ивенты идут одновременно
 -- на всех серверах — можно звать друзей: «через 2 минуты Минута 67!».
 
+local S = require(script.Parent.Parent.Strings)
+
 local Events = {}
 
 Events.CYCLE = 15 * 60 -- случайный ивент начинается каждые 15 минут...
 Events.DURATION = 3 * 60 -- ...и длится 3 минуты
 
 Events.Random = {
-	{ id = "luck_storm", name = "🍀 Шторм удачи", desc = "x2 удачи всем!", luck = 2, color = Color3.fromRGB(120, 255, 120) },
-	{ id = "money_rain", name = "💰 Денежный дождь", desc = "x2 дохода всем!", income = 2, color = Color3.fromRGB(255, 220, 80) },
-	{ id = "mutant_fog", name = "🧬 Мутаген-туман", desc = "x3 шанс мутаций!", mutation = 3, color = Color3.fromRGB(200, 120, 255) },
-	{ id = "turbo", name = "⚡ Турбо-фабрика", desc = "Машины работают в 2 раза быстрее!", speed = 2, color = Color3.fromRGB(80, 200, 255) },
+	{ id = "luck_storm", luck = 2, color = Color3.fromRGB(120, 255, 120) },
+	{ id = "money_rain", income = 2, color = Color3.fromRGB(255, 220, 80) },
+	{ id = "mutant_fog", mutation = 3, color = Color3.fromRGB(200, 120, 255) },
+	{ id = "turbo", speed = 2, color = Color3.fromRGB(80, 200, 255) },
 }
 
 -- Каждый час с 6:00 по 7:59 минуты — «6-7».
 Events.SixSeven = {
 	id = "minute67",
-	name = "🤌 МИНУТА 67",
-	desc = "Шанс SIX SEVEN и мутации 67 x6.7!",
 	secret = 6.7,
 	mutation67 = 6.7,
 	color = Color3.fromRGB(255, 230, 0),
@@ -28,8 +28,6 @@ Events.SixSeven = {
 -- Каждый час с :30 до :33 на площадь приходит босс (см. server/Services/BossService).
 Events.Boss = {
 	id = "boss",
-	name = "👹 БОСС-БРЕЙНРОТ",
-	desc = "Шлёпайте босса на площади всем сервером!",
 	color = Color3.fromRGB(255, 70, 70),
 	startMinute = 30,
 	endMinute = 33,
@@ -37,6 +35,13 @@ Events.Boss = {
 
 -- Ивенты, которые идут каждый час в одно и то же время.
 Events.Hourly = { Events.SixSeven, Events.Boss }
+
+for _, event in ipairs(Events.Random) do
+	S.fill(event, "event." .. event.id, "name", "desc")
+end
+for _, event in ipairs(Events.Hourly) do
+	S.fill(event, "event." .. event.id, "name", "desc")
+end
 
 function Events.byId(id)
 	for _, event in ipairs(Events.Hourly) do

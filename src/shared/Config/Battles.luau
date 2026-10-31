@@ -1,6 +1,8 @@
 -- Аура-баттлы: 3 сильнейших брейнрота против 3 сильнейших соперника.
 -- Без ставок: проиграть свои брейнроты или монеты нельзя.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Battles = {}
 
 Battles.TEAM_SIZE = 3
@@ -18,22 +20,23 @@ Battles.BotWinReward = { coinsMinutes = 2 }
 
 -- Ранги по очкам ауры.
 Battles.Ranks = {
-	{ points = 0, name = "Без ауры" },
-	{ points = 100, name = "Аура-новичок" },
-	{ points = 300, name = "Аура-фармер" },
-	{ points = 700, name = "Аура-мастер" },
-	{ points = 1500, name = "Аура-легенда" },
-	{ points = 3000, name = "Бесконечная аура ♾️" },
+	{ points = 0 },
+	{ points = 100 },
+	{ points = 300 },
+	{ points = 700 },
+	{ points = 1500 },
+	{ points = 3000 },
 }
 
+-- Сообщение (см. Strings): название ранга покажет клиент на языке игрока.
 function Battles.rankFor(points)
-	local name = Battles.Ranks[1].name
+	local reached = Battles.Ranks[1].points
 	for _, rank in ipairs(Battles.Ranks) do
 		if points >= rank.points then
-			name = rank.name
+			reached = rank.points
 		end
 	end
-	return name
+	return S.m("battle.rank." .. reached)
 end
 
 -- Сила брейнрота в баттле: корень 4-й степени из дохода, чтобы Бог был сильнее

@@ -1,28 +1,24 @@
 -- Улучшения фабрики за монеты.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Upgrades = {}
 
 Upgrades.List = {
 	{
 		id = "speed",
-		name = "Скорость машины",
-		desc = "Машина создаёт брейнротов быстрее.",
 		maxLevel = 10,
 		baseCost = 100,
 		costMult = 3,
 	},
 	{
 		id = "luck",
-		name = "Луч удачи",
-		desc = "+8% удачи за уровень. Редкие тренды выпадают чаще.",
 		maxLevel = 20,
 		baseCost = 500,
 		costMult = 2.6,
 	},
 	{
 		id = "trap",
-		name = "Ловушка для воров",
-		desc = "Вор, схвативший брейнрота, оглушён на 1.5 с за уровень.",
 		maxLevel = 5,
 		baseCost = 5000,
 		costMult = 5,
@@ -31,6 +27,7 @@ Upgrades.List = {
 
 Upgrades.ById = {}
 for _, upgrade in ipairs(Upgrades.List) do
+	S.fill(upgrade, "upgrade." .. upgrade.id, "name", "desc")
 	Upgrades.ById[upgrade.id] = upgrade
 end
 

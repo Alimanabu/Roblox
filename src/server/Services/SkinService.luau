@@ -1,6 +1,7 @@
 -- Скины: покупка за монеты и надевание на брейнротов.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Skins = require(Shared.Config.Skins)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -27,21 +28,21 @@ local function buy(player, skinId)
 		return
 	end
 	if data.skins[skin.id] then
-		Remotes.Notify:FireClient(player, "Этот скин уже твой", BAD)
+		Remotes.Notify:FireClient(player, S.m("skin.owned"), BAD)
 		return
 	end
 	if not skin.price then
-		Remotes.Notify:FireClient(player, "Этот скин нельзя купить — его надо заслужить 🤌", BAD)
+		Remotes.Notify:FireClient(player, S.m("skin.not_for_sale"), BAD)
 		return
 	end
 	if data.coins < skin.price then
-		Remotes.Notify:FireClient(player, "Не хватает монет: нужно " .. Format.coins(skin.price), BAD)
+		Remotes.Notify:FireClient(player, S.m("common.not_enough_coins", { cost = Format.coins(skin.price) }), BAD)
 		return
 	end
 	data.coins -= skin.price
 	AnalyticsService.coins(player, false, skin.price, "Skin")
 	data.skins[skin.id] = true
-	Remotes.Notify:FireClient(player, "🎨 Куплен скин " .. skin.name .. "! Надень его на брейнрота", GOOD)
+	Remotes.Notify:FireClient(player, S.m("skin.bought", { name = S.m(skin.nameKey) }), GOOD)
 	Remotes.Sfx:FireClient(player, "success")
 	DataService.markDirty(player)
 end
@@ -55,12 +56,12 @@ local function apply(player, uid, skinId)
 		return
 	end
 	if TradeService.isTrading(player) then
-		Remotes.Notify:FireClient(player, "Нельзя менять скины во время обмена", BAD)
+		Remotes.Notify:FireClient(player, S.m("skin.no_change_in_trade"), BAD)
 		return
 	end
 	local now = os.clock()
 	if lastApply[player] and now - lastApply[player] < APPLY_COOLDOWN then
-		Remotes.Notify:FireClient(player, "Скин можно менять раз в " .. APPLY_COOLDOWN .. " секунд", BAD)
+		Remotes.Notify:FireClient(player, S.m("skin.cooldown", { seconds = APPLY_COOLDOWN }), BAD)
 		return
 	end
 	lastApply[player] = now

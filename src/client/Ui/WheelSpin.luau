@@ -1,6 +1,7 @@
 -- Анимация колеса удачи: призы мелькают, замедляются и останавливаются на выигрыше.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
 
 local Theme = require(script.Parent.Theme)
@@ -24,7 +25,7 @@ function WheelSpin.new(screenGui)
 		ZIndex = 30,
 		Parent = screenGui,
 	}, { Theme.corner(20), Theme.stroke(C.Gold, 5) })
-	Theme.label({ Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 8), Text = "🎡 КОЛЕСО УДАЧИ", TextColor3 = C.Gold, ZIndex = 31, Parent = self.frame })
+	Theme.label({ Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 8), Text = S.t("wheel.title"), TextColor3 = C.Gold, ZIndex = 31, Parent = self.frame })
 	self.label = Theme.label({ Size = UDim2.new(1, -20, 0, 70), Position = UDim2.fromOffset(10, 56), Text = "", ZIndex = 31, Parent = self.frame })
 	self.token = 0
 	return self

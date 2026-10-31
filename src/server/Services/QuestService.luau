@@ -1,6 +1,7 @@
 -- Ежедневные награды и задания.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
@@ -49,7 +50,7 @@ local function onAction(player, kind, amount)
 		if def and def.kind == kind and not quest.claimed and quest.progress < def.target then
 			quest.progress = math.min(def.target, quest.progress + (amount or 1))
 			if quest.progress >= def.target then
-				Remotes.Notify:FireClient(player, "📋 Задание выполнено: " .. def.text .. "! Забери награду 🎁", GOLD)
+				Remotes.Notify:FireClient(player, S.m("quest.done", { text = S.m(def.textKey) }), GOLD)
 			end
 			DataService.markDirty(player)
 		end
@@ -78,7 +79,7 @@ local function claimDaily(player)
 		return
 	end
 	if not canClaimDaily(data) then
-		Remotes.Notify:FireClient(player, "Сегодняшняя награда уже получена. Приходи завтра!", BAD)
+		Remotes.Notify:FireClient(player, S.m("quest.daily_claimed"), BAD)
 		return
 	end
 	local day = nextStreakDay(data)
@@ -86,7 +87,7 @@ local function claimDaily(player)
 	data.daily.streak = day
 	data.daily.lastClaimDay = Daily.today()
 	local text = giveReward(player, data, reward.coinsMinutes, reward.luckMinutes)
-	Remotes.Notify:FireClient(player, "🎁 День " .. day .. ": " .. text, GOLD)
+	Remotes.Notify:FireClient(player, S.m("quest.daily_reward", { day = day, reward = text }), GOLD)
 	Actions.fire(player, "daily", 1)
 	Remotes.Sfx:FireClient(player, "coins")
 	DataService.markDirty(player)
@@ -106,7 +107,7 @@ local function claimQuest(player, index)
 	quest.claimed = true
 	local text = giveReward(player, data, def.minutes, 0)
 	ProgressionService.addXp(player, data, def.minutes * 5)
-	Remotes.Notify:FireClient(player, "📋 Награда за задание: " .. text, GOOD)
+	Remotes.Notify:FireClient(player, S.m("quest.reward", { reward = text }), GOOD)
 	DataService.markDirty(player)
 end
 
@@ -120,7 +121,7 @@ function QuestService.snapshot(player, data)
 		if def then
 			table.insert(quests, {
 				index = index,
-				text = def.text,
+				text = S.m(def.textKey),
 				progress = quest.progress,
 				target = def.target,
 				claimed = quest.claimed,
@@ -135,9 +136,9 @@ function QuestService.snapshot(player, data)
 			table.insert(parts, Format.coins(Daily.coinsFor(income, reward.coinsMinutes)))
 		end
 		if reward.luckMinutes then
-			table.insert(parts, "🍀x2 " .. reward.luckMinutes .. "м")
+			table.insert(parts, S.m("reward.luck_short", { minutes = reward.luckMinutes }))
 		end
-		rewards[day] = table.concat(parts, "\n")
+		rewards[day] = S.join(parts, "\n")
 	end
 	return {
 		canClaim = canClaimDaily(data),

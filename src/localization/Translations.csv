@@ -1,0 +1,686 @@
+Key,Source,Context,Example,ru
+common.wait,Hold on a couple of seconds,,,Подожди пару секунд
+common.not_enough_coins,Not enough coins: you need {cost},,,Не хватает монет: нужно {cost}
+common.title_level,{title} • lvl {level},,,{title} • ур. {level}
+common.per_second,{coins}/s,,,{coins}/с
+format.one_in,1 in {n},,,1 к {n}
+format.hours,{hours} h {minutes} min,,,{hours} ч {minutes} мин
+hud.rewards,🎁 Rewards,,,🎁 Награды
+hud.factory,🏭 Factory,,,🏭 Фабрика
+hud.base,🧠 Base,,,🧠 База
+hud.upgrades,⬆️ Upgrades,,,⬆️ Улучшения
+hud.rebirth,♻️ Rebirth,,,♻️ Перерождение
+hud.index,📖 Index,,,📖 Индекс
+hud.achievements,🏆 Achievements,,,🏆 Достижения
+hud.trade,🤝 Trade,,,🤝 Обмен
+hud.battles,⚔️ Battles,,,⚔️ Баттлы
+hud.skins,🎨 Skins,,,🎨 Скины
+hud.shop,🛒 Shop,,,🛒 Магазин
+hud.help,❓ How to Play,,,❓ Как играть
+hud.admin,🛠 Test,,,🛠 Тест
+hud.luck,🍀 Luck x{luck},,,🍀 Удача x{luck}
+hud.boost,Boost x2: {time},,,Буст x2: {time}
+hud.vip,👑 VIP: x2 coins,,,👑 VIP: x2 монет
+panel.factory,🏭 Brainrot Factory,,,🏭 Фабрика брейнрота
+panel.base,🧠 My Base,,,🧠 Моя база
+panel.upgrades,⬆️ Factory Upgrades,,,⬆️ Улучшения фабрики
+panel.index,📖 Brainrot Index,,,📖 Индекс брейнротов
+panel.rewards,🎁 Rewards and Quests,,,🎁 Награды и задания
+panel.trade,🤝 Brainrot Trade,,,🤝 Обмен брейнротами
+panel.settings,⚙️ Settings,,,⚙️ Настройки
+panel.skins,🎨 Brainrot Skins,,,🎨 Скины брейнротов
+panel.admin,🛠 Test Commands,,,🛠 Тест-команды
+factory.announce,🚨 {player} crafted {name} [{rarity}]!,,,🚨 {player} создал {name} [{rarity}]!
+factory.capsule_locked,This capsule is still locked!,,,Эта капсула ещё закрыта!
+factory.season_over_auto,"The season is over, Auto Factory turned off",,,Сезон закончился — авто-фабрика выключена
+factory.season_over,This season is over 🎃,,,Этот сезон закончился 🎃
+factory.base_full,"Your base is full! Sell or fuse brainrots, or build a floor 🏗",,,"База заполнена! Продай или скрести брейнротов, или построй этаж 🏗"
+factory.pity,🎯 Guaranteed drop!,,,🎯 Сработала гарантия!
+factory.sold,Sold for {coins},,,Продано за {coins}
+factory.sold_many,Sold {count} for {coins},,,Продано {count} шт. за {coins}
+factory.fuse_need,You need {count} brainrots of the same rarity,,,Нужно {count} брейнрота одной редкости
+factory.need_auto,You need the “{pass}” game pass,,,Нужен геймпасс «{pass}»
+factory.stats,🍀 Luck x{luck}  •  ⏱ Machine: {time} s  •  Spots: {used}/{slots},,,🍀 Удача x{luck}  •  ⏱ Машина: {time} с  •  Места: {used}/{slots}
+factory.hint,"The more popular the trend, the rarer the drop. Luck boosts your rare odds!",,,Чем популярнее тренд — тем реже он выпадает. Удача повышает шанс редких!
+factory.secret,??? secret,,,??? секрет
+factory.pity_left,🎯 {rarity} guaranteed in {left},,,🎯 {rarity} точно через {left}
+factory.craft,Craft {cost},,,Создать {cost}
+factory.auto_on,🤖 Auto: ON,,,🤖 Авто: ВКЛ
+factory.auto,🤖 Auto,,,🤖 Авто
+factory.need_level,🔒 Level {level},,,🔒 Уровень {level}
+factory.need_rebirths,{need} + {rebirths} rebirths,,,{need} + {rebirths} перерожд.
+base.perks,"{slots} spots, ❤️{hp}",,,"{slots} мест, ❤️{hp}"
+base.perks_income,"{perks}, income x{income}",,,"{perks}, доход x{income}"
+base.floor_now,"🏗 Now: {floor} ({slots} spots)
+Next {next}: {perks}",,,"🏗 Сейчас: {floor} ({slots} мест)
+Дальше {next}: {perks}"
+base.complete,"🏆 Base complete: {slots} spots
+Up top ❤️{hp} and income x{income}",,,"🏆 База построена: {slots} мест
+Наверху ❤️{hp} и доход x{income}"
+base.build,Build {cost},,,Построить {cost}
+base.stats,Spots: {used}/{slots}  •  Income: {income}/s,,,Места: {used}/{slots}  •  Доход: {income}/с
+base.friends,👥 Friends on server: {friends}/4 (+{bonus}%),,,👥 Друзья на сервере: {friends}/4 (+{bonus}%)
+base.group_on,⭐ Group +10%,,,⭐ Группа +10%
+base.group_off,⭐ Join the group: +10%,,,⭐ Вступи в группу: +10%
+base.empty,Nothing here yet! Go to the 🏭 Factory and craft your first brainrot.,,,Тут пусто! Иди на 🏭 Фабрику и создай первого брейнрота.
+base.sell_all,💰 Sell all,,,💰 Продать всех
+base.confirm,Sure? Tap again,,,Точно? Нажми ещё
+base.hint,Fusing takes the weakest ones. “Sell all” leaves mutants alone.,,,Скрещивание берёт самых слабых. «Продать всех» не трогает мутантов.
+base.on_floor2,⭐ Floor 2,,,⭐ 2 этаж
+base.sell,Sell {coins},,,Продать {coins}
+base.confirm_sell,Really sell?,,,Точно продать?
+upgrades.level,lvl {level}/{max},,,ур. {level}/{max}
+upgrades.max,MAX,,,МАКС
+upgrade.speed.name,Machine Speed,,,Скорость машины
+upgrade.speed.desc,The machine crafts brainrots faster.,,,Машина создаёт брейнротов быстрее.
+upgrade.luck.name,Luck Beam,,,Луч удачи
+upgrade.luck.desc,+8% luck per level. Rare trends drop more often.,,,+8% удачи за уровень. Редкие тренды выпадают чаще.
+upgrade.trap.name,Thief Trap,,,Ловушка для воров
+upgrade.trap.desc,A thief who grabs a brainrot is stunned for 1.5 s per level.,,,"Вор, схвативший брейнрота, оглушён на 1.5 с за уровень."
+rebirth.1.title,Sigma,,,Сигма
+rebirth.2.title,Alpha,,,Альфа
+rebirth.3.title,Gigachad,,,Гигачад
+rebirth.4.title,Aura Farmer,,,Аура-фармер
+rebirth.5.title,Ohio Final Boss,,,Огайо Финальный Босс
+rebirth.6.title,Brainrot Emperor,,,Брейнрот-Император
+rebirth.7.title,Legend 67 🤌,,,Легенда 67 🤌
+rebirth.8.title,Meme Deity,,,Мем-Божество
+rebirth.9.title,Lord of Brainrot,,,Повелитель Брейнрота
+rebirth.10.title,ABSOLUTE 67 🤌🤌,,,АБСОЛЮТНЫЙ 67 🤌🤌
+rebirth.count,Rebirths so far: {count},,,Сейчас перерождений: {count}
+rebirth.next_title,Next title: {title},,,Следующий титул: {title}
+rebirth.quoted,“{title}”,,,«{title}»
+rebirth.gain,You gain forever:,,,Ты получишь навсегда:
+rebirth.bonus,+{income}% income  •  +{luck}% luck,,,+{income}% дохода  •  +{luck}% удачи
+rebirth.lose,You lose:,,,Ты потеряешь:
+rebirth.lose_list,"coins, brainrots on your base and upgrades",,,"монеты, брейнротов на базе и улучшения"
+rebirth.keep,"(level, Index and base floors stay)",,,"(уровень, Индекс и этажи базы остаются)"
+rebirth.level_req,Level {need} (you have {level}),,,Уровень {need} (у тебя {level})
+rebirth.button,♻️ REBIRTH,,,♻️ ПЕРЕРОДИТЬСЯ
+rebirth.confirm,⚠️ Sure? Tap again,,,⚠️ Точно? Нажми ещё раз
+index.count,Unlocked: {found} / {total}  (new brainrot = x3 XP),,,Открыто: {found} / {total}  (новый брейнрот = x3 опыта)
+shop.luck_boost_on,🍀 Luck Boost x2 activated!,,,🍀 Буст удачи x2 активирован!
+shop.spins_added,🎡 +{count} wheel spins!,,,🎡 +{count} вращения колеса!
+shop.purchased,✅ Purchased: {name},,,✅ Куплено: {name}
+shop.passes,Game Passes (forever),,,Геймпассы (навсегда)
+shop.owned,✅ Owned,,,✅ Куплено
+shop.region,Not available in your region,,,Недоступно в твоём регионе
+shop.soon,Soon,,,Скоро
+shop.boosts,Boosts,,,Бусты
+rewards.hint,Log in every day: day 7 is a mega reward!,,,Заходи каждый день — на 7-й день мега-награда!
+rewards.day,Day {day},,,День {day}
+rewards.wheel_odds,🎡 Wheel odds: {odds},,,🎡 Шансы колеса: {odds}
+rewards.spin_free,🎡 Spin the wheel (free!),,,🎡 Крутить колесо (бесплатно!)
+rewards.spin,🎡 Spin the wheel ({count}),,,🎡 Крутить колесо ({count})
+rewards.spin_tomorrow,🎡 Free spin tomorrow,,,🎡 Бесплатное вращение завтра
+rewards.spins_blocked,Purchase unavailable,,,Покупка недоступна
+rewards.spins_buy,+3 spins R$ {price},,,+3 вращения R$ {price}
+rewards.spins_soon,+3 spins (soon),,,+3 вращения (скоро)
+rewards.gifts,⏰ Playtime gifts (you've played {minutes} min),,,⏰ Подарки за игру (ты играешь {minutes} мин)
+rewards.gift_done,✅ {minutes} min,,,✅ {minutes} мин
+rewards.gift_claim,"🎁 Claim!
+{reward}",,,"🎁 Забрать!
+{reward}"
+rewards.gift_wait,"⏰ in {minutes} min
+{reward}",,,"⏰ через {minutes} мин
+{reward}"
+rewards.code_placeholder,"🎟️ Code (for example, SIXSEVEN)",,,"🎟️ Промокод (например, SIXSEVEN)"
+rewards.code_enter,Redeem code,,,Ввести код
+rewards.claim_day,🎁 Claim day {day},,,🎁 Забрать день {day}
+rewards.come_back,✅ Come back tomorrow,,,✅ Приходи завтра
+rewards.quests,📋 Today's quests (new ones in {time}),,,📋 Задания на сегодня (новые через {time})
+rewards.received,✅ Claimed,,,✅ Получено
+reward.luck_short,🍀x2 {minutes}m,,,🍀x2 {minutes}м
+reward.luck,🍀 x2 luck for {minutes} min,,,🍀 x2 удачи на {minutes} мин
+reward.skin,🎨 skin,,,🎨 скин
+reward.coins_base_full,💰 {coins} (base is full),,,💰 {coins} (база полна)
+reward.creature,🧠 {name},,,🧠 {name}
+quest.craft25.text,Craft 25 brainrots,,,Создай 25 брейнротов
+quest.craft80.text,Craft 80 brainrots,,,Создай 80 брейнротов
+quest.fuse3.text,Fuse brainrots 3 times,,,Скрести брейнротов 3 раза
+quest.sell10.text,Sell 10 brainrots,,,Продай 10 брейнротов
+quest.steal1.text,Steal 1 brainrot,,,Укради 1 брейнрота
+quest.slap3.text,Slap 3 players,,,Шлёпни 3 игроков
+quest.slapThief.text,Slap a thief,,,Шлёпни вора
+quest.lock3.text,Lock your base 3 times,,,Закрой базу замком 3 раза
+quest.mutant1.text,Get a mutated brainrot,,,Получи брейнрота с мутацией
+quest.sigma5.text,Get 5 brainrots of Sigma rarity or rarer,,,Получи 5 брейнротов «Сигма» или реже
+quest.index1.text,Unlock a new brainrot in the Index,,,Открой нового брейнрота в Индексе
+quest.done,📋 Quest complete: {text}! Claim your reward 🎁,,,📋 Задание выполнено: {text}! Забери награду 🎁
+quest.daily_claimed,Today's reward is already claimed. Come back tomorrow!,,,Сегодняшняя награда уже получена. Приходи завтра!
+quest.daily_reward,🎁 Day {day}: {reward},,,🎁 День {day}: {reward}
+quest.reward,📋 Quest reward: {reward},,,📋 Награда за задание: {reward}
+gift.not_ready,This gift isn't ready yet ⏰,,,Этот подарок ещё не готов ⏰
+gift.claimed,🎁 {minutes} min gift: {reward},,,🎁 Подарок за {minutes} мин: {reward}
+wheel.1.name,💰 5 min of income,,,💰 5 мин дохода
+wheel.2.name,🍀 x2 luck 10 min,,,🍀 x2 удачи 10 мин
+wheel.3.name,💰 15 min of income,,,💰 15 мин дохода
+wheel.4.name,🧠 Sigma,,,🧠 Сигма
+wheel.5.name,🍀 x2 luck 30 min,,,🍀 x2 удачи 30 мин
+wheel.6.name,🧠 Aura,,,🧠 Аура
+wheel.7.name,🔥 Fire Skin,,,🔥 Огненный скин
+wheel.8.name,🧠 SKIBIDI!,,,🧠 СКИБИДИ!
+wheel.no_spins,Out of spins. Next free one is tomorrow 🎡,,,Вращения кончились. Бесплатное будет завтра 🎡
+wheel.result,🎡 Wheel: {name} → {reward},,,🎡 Колесо: {name} → {reward}
+wheel.title,🎡 LUCKY WHEEL,,,🎡 КОЛЕСО УДАЧИ
+code.skin67.text,Skin 67 unlocked! Put it on in 🎨 Skins,,,Скин 67 разблокирован! Надень его в 🎨 Скины
+code.invalid,❌ That code doesn't exist (or it has expired),,,❌ Такого кода нет (или он закончился)
+code.used,You've already used this code,,,Ты уже вводил этот код
+code.redeemed,🎟️ Code {code}: {reward} {text},,,🎟️ Код {code}: {reward} {text}
+help.1.body,"Buy meme capsules and craft brainrots. The more popular the trend, the rarer the drop: Normie → Low-key → Rizz → Sigma → Aura → Skibidi → Brainrot God → SIX SEVEN 🤌",,,"Покупай мем-капсулы и создавай брейнротов. Чем популярнее тренд, тем реже он выпадает: Нормис → Лоу-ки → Ризз → Сигма → Аура → Скибиди → Брейнрот Бог → SIX SEVEN 🤌"
+help.2.body,"Brainrots stand on your base and earn coins every second. When you run out of space, sell the weak ones or fuse 3 of the same rarity into 1 rarer one.",,,"Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий."
+help.3.body,"You start with 5 spots on the ground. Build Floor 1 for $100K (10 spots), then Floor 2 for $100M (10 more spots). The strongest brainrots move up: income is x2 there and they're harder to steal. Build at the yellow sign on your base or in ⬆️ Upgrades. Floors stay even after a rebirth.",,,"Сначала у тебя 5 мест прямо на земле. Построй 1 этаж за $100K (10 мест), потом 2 этаж за $100M (ещё 10 мест). Наверх встают самые сильные: там доход x2 и их труднее украсть. Строить — у жёлтой таблички на базе или в ⬆️ Улучшениях. Этажи остаются даже после перерождения."
+help.4.body,"Sometimes a brainrot comes out Golden (x2), Diamond (x3), Rainbow (x5) or with Mutation 67 (x6.7 income)!",,,"Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!"
+help.5.body,"Wild brainrots roam the map. Walk up and hold E: first to catch it keeps it! Rare ones show up now and then, and the whole server gets told.",,,"По карте бегают дикие брейнроты. Подойди и зажми E — кто первый поймал, того и брейнрот! Иногда появляются редкие — об этом узнает весь сервер."
+help.6.body,"In 🧠 Base, tap a brainrot's name and give it your own. Everyone will see it above your base.",,,В 🧠 Базе нажми на имя брейнрота и придумай ему своё — его увидят все над твоей базой.
+help.7.body,"In 🧠 Base, tap 🐾 on any brainrot and it will follow you around the map. Show off your legendary!",,,В 🧠 Базе нажми 🐾 у любого брейнрота — он будет бегать за тобой по всей карте. Пусть все видят твою легендарку!
+help.8.body,"Walk up to someone else's brainrot and hit it with the Slapper until its ❤️ runs out (5 on the ground, 10 on Floor 1, 20 on Floor 2). When it's stunned 💫, hold F and run to your base within 60 seconds! If you get slapped, the brainrot goes back to its owner.",,,"Подойди к чужому брейнроту и шлёпай его Шлёпалкой, пока не кончится ❤️ (на земле 5, на 1 этаже 10, на 2 этаже 20). Когда он оглушён 💫 — зажми F и беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину."
+help.9.body,Stand on the blue lock button on your base to lock it for 60 seconds. You can slap a thief with the Slapper (key 1).,,,Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1).
+help.10.body,"Challenge a player or train with a bot: your 3 strongest brainrots against their 3. Power depends on income, but upsets happen! You lose nothing, and wins give aura points, ranks and coins.",,,"Вызови игрока или потренируйся с ботом: 3 твоих сильнейших брейнрота против 3 его. Сила зависит от дохода, но бывают апсеты! Ничего не теряешь, за победы — очки ауры, ранги и монеты."
+help.11.body,Every hour at :30 a giant brainrot boss comes to the plaza. Slap it with the whole server! Whoever hits it the most gets an Aura brainrot.,,,"Каждый час в :30 на площадь приходит огромный босс-брейнрот. Шлёпайте его всем сервером! Кто ударил больше всех, получит Ауру."
+help.12.body,"Every 15 minutes there's an event: luck, money, mutations or turbo. And every hour at minutes 6-7 comes MINUTE 67: SIX SEVEN chance x6.7!",,,"Каждые 15 минут идёт ивент: удача, деньги, мутации или турбо. А каждый час в 6-7 минуту наступает МИНУТА 67: шанс SIX SEVEN x6.7!"
+help.13.body,"Resets your coins and brainrots, but gives +50% income, +10% luck and a cool title forever.",,,"Сбрасывает монеты и брейнротов, но навсегда даёт +50% дохода, +10% удачи и крутой титул."
+help.14.body,"Log in every day for a reward, day 7 is a mega reward. Complete 3 quests a day.",,,"Заходи каждый день за наградой, на 7-й день мега-награда. Выполняй 3 задания в день."
+help.3.title,🏗 Floors,,,🏗 Этажи
+help.4.title,✨ Mutations,,,✨ Мутации
+help.5.title,🦎 Wild Brainrots,,,🦎 Дикие брейнроты
+help.6.title,✏️ Names,,,✏️ Имена
+help.7.title,🐾 Pet,,,🐾 Питомец
+help.8.title,🦹 Stealing,,,🦹 Кража
+help.9.title,🔒 Defense,,,🔒 Защита
+help.10.title,⚔️ Aura Battles,,,⚔️ Аура-баттлы
+help.11.title,👹 Boss,,,👹 Босс
+help.12.title,🎉 Events,,,🎉 Ивенты
+trade.region_you,Trading isn't available in your region,,,Обмен недоступен в твоём регионе
+trade.region_them,Trading isn't available for this player,,,У этого игрока обмен недоступен
+trade.invite_cooldown,Wait a little before sending another invite,,,Подожди немного перед новым приглашением
+trade.busy,One of you is already in a trade,,,Кто-то из вас уже в обмене
+trade.invite_sent,📨 Invite sent: {name},,,📨 Приглашение отправлено: {name}
+trade.declined,{name} declined the trade,,,{name} отклонил обмен
+trade.err_left,a player left,,,игрок вышел
+trade.err_missing,a brainrot from the offer is gone,,,брейнрота из предложения больше нет
+trade.err_empty,the trade is empty,,,обмен пустой
+trade.err_past_life,you can't take back your own brainrot from a past life (before rebirth),,,своего брейнрота из прошлой жизни (до перерождения) вернуть нельзя
+trade.err_no_space,{name} doesn't have enough base spots,,,у {name} не хватает мест на базе
+trade.cancelled,❌ Trade cancelled: {reason},,,❌ Обмен отменён: {reason}
+trade.done,🤝 Trade complete!,,,🤝 Обмен завершён!
+trade.partner_left,Trade cancelled: {name} left the trade,,,Обмен отменён: {name} вышел из обмена
+trade.server_restart,Trade cancelled: the server is restarting,,,Обмен отменён: сервер перезапускается
+trade.invite,🤝 {name} wants to trade brainrots!,,,🤝 {name} хочет обменяться брейнротами!
+trade.hint,"Pick a player and offer a trade. Each side puts in up to 6 brainrots, then both press “Ready”.",,,"Выбери игрока и предложи обмен. Каждый кладёт до 6 брейнротов, потом оба жмут «Готов»."
+trade.offer,🤝 Offer,,,🤝 Предложить
+trade.nobody,Nobody else is on the server 😢,,,На сервере больше никого нет 😢
+trade.you_give,You give ({count}/6),,,Ты отдаёшь ({count}/6)
+trade.they_give,{name} gives,,,{name} отдаёт
+trade.countdown,⏳ Trading in {seconds} s...,,,⏳ Обмен через {seconds} с...
+trade.you_ready,✅ You're ready,,,✅ Ты готов
+trade.you_not_ready,You're not ready,,,Ты не готов
+trade.they_ready,✅ {name} is ready,,,✅ {name} готов
+trade.they_not_ready,{name} isn't ready,,,{name} не готов
+trade.unready,❌ Not ready,,,❌ Не готов
+trade.ready,✅ Ready,,,✅ Готов
+trade.leave,🚪 Leave trade,,,🚪 Выйти из обмена
+invite.accept,✅ Accept,,,✅ Принять
+invite.decline,❌ No,,,❌ Нет
+settings.music,🎵 Music,,,🎵 Музыка
+settings.sfx,🔊 Sounds,,,🔊 Звуки
+settings.announcements,📢 Server announcements (who dropped/stole what),,,📢 Объявления сервера (кто что выбил/украл)
+settings.on,ON,,,ВКЛ
+settings.off,OFF,,,ВЫКЛ
+skins.hint,"Skins are just for looks. Pick a skin, then press “Put on” next to a brainrot.",,,"Скины только для красоты. Выбери скин, потом нажми «Надеть» у брейнрота."
+skins.selected,✅ Selected,,,✅ Выбран
+skins.select,Select,,,Выбрать
+skins.secret,🔒 Secret,,,🔒 Секрет
+skins.remove_mode,✅ “Remove skin” mode,,,✅ Режим «снять скин»
+skins.remove_select,Remove skins (select),,,Снять скины (выбрать)
+skins.put_on,🎨 Put on,,,🎨 Надеть
+skins.remove,Remove,,,Снять
+skin.fire.name,🔥 Fire,,,🔥 Огненный
+skin.ice.name,🧊 Ice,,,🧊 Ледяной
+skin.toxic.name,☢️ Toxic,,,☢️ Токсичный
+skin.shadow.name,🌑 Shadow,,,🌑 Теневой
+skin.gold.name,👑 Pure Gold,,,👑 Чистое золото
+skin.galaxy.name,🌌 Galaxy,,,🌌 Галактика
+skin.rainbow.name,🌈 Rainbow,,,🌈 Радужный
+skin.sixseven.name,🤌 Skin 67,,,🤌 Скин 67
+skin.owned,You already own this skin,,,Этот скин уже твой
+skin.not_for_sale,"This skin can't be bought, you have to earn it 🤌",,,Этот скин нельзя купить — его надо заслужить 🤌
+skin.bought,🎨 Skin {name} purchased! Put it on a brainrot,,,🎨 Куплен скин {name}! Надень его на брейнрота
+skin.no_change_in_trade,You can't change skins during a trade,,,Нельзя менять скины во время обмена
+skin.cooldown,You can change a skin once every {seconds} seconds,,,Скин можно менять раз в {seconds} секунд
+battles.stats,✨ {rank} • aura points: {points} • wins {wins} / losses {losses},,,✨ {rank} • очки ауры: {points} • побед {wins} / поражений {losses}
+battles.hint,Your 3 strongest brainrots fight. You lose nothing! Win rewards left today: {left},,,Сражаются 3 твоих сильнейших брейнрота. Ничего не теряешь! Наград за победы сегодня: {left}
+battles.no_team,Craft some brainrots at the 🏭 Factory first,,,Сначала создай брейнротов на 🏭 Фабрике
+battles.train,🤖 Train with a bot,,,🤖 Тренировка с ботом
+battles.challenge,⚔️ Challenge,,,⚔️ Вызвать
+battle.rank.0,No Aura,,,Без ауры
+battle.rank.100,Aura Rookie,,,Аура-новичок
+battle.rank.300,Aura Farmer,battle.rank.300,,Аура-фармер
+battle.rank.700,Aura Master,,,Аура-мастер
+battle.rank.1500,Aura Legend,,,Аура-легенда
+battle.rank.3000,Infinite Aura ♾️,,,Бесконечная аура ♾️
+battle.reward_limit,daily reward limit reached,,,лимит наград на сегодня
+battle.need_brainrot,You need at least one brainrot on your base,,,Нужен хотя бы один брейнрот на базе
+battle.not_started,Battle didn't start: someone has no brainrots,,,Баттл не начался: у кого-то нет брейнротов
+battle.result,⚔️ {winner} beat {loser} in an aura battle!,,,⚔️ {winner} победил {loser} в аура-баттле!
+battle.cooldown,Catch your breath for a couple of seconds 😮‍💨,,,Отдышись пару секунд 😮‍💨
+battle.bot_name,🤖 Coach Brainrot,,,🤖 Тренер Брейнрот
+battle.rematch_wait,You can fight this player again in a minute,,,С этим игроком можно снова сразиться через минуту
+battle.challenge_sent,⚔️ Challenge sent: {name},,,⚔️ Вызов отправлен: {name}
+battle.declined,{name} declined the challenge,,,{name} не принял вызов
+battle.invite,⚔️ {name} challenges you to an aura battle!,,,⚔️ {name} вызывает тебя на аура-баттл!
+battle.empty,— empty —,,,— пусто —
+battle.versus,⚔️ You  vs  {name},,,⚔️ Ты  vs  {name}
+battle.win,🏆 VICTORY! Your aura is stronger!,,,🏆 ПОБЕДА! Твоя аура сильнее!
+battle.loss,😢 Defeat... your aura needs work,,,😢 Поражение... аура подкачать бы
+battle.footer,Aura points: {points} • {rank},,,Очки ауры: {points} • {rank}
+battle.footer_reward,Reward: {reward}   {footer},,,Награда: {reward}   {footer}
+achievements.count,Unlocked: {count} / {total},,,Получено: {count} / {total}
+achievement.first.name,First Brainrot,,,Первый брейнрот
+achievement.first.desc,Craft your first brainrot,,,Создай первого брейнрота
+achievement.craft100.name,Meme Mill,,,Мем-завод
+achievement.craft100.desc,Craft 100 brainrots,,,Создай 100 брейнротов
+achievement.craft1000.name,Factory of a Thousand Memes,,,Фабрика тысячи мемов
+achievement.craft1000.desc,Craft 1000 brainrots,,,Создай 1000 брейнротов
+achievement.index10.name,Collector,,,Коллекционер
+achievement.index10.desc,Unlock 10 brainrots in the Index,,,Открой 10 брейнротов в Индексе
+achievement.index20.name,Trend Expert,,,Знаток трендов
+achievement.index20.desc,Unlock 20 brainrots in the Index,,,Открой 20 брейнротов в Индексе
+achievement.indexAll.name,Walking Index,,,Ходячий Индекс
+achievement.indexAll.desc,Unlock ALL brainrots,,,Открой ВСЕХ брейнротов
+achievement.aura.name,Aura Farmer,achievement.aura.name,,Аура-фармер
+achievement.aura.desc,Get an Aura brainrot,,,Получи брейнрота «Аура»
+achievement.god.name,Meeting God,,,Встреча с Богом
+achievement.god.desc,Get a Brainrot God,,,Получи Брейнрот Бога
+achievement.sixseven.name,SIX... SEVEN!!! 🤌,,,SIX... SEVEN!!! 🤌
+achievement.sixseven.desc,Get a SIX SEVEN (+ Skin 67),,,Получи SIX SEVEN (+ Скин 67)
+achievement.mutant.name,Mutant,,,Мутант
+achievement.mutant.desc,Get a mutated brainrot,achievement.mutant.desc,,Получи брейнрота с мутацией
+achievement.mutant25.name,Mutant Lab,,,Лаборатория мутантов
+achievement.mutant25.desc,Get 25 mutants,,,Получи 25 мутантов
+achievement.fuse10.name,Geneticist,,,Генетик
+achievement.fuse10.desc,Fuse brainrots 10 times,,,Скрести брейнротов 10 раз
+achievement.thief.name,First Heist,,,Первая кража
+achievement.thief.desc,Steal a brainrot,,,Укради брейнрота
+achievement.thief10.name,Master Thief,,,Мастер-вор
+achievement.thief10.desc,Steal 10 brainrots,,,Укради 10 брейнротов
+achievement.defender.name,Base Defender,,,Защитник базы
+achievement.defender.desc,Slap a thief,achievement.defender.desc,,Шлёпни вора
+achievement.defender10.name,Level 80 Security Guard,,,Охранник 80 уровня
+achievement.defender10.desc,Slap 10 thieves,,,Шлёпни 10 воров
+achievement.wild.name,Brainrot Catcher,,,Ловец брейнротов
+achievement.wild.desc,Catch a wild brainrot,,,Поймай дикого брейнрота
+achievement.wild25.name,Brainrot Ranger,,,Брейнрот-рейнджер
+achievement.wild25.desc,Catch 25 wild brainrots,,,Поймай 25 диких брейнротов
+achievement.boss.name,Boss Hunter,,,Охотник на боссов
+achievement.boss.desc,Defeat the brainrot boss,,,Победи босса-брейнрота
+achievement.boss10.name,Terror of Ohio,,,Гроза Огайо
+achievement.boss10.desc,Defeat 10 bosses,,,Победи 10 боссов
+achievement.battle.name,First Aura Win,,,Первая аура-победа
+achievement.battle.desc,Win an aura battle,,,Победи в аура-баттле
+achievement.battle25.name,Aura Champion,,,Аура-чемпион
+achievement.battle25.desc,Beat 25 players in aura battles,,,Победи 25 игроков в аура-баттлах
+achievement.auraLegend.name,Aura Legend,achievement.auraLegend.name,,Аура-легенда
+achievement.auraLegend.desc,Reach 1500 aura points,,,Набери 1500 очков ауры
+achievement.level10.name,TikToker,,,Тиктокер
+achievement.level10.desc,Reach level 10,,,Дойди до 10 уровня
+achievement.level30.name,Trend Legend,,,Легенда трендов
+achievement.level30.desc,Reach level 30,,,Дойди до 30 уровня
+achievement.rebirth.name,New Life,,,Новая жизнь
+achievement.rebirth.desc,Rebirth once,,,Переродись
+achievement.rebirth5.name,Ohio Final Boss,achievement.rebirth5.name,,Огайо Финальный Босс
+achievement.rebirth5.desc,Rebirth 5 times,,,Переродись 5 раз
+achievement.million.name,Millionaire,,,Миллионер
+achievement.million.desc,Earn $1M in total,,,Заработай $1M за всё время
+achievement.billion.name,Billionaire,,,Миллиардер
+achievement.billion.desc,Earn $1B in total,,,Заработай $1B за всё время
+achievement.trade.name,Business Partner,,,Деловой партнёр
+achievement.trade.desc,Complete a trade,,,Соверши обмен
+achievement.streak7.name,Loyal Fan,,,Верный фанат
+achievement.streak7.desc,Claim the day 7 reward,,,Забери награду 7-го дня
+achievement.season.desc,Get a brainrot from the “{season}” season,,,Получи брейнрота сезона «{season}»
+achievement.unlocked,🏆 Achievement “{name}”! {reward},,,🏆 Достижение «{name}»! {reward}
+admin.level,Level {level},,,Уровень {level}
+admin.given,Given: {name},,,Выдан {name}
+admin.given_mutant,Given Mutant 67: {name},,,Выдан мутант 67: {name}
+admin.event,Started event {name} for 2 minutes,,,Запущен ивент {name} на 2 минуты
+admin.season_off,Manual season turned off,,,Ручной сезон выключен
+admin.season_on,Season {name} on (until turned off),,,Включён сезон {name} (до выключения)
+admin.wild,A wild brainrot appeared,,,Появился дикий брейнрот
+admin.tutorial_skipped,Tutorial skipped,,,Обучение пропущено
+admin.floors_removed,Floors removed: back to 5 spots on the ground,,,Этажи снесены: снова 5 мест на земле
+admin.daily_reset,Daily rewards and quests reset,,,Ежедневные награды и задания сброшены
+admin.progress_reset,Progress reset,,,Прогресс сброшен
+admin.result,🛠 {text},,,🛠 {text}
+admin.level1,⭐ +1 level,,,⭐ +1 уровень
+admin.level10,⭐ +10 levels,,,⭐ +10 уровней
+admin.mutant,Mutant 67,,,Мутант 67
+admin.mutagen,🧬 Mutagen,,,🧬 Мутаген
+admin.turbo,⚡ Turbo,,,⚡ Турбо
+admin.minute67,🤌 Minute 67,,,🤌 Минута 67
+admin.wild_button,🦎 Wild brainrot,,,🦎 Дикий брейнрот
+admin.season_halloween,🎃 Halloween season,,,🎃 Сезон Хэллоуин
+admin.season_newyear,🎄 New Year season,,,🎄 Сезон Новый год
+admin.season_valentine,💘 Valentine season,,,💘 Сезон Валентин
+admin.season_summer,☀️ Summer season,,,☀️ Сезон Лето
+admin.season_off_button,Turn off season,,,Выключить сезон
+admin.skip_tutorial,📚 Skip tutorial,,,📚 Пропустить обучение
+admin.reset_daily,🎁 Reset daily rewards,,,🎁 Сбросить награды дня
+admin.remove_floors,🏗 Remove floors,,,🏗 Снести этажи
+admin.reset,⚠️ RESET PROGRESS,,,⚠️ СБРОС ПРОГРЕССА
+admin.hint,For testing the game only. Visible in Studio and to admins from Config/Admins.,,,Только для проверки игры. Видно в Studio и админам из Config/Admins.
+rename.title,✏️ What will you name this brainrot?,,,✏️ Как назовёшь брейнрота?
+rename.placeholder,For example: Vinny 🤌 (up to 20 characters),,,Например: Вася 🤌 (до 20 символов)
+rename.ok,✅ Done,,,✅ Готово
+rename.cancel,Cancel,,,Отмена
+name.too_long,Names can be up to {max} characters,,,Имя — до {max} символов
+name.filter_failed,"Couldn't check the name, please try again",,,"Не получилось проверить имя, попробуй ещё раз"
+name.changed,✏️ Its name is now “{name}”,,,✏️ Теперь его зовут «{name}»
+name.removed,Name removed,,,Имя убрано
+reveal.fused,🧬 FUSED,,,🧬 СКРЕЩИВАНИЕ
+reveal.new,✨ NEW!,,,✨ НОВЫЙ!
+status.carry,🏃 Carry the brainrot to your base! {time},,,🏃 Неси брейнрота на свою базу! {time}
+status.shield,🛡️ Shield {time},,,🛡️ Защита {time}
+status.locked,🔒 Base locked {time},,,🔒 База закрыта {time}
+status.lock_ready,⏳ Lock ready in {time},,,⏳ Замок через {time}
+status.open,🔓 Base is open!,,,🔓 База открыта!
+steal.carry_label,🦹 {name},,,🦹 {name}
+steal.reason_thief_left,the thief left,,,вор вышел
+steal.reason_past_life,you can't take back your own brainrot from a past life,,,своего брейнрота из прошлой жизни вернуть нельзя
+steal.reason_no_space,no space on your base,,,на твоей базе нет места
+steal.stolen,🦹 Stolen: {name}!,,,🦹 Украдено: {name}!
+steal.announce,🚨 {thief} stole {name} from {owner}!,,,🚨 {thief} украл {name} у {owner}!
+steal.lost,😭 {thief} stole your {name}!,,,😭 {thief} украл твоего {name}!
+steal.returned,✅ {name} is back home!,,,✅ {name} вернулся домой!
+steal.failed,❌ Steal failed: {reason},,,❌ Кража не удалась: {reason}
+steal.hit_first,👋 Knock out its ❤️ first: hit it with the Slapper!,,,👋 Сначала выбей ❤️: шлёпай его Шлёпалкой!
+steal.base_locked,🔒 This base is locked!,,,🔒 База закрыта!
+steal.already_carrying,You're already carrying a brainrot!,,,Ты уже несёшь брейнрота!
+steal.no_space,No space on your base!,,,У тебя на базе нет места!
+steal.reason_defeated,you were defeated,,,тебя победили
+steal.trap_thief,⚡ Trap! You're stunned for {seconds} s,,,⚡ Ловушка! Ты оглушён на {seconds} с
+steal.trap_owner,⚡ Your trap went off! Go slap the thief!,,,⚡ Ловушка сработала! Беги шлёпать вора!
+steal.carry,🏃 Carry {name} to your base!,,,🏃 Неси {name} на свою базу!
+steal.alarm,⚠️ {thief} is stealing {name}! Chase them and slap!,,,⚠️ {thief} крадёт {name}! Догони и шлёпни!
+steal.already_locked,Your base is already locked,,,База уже закрыта
+steal.lock_cooldown,⏳ Lock is recharging: {seconds} s left,,,⏳ Замок перезаряжается: ещё {seconds} с
+steal.locked,🔒 Base locked for {seconds} seconds,,,🔒 База закрыта на {seconds} секунд
+steal.brainrot,brainrot,,,брейнрота
+steal.stunned_thief,💫 {name} is stunned! Hold F and grab it!,,,💫 {name} оглушён! Зажми F и хватай!
+steal.stunned_owner,💫 {name} is stunned and about to be stolen! Go slap the thief!,,,"💫 {name} оглушён, его сейчас украдут! Беги шлёпни вора!"
+steal.being_hit,⚠️ {player} is hitting your {name}! ❤️ {hp},,,⚠️ {player} бьёт твоего {name}! ❤️ {hp}
+steal.reason_slapped,{name} slapped you!,,,{name} тебя шлёпнул!
+steal.slap_thief,👋 Slap! The thief dropped the brainrot!,,,👋 Шлёп! Вор уронил брейнрота!
+steal.slapper,Slapper,,,Шлёпалка
+steal.slapper_tip,Slap a thief to make them drop the brainrot! Slap other players' brainrots to steal them.,,,"Шлёпни вора — он уронит брейнрота! Шлёпай чужих брейнротов, чтобы украсть."
+steal.reason_shutdown,the server is shutting down,,,сервер выключается
+steal.shield,🛡️ Your base is protected for {seconds} seconds,,,🛡️ Твоя база защищена {seconds} секунд
+steal.reason_owner_left,the owner left the game,,,хозяин ушёл из игры
+steal.reason_timeout,time ran out,,,время вышло
+plot.machine,🏭 MACHINE,,,🏭 МАШИНА
+plot.open_factory,Open factory,,,Открыть фабрику
+plot.machine_object,Brainrot Machine,,,Машина брейнрота
+plot.free_base,Free base,,,Свободная база
+plot.lock,🔓 Lock,,,🔓 Замок
+plot.lock_action,Lock base,,,Закрыть базу
+plot.lock_object,Lock,,,Замок
+plot.build,Build,,,Построить
+plot.floor1_sign,FLOOR 1 • ❤️{hp},,,1 ЭТАЖ • ❤️{hp}
+plot.floor2_sign,⭐ FLOOR 2 • ❤️{hp} • income x{income},,,⭐ 2 ЭТАЖ • ❤️{hp} • доход x{income}
+plot.perks,{slots} spots • ❤️{hp},,,{slots} мест • ❤️{hp}
+plot.perks_income,{perks} • income x{income},,,{perks} • доход x{income}
+plot.build_sign,"🏗 {floor}: {price}
+{perks}",,,"🏗 {floor}: {price}
+{perks}"
+plot.build_object,{floor} — {price},,,{floor} — {price}
+plot.built,🏆 Base complete!,,,🏆 База построена!
+plot.stunned,💫 STUNNED!,,,💫 ОГЛУШЁН!
+plot.hp,❤️ {hp}/{max},,,❤️ {hp}/{max}
+plot.steal,Steal!,,,Украсть!
+plot.slap,Slap! ❤️{hp},,,Шлёпни! ❤️{hp}
+plot.nickname,"“{nickname}”
+{name}",,,"«{nickname}»
+{name}"
+plot.creature_label,"{name}
+<font color=""#{color}"">{rarity}</font>
+<font color=""#78ff78"">{income}/s</font>",,,"{name}
+<font color=""#{color}"">{rarity}</font>
+<font color=""#78ff78"">{income}/с</font>"
+plot.locked_seconds,🔒 {seconds} s,,,🔒 {seconds} с
+plot.owner_base,{name}'s base,,,База {name}
+wild.catch,Catch,,,Поймать
+wild.object,Wild {name},,,Дикий {name}
+wild.label,"🦎 Wild {name}
+[{rarity}]",,,"🦎 Дикий {name}
+[{rarity}]"
+wild.announce,🌟 A WILD {name} [{rarity}] appeared on the map! Catch it!,,,🌟 На карте появился ДИКИЙ {name} [{rarity}]! Лови!
+wild.no_space,No space on your base for a wild brainrot!,,,На базе нет места для дикого брейнрота!
+wild.caught,🦎 Caught a wild {name}!,,,🦎 Пойман дикий {name}!
+wild.caught_announce,🦎 {player} caught a wild {name}!,,,🦎 {player} поймал дикого {name}!
+boss.health,👹 Orso Ohio — {hp} / {max},,,👹 Орсо Огайо — {hp} / {max}
+boss.arrived,👹 The brainrot boss is on the plaza! Run and slap it!,,,👹 Босс-брейнрот пришёл на площадь! Бегите шлёпать!
+boss.escaped,👹 The boss got away... Slap harder next time!,,,👹 Босс сбежал... В следующий раз шлёпайте сильнее!
+boss.defeated_best,🏆 Boss defeated! Top fighter: {name},,,🏆 Босс повержен! Лучший боец: {name}
+boss.defeated,🏆 Boss defeated!,,,🏆 Босс повержен!
+boss.reward,👹 Boss reward: {reward},,,👹 Награда за босса: {reward}
+event.luck_storm.name,🍀 Luck Storm,,,🍀 Шторм удачи
+event.luck_storm.desc,x2 luck for everyone!,,,x2 удачи всем!
+event.money_rain.name,💰 Money Rain,,,💰 Денежный дождь
+event.money_rain.desc,x2 income for everyone!,,,x2 дохода всем!
+event.mutant_fog.name,🧬 Mutagen Fog,,,🧬 Мутаген-туман
+event.mutant_fog.desc,x3 mutation chance!,,,x3 шанс мутаций!
+event.turbo.name,⚡ Turbo Factory,,,⚡ Турбо-фабрика
+event.turbo.desc,Machines run 2x faster!,,,Машины работают в 2 раза быстрее!
+event.minute67.name,🤌 MINUTE 67,,,🤌 МИНУТА 67
+event.minute67.desc,SIX SEVEN and Mutation 67 chance x6.7!,,,Шанс SIX SEVEN и мутации 67 x6.7!
+event.boss.name,👹 BRAINROT BOSS,,,👹 БОСС-БРЕЙНРОТ
+event.boss.desc,"Slap the boss on the plaza, whole server!",,,Шлёпайте босса на площади всем сервером!
+event.started,🎉 Event started: {name}: {desc},,,🎉 Начался ивент {name}: {desc}
+event.ended,The event is over. Next one soon!,,,Ивент закончился. Следующий скоро!
+event.soon,⏰ In one minute: {name}!,,,⏰ Через минуту: {name}!
+event.next,Next event,,,Следующий ивент
+event.next_in,{name} in {time},,,{name} через {time}
+tutorial.1.text,Tap 🏭 Factory and craft your first brainrot!,,,Нажми 🏭 Фабрика и создай первого брейнрота!
+tutorial.2.text,Brainrots earn coins every second! Craft 4 more,,,Брейнроты приносят монеты каждую секунду! Создай ещё 4
+tutorial.3.text,Buy any upgrade in ⬆️ Upgrades,,,Купи любое улучшение в ⬆️ Улучшения
+tutorial.4.text,Thieves never sleep! Stand on the blue 🔓 Lock button at your base,,,Воры не дремлют! Встань на голубую кнопку 🔓 Замок на своей базе
+tutorial.5.text,Claim your daily reward in 🎁 Rewards,,,Забери ежедневную награду в 🎁 Награды
+tutorial.step_done,✅ Nice! +{coins},,,✅ Отлично! +{coins}
+tutorial.finished,🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌,,,🎓 Обучение пройдено! +{coins}. Теперь собери SIX SEVEN 🤌
+tutorial.step,📚 Tutorial {index}/{total},,,📚 Обучение {index}/{total}
+progress.level_up,⭐ New level: {level}!,,,⭐ Новый уровень: {level}!
+progress.new_title,🏷️ New title: {title},,,🏷️ Новый титул: {title}
+progress.capsule_unlocked,🔓 Capsule unlocked: {name},,,🔓 Открыта капсула: {name}
+progress.upgrade_maxed,This upgrade is already maxed out!,,,Это улучшение уже на максимуме!
+progress.upgrade_level,⬆️ {name}: level {level},,,⬆️ {name}: уровень {level}
+progress.floors_done,All floors are already built!,,,Все этажи уже построены!
+progress.floor_built,🏗 {floor} built! Spots now: {slots},,,🏗 Построен {floor}! Теперь мест: {slots}
+progress.floor_announce,🏗 {name} built their base up to {floor}!,,,🏗 {name} достроил базу: {floor}!
+progress.being_robbed,Someone is stealing your brainrot right now! Get it back first 👋,,,У тебя сейчас крадут брейнрота! Сначала отбей его 👋
+progress.rebirth_level,You need level {level} to rebirth,,,Нужен {level} уровень для перерождения
+progress.rebirth_coins,You need {cost} to rebirth,,,Нужно {cost} для перерождения
+progress.rebirth_announce,♻️ {name} was reborn as “{title}”!,,,♻️ {name} переродился и стал «{title}»!
+progress.overhead,"[{rebirth}]
+{title}",,,"[{rebirth}]
+{title}"
+income.offline,"💤 While you were away, your brainrots earned {coins}",,,"💤 Пока тебя не было, брейнроты заработали {coins}"
+pet.following,🐾 This brainrot now follows you around!,,,🐾 Теперь этот брейнрот ходит за тобой!
+leaderboard.top_earned,💰 Top Earners,,,💰 Топ по заработку
+leaderboard.top_rebirths,♻️ Top Rebirths,,,♻️ Топ по перерождениям
+leaderboard.loading,Loading...,,,Загрузка...
+leaderboard.published_only,"Leaderboards work
+in the published game",,,"Табло работает
+в опубликованной игре"
+leaderboard.empty,Nothing here yet. Be the first!,,,Пока пусто. Стань первым!
+leaderboard.income,Income/s,,,Доход/с
+leaderboard.rebirths,Rebirths,,,Перерожд.
+map.statue,🤌 Legend: SIX SEVEN 🤌,,,🤌 Легенда: SIX SEVEN 🤌
+fx.legendary,🌟 LEGENDARY DROP! 🌟,,,🌟 ЛЕГЕНДАРНЫЙ ДРОП! 🌟
+data.load_failed,Couldn't load your progress (you may still be connected to another server). Please rejoin in a minute!,,,"Не получилось загрузить прогресс (возможно, ты ещё открыт на другом сервере). Перезайди через минуту!"
+creature.bananito_ninjini.name,Bananito Ninjini,,,Бананито Ниндзини
+creature.bananito_ninjini.desc,A banana ninja. Trying really hard.,,,Банан-ниндзя. Очень старается.
+creature.tostino_volantino.name,Tostino Volantino,,,Тостино Волантино
+creature.tostino_volantino.desc,A toaster that thinks it can fly.,,,"Тостер, который думает, что умеет летать."
+creature.lumacone_turbo.name,Lumacone Turbo,,,Лумаконе Турбо
+creature.lumacone_turbo.desc,A turbocharged snail. Still slow.,,,Улитка с турбонаддувом. Всё равно медленная.
+creature.calzino_perduto.name,Calzino Perduto,,,Кальцино Пердуто
+creature.calzino_perduto.desc,A lost sock. Looking for its pair since 2019.,,,Потерянный носок. Ищет пару с 2019 года.
+creature.frigo_gatto.name,Frigo Gatto,,,Фриго Гатто
+creature.frigo_gatto.desc,A fridge cat. The most chill low-key around.,,,Кот-холодильник. Лоу-ки самый чилловый.
+creature.pinguino_boombox.name,Pinguino Boombox,,,Пингвино Бумбоксо
+creature.pinguino_boombox.desc,Wears a speaker where its belly should be.,,,Носит колонку вместо живота.
+creature.cactusso_dancerino.name,Cactusso Dancerino,,,Кактуссо Дансерино
+creature.cactusso_dancerino.desc,"It dances, but we don't recommend hugs.",,,"Танцует, но обнимать не советуем."
+creature.burgerito_chillo.name,Burgerito Chillo,,,Бургерито Чилло
+creature.burgerito_chillo.desc,A burger on chill. The tastiest low-key.,,,Бургер на чилле. Лоу-ки самый вкусный.
+creature.squalo_sneakerino.name,Squalo Sneakerino,,,Сквало Сникерино
+creature.squalo_sneakerino.desc,A shark in limited-edition sneakers.,,,Акула в лимитированных кроссовках.
+creature.croissanto_samurai.name,Croissanto Samurai,,,Круассанто Самурай
+creature.croissanto_samurai.desc,A flaky warrior of honor.,,,Хрустящий воин чести.
+creature.polpo_rizzini.name,Polpo Rizzini,,,Польпо Риззини
+creature.polpo_rizzini.desc,An octopus with eightfold rizz.,,,Осьминог с восьмикратным риззом.
+creature.lamantino_rapper.name,Lamantino Rapper,,,Ламантино Рэппер
+creature.lamantino_rapper.desc,Raps so slowly it counts as rizz.,,,"Читает рэп так медленно, что это уже ризз."
+creature.gelato_gigachado.name,Gelato Gigachado,,,Джелато Гигачадо
+creature.gelato_gigachado.desc,Ice cream with a square jaw.,,,Мороженое с квадратной челюстью.
+creature.tacchino_sigmone.name,Tacchino Sigmone,,,Таккино Сигмоне
+creature.tacchino_sigmone.desc,A turkey that wakes up at 4 AM.,,,"Индюк, который встаёт в 4 утра."
+creature.mollusco_mewing.name,Mollusco Mewing,,,Моллюско Мьюинг
+creature.mollusco_mewing.desc,Has been holding that jawline for 300 years.,,,Держит челюсть уже 300 лет.
+creature.criceto_palestra.name,Criceto Palestra,,,Кричето Палестра
+creature.criceto_palestra.desc,A gym hamster. Only spins the wheel on max weight.,,,Хомяк-качок. Колесо крутит только на максимальном весе.
+creature.pizzarino_rocketto.name,Pizzarino Rocketto,,,Пиццарино Ракетто
+creature.pizzarino_rocketto.desc,Jet-powered pizza. +1000 aura.,,,Пицца на реактивной тяге. +1000 ауры.
+creature.drago_wifi.name,Drago Wifi,,,Драго Вайфайо
+creature.drago_wifi.desc,A dragon handing out free Wi-Fi.,,,"Дракон, раздающий бесплатный вайфай."
+creature.fenicotto_auretto.name,Fenicotto Auretto,,,Феникотто Ауретто
+creature.fenicotto_auretto.desc,A flamingo farming aura on one leg.,,,"Фламинго, который фармит ауру одной ногой."
+creature.unicorno_neon.name,Unicorno Neon,,,Уникорно Неоно
+creature.unicorno_neon.desc,A unicorn that glows even in daylight. Aura: infinite.,,,"Единорог, светится даже днём. Аура: бесконечность."
+creature.elefantino_bass.name,Elefantino Bass,,,Элефантино Бассо
+creature.elefantino_bass.desc,An elephant DJ. You can hear the bass on the next server.,,,Слон-диджей. Басы слышно в соседнем сервере.
+creature.robottino_spaghetti.name,Robottino Spaghetti,,,Роботтино Спагетти
+creature.robottino_spaghetti.desc,A robot made of pasta. The code is spaghetti too.,,,Робот из макарон. Код тоже спагетти.
+creature.capibara_galattica.name,Capibara Galattica,,,Капибара Галаттика
+creature.capibara_galattica.desc,A capybara that saw the end of the universe. It's fine.,,,"Капибара, которая видела конец вселенной. Ей норм."
+creature.pinguoide_cosmo.name,Pinguoide Cosmo,,,Пингуоиде Космо
+creature.pinguoide_cosmo.desc,A penguin astronaut. Flew to Mars for memes.,,,Пингвин-космонавт. Улетел за мемами на Марс.
+creature.re_lasagnone.name,Re Lasagnone,,,Ре Лазаньоне
+creature.re_lasagnone.desc,The lasagna king. All memes bow before him.,,,Король лазаньи. Все мемы склоняются перед ним.
+creature.medusa_glitchina.name,Medusa Glitchina,,,Медуза Глитчина
+creature.medusa_glitchina.desc,A jellyfish from a broken texture.,,,Медуза из сломанной текстуры.
+creature.orso_ohio.name,Orso Ohio,,,Орсо Огайо
+creature.orso_ohio.desc,The final-level boss bear of Ohio.,,,Медведь-босс последнего уровня Огайо.
+creature.alpaca_assoluta.name,Alpaca Assoluta,,,Альпака Ассолюта
+creature.alpaca_assoluta.desc,The absolute alpaca. One spit and a meme goes viral.,,,Абсолютная альпака. Плюнула — и мем стал вирусным.
+creature.sei_sette.name,Sei Sette,,,Сей Сетте
+creature.sei_sette.desc,Six... SEVEN! 🤌 The rarest brainrot in the world.,,,Шесть... СЕМЬ! 🤌 Самый редкий брейнрот в мире.
+creature.dottore_sessantasette.name,Dottore Sessantasette,,,Дотторе Сессантасетте
+creature.dottore_sessantasette.desc,Holds a PhD in the number 67.,,,Доктор наук по числу 67.
+creature.zucchino_ridente.name,Zucchino Ridente,,,Цуккино Риденте
+creature.zucchino_ridente.desc,A pumpkin laughing at your memes.,,,"Тыква, которая смеётся над твоими мемами."
+creature.scheletro_mewing.name,Scheletro Mewing,,,Скелетро Мьюинг
+creature.scheletro_mewing.desc,A skeleton with a perfect jawline. Literally.,,,"Скелет, у которого челюсть идеальная. Буквально."
+creature.fantasma_aurino.name,Fantasma Aurino,,,Фантазма Аурино
+creature.fantasma_aurino.desc,A ghost farming aura from the other side.,,,"Призрак, который фармит ауру с того света."
+creature.pupazzo_rizz.name,Pupazzo Rizz,,,Пупаццо Ризз
+creature.pupazzo_rizz.desc,A snowman with carrot rizz.,,,Снеговик с морковным риззом.
+creature.renna_sigmina.name,Renna Sigmina,,,Ренна Сигмина
+creature.renna_sigmina.desc,A reindeer hauling the sleigh at 4 AM.,,,"Олень, который тащит сани в 4 утра."
+creature.abete_aurella.name,Abete Aurella,,,Абете Аурелла
+creature.abete_aurella.desc,A fir tree strung with aura lights.,,,Ёлка с гирляндой ауры.
+creature.nonno_gelo.name,Nonno Gelo,,,Нонно Джело
+creature.nonno_gelo.desc,Grandpa Frost from Italy. Only gifts memes.,,,Дедушка Мороз из Италии. Дарит только мемы.
+creature.cuore_rizzone.name,Cuore Rizzone,,,Куоре Риззоне
+creature.cuore_rizzone.desc,A little heart with max rizz. Oops.,,,Сердечко с максимальным риззом. Ой.
+creature.cupido_sigmino.name,Cupido Sigmino,,,Купидо Сигмино
+creature.cupido_sigmino.desc,A Cupid who only shoots at sigmas.,,,"Купидон, который стреляет только по сигмам."
+creature.rosalina_aurina.name,Rosalina Aurina,,,Розалина Аурина
+creature.rosalina_aurina.desc,A rose with thorns and infinite aura.,,,Роза с шипами и бесконечной аурой.
+creature.cioccolato_amorele.name,Cioccolato Amore,,,Чоколато Аморе
+creature.cioccolato_amorele.desc,A box of chocolates that gifts itself.,,,"Коробка конфет, которая дарит сама себя."
+creature.anguria_chillino.name,Anguria Chillino,,,Ангурия Чиллино
+creature.anguria_chillino.desc,A watermelon on chill. The seeds are pure rizz.,,,Арбуз на чилле. Косточки — это ризз.
+creature.granchio_spiaggino.name,Granchio Spiaggino,,,Гранкьо Спьяджино
+creature.granchio_spiaggino.desc,"A sigma crab. Walks sideways, but always forward.",,,"Краб-сигма. Ходит боком, но всегда вперёд."
+creature.surfero_aurino.name,Surfero Aurino,,,Сурферо Аурино
+creature.surfero_aurino.desc,Catches waves and aura at the same time.,,,Ловит волну и ауру одновременно.
+creature.sole_dj.name,Sole DJ,,,Соле Диджейна
+creature.sole_dj.desc,A sun DJ. Summer set 24/7.,,,Солнце-диджей. Летний сет 24/7.
+creature.vampiro_dj.name,Vampiro DJ,,,Вампиро Диджеино
+creature.vampiro_dj.desc,"A vampire DJ. Only plays at night, but loud.",,,"Вампир-диджей. Играет только ночью, но громко."
+creature.mutated,{mutation} {name},,,{mutation} {name}
+rarity.normie.name,Normie,,,Нормис
+rarity.lowkey.name,Low-key,,,Лоу-ки
+rarity.rizz.name,Rizz,,,Ризз
+rarity.sigma.name,Sigma,rarity.sigma.name,,Сигма
+rarity.aura.name,Aura,,,Аура
+rarity.skibidi.name,Skibidi,,,Скибиди
+rarity.god.name,Brainrot God,,,Брейнрот Бог
+rarity.sixseven.name,SIX SEVEN 🤌,,,SIX SEVEN 🤌
+mutation.golden.name,Golden,,,Золотой
+mutation.diamond.name,Diamond,,,Алмазный
+mutation.rainbow.name,Rainbow,,,Радужный
+mutation.sixseven.name,Mutation 67,,,Мутация 67
+mutation.cosmic.name,Cosmic,,,Космический
+capsule.old_meme.name,Old Meme,,,Старый мем
+capsule.old_meme.desc,"A meme from 2016. Cringe, but it works.",,,"Мем из 2016-го. Кринж, но работает."
+capsule.chat_meme.name,Chat Meme,,,Мем из чата
+capsule.chat_meme.desc,Someone dropped it in the class chat.,,,Кто-то скинул в чат класса.
+capsule.viral_meme.name,Viral Meme,,,Вирусный мем
+capsule.viral_meme.desc,Already at 1M views!,,,Уже 1 млн просмотров!
+capsule.trend_sound.name,Trending Sound,,,Трендовый звук
+capsule.trend_sound.desc,This sound is in every other video.,,,Этот звук играет в каждом втором видео.
+capsule.mega_trend.name,Mega Trend,,,Мега-тренд
+capsule.mega_trend.desc,Even parents talk about this.,,,Про это говорят даже родители.
+capsule.brainrot_core.name,Brainrot Core,,,Брейнрот-ядро
+capsule.brainrot_core.desc,Pure concentrated brainrot.,,,Чистый концентрированный брейнрот.
+capsule.capsule_67.name,Capsule 67,,,Капсула 67
+capsule.capsule_67.desc,Six... seven... 🤌,,,Шесть... семь... 🤌
+capsule.halloween_capsule.name,🎃 Halloween Capsule,,,🎃 Хэллоуинская капсула
+capsule.halloween_capsule.desc,Only until November 6! Exclusive brainrots.,,,Только до 6 ноября! Эксклюзивные брейнроты.
+capsule.newyear_capsule.name,🎄 New Year Capsule,,,🎄 Новогодняя капсула
+capsule.newyear_capsule.desc,Only until January 10! Exclusive brainrots.,,,Только до 10 января! Эксклюзивные брейнроты.
+capsule.valentine_capsule.name,💘 Valentine,,,💘 Валентинка
+capsule.valentine_capsule.desc,Only until February 15! Exclusive brainrots.,,,Только до 15 февраля! Эксклюзивные брейнроты.
+capsule.summer_capsule.name,☀️ Summer Capsule,,,☀️ Летняя капсула
+capsule.summer_capsule.desc,Only until July 10! Exclusive brainrots.,,,Только до 10 июля! Эксклюзивные брейнроты.
+capsule.world_trend.name,World Trend,,,Мировой тренд
+capsule.world_trend.desc,The whole planet knows this meme.,,,Этот мем знает вся планета.
+capsule.ultra_brainrot.name,Ultra Brainrot,,,Ультра-брейнрот
+capsule.ultra_brainrot.desc,The final form of the internet. 🤌,,,Финальная форма интернета. 🤌
+level.1.name,Noob,,,Нуб
+level.3.name,Schoolkid,,,Школьник
+level.6.name,Memologist,,,Мемолог
+level.10.name,TikToker,level.10.name,,Тиктокер
+level.15.name,Reels Maker,,,Рилсмейкер
+level.22.name,Viral,,,Вирусный
+level.30.name,Trend Legend,level.30.name,,Легенда трендов
+level.40.name,Brainrot Tycoon,,,Брейнрот-магнат
+level.50.name,Meme Emperor,,,Император мемов
+level.67.name,King 67 🤌,,,Король 67 🤌
+floor.0.name,Ground,,,Земля
+floor.1.name,Floor 1,,,1 этаж
+floor.2.name,Floor 2,,,2 этаж
+pass.VIP.name,VIP,,,VIP
+pass.VIP.desc,x2 coins forever,,,x2 монет навсегда
+pass.LUCKY.name,Lucky,,,Счастливчик
+pass.LUCKY.desc,x1.5 luck forever,,,x1.5 удачи навсегда
+pass.BIG_BASE.name,Huge Base,,,Огромная база
+pass.BIG_BASE.desc,Floor 1 right away + Floor 2 at half price,,,1 этаж сразу + 2 этаж за полцены
+pass.AUTO_CRAFT.name,Auto Factory,,,Авто-фабрика
+pass.AUTO_CRAFT.desc,The machine crafts brainrots by itself,,,Машина сама создаёт брейнротов
+pass.FAST_MACHINE.name,Turbo Machine,,,Турбо-машина
+pass.FAST_MACHINE.desc,The machine runs 2x faster,,,Машина работает в 2 раза быстрее
+product.LUCK_BOOST.name,Luck Boost x2,,,Буст удачи x2
+product.LUCK_BOOST.desc,x2 luck for 15 minutes,,,x2 удачи на 15 минут
+product.COINS_SMALL.name,Bag of Coins,,,Мешок монет
+product.COINS_SMALL.desc,10 minutes of income (min. 5K),,,10 минут дохода (мин. 5K)
+product.SPINS_3.name,3 Wheel Spins,,,3 вращения колеса
+product.SPINS_3.desc,Spin the lucky wheel 3 more times,,,Крути колесо удачи ещё 3 раза
+product.COINS_BIG.name,Chest of Coins,,,Сундук монет
+product.COINS_BIG.desc,1 hour of income (min. 50K),,,1 час дохода (мин. 50K)
+season.halloween.name,🎃 Halloween,,,🎃 Хэллоуин
+season.newyear.name,🎄 New Year,,,🎄 Новый год
+season.valentine.name,💘 Valentine's Day,,,💘 День святого Валентина
+season.summer.name,☀️ Summer,,,☀️ Лето

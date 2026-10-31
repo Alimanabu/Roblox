@@ -3,6 +3,7 @@
 local Lighting = game:GetService("Lighting")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Events = require(Shared.Config.Events)
 local Remotes = require(Shared.Remotes)
 
@@ -31,13 +32,13 @@ function EventService.init()
 				current[event.id] = true
 				tintColor = event.color
 				if not activeIds[event.id] then
-					Remotes.Notify:FireAllClients("🎉 Начался ивент " .. event.name .. ": " .. event.desc, event.color)
+					Remotes.Notify:FireAllClients(S.m("event.started", { name = S.m(event.nameKey), desc = S.m(event.descKey) }), event.color)
 					Remotes.Sfx:FireAllClients("event")
 				end
 			end
 			for id in pairs(activeIds) do
 				if not current[id] then
-					Remotes.Notify:FireAllClients("Ивент закончился. Следующий скоро!", Color3.fromRGB(200, 200, 200))
+					Remotes.Notify:FireAllClients(S.m("event.ended"), Color3.fromRGB(200, 200, 200))
 				end
 			end
 			activeIds = current
@@ -47,7 +48,7 @@ function EventService.init()
 			local key = nextEvent.id .. startsAt
 			if startsAt - now <= 60 and not warned[key] then
 				warned[key] = true
-				Remotes.Notify:FireAllClients("⏰ Через минуту: " .. nextEvent.name .. "!", nextEvent.color)
+				Remotes.Notify:FireAllClients(S.m("event.soon", { name = S.m(nextEvent.nameKey) }), nextEvent.color)
 			end
 
 			tint.Enabled = tintColor ~= nil

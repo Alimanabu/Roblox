@@ -1,6 +1,7 @@
 -- Промокоды.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Codes = require(Shared.Config.Codes)
 local Remotes = require(Shared.Remotes)
 
@@ -21,7 +22,7 @@ local function redeem(player, text)
 	end
 	local now = os.clock()
 	if lastAttempt[player] and now - lastAttempt[player] < ATTEMPT_COOLDOWN then
-		Remotes.Notify:FireClient(player, "Подожди пару секунд", BAD)
+		Remotes.Notify:FireClient(player, S.m("common.wait"), BAD)
 		return
 	end
 	lastAttempt[player] = now
@@ -33,16 +34,16 @@ local function redeem(player, text)
 	local code = string.upper((text:gsub("%s", "")))
 	local reward = Codes[code]
 	if not reward or (reward.expires and os.time() > reward.expires) then
-		Remotes.Notify:FireClient(player, "❌ Такого кода нет (или он закончился)", BAD)
+		Remotes.Notify:FireClient(player, S.m("code.invalid"), BAD)
 		return
 	end
 	if data.codes[code] then
-		Remotes.Notify:FireClient(player, "Ты уже вводил этот код", BAD)
+		Remotes.Notify:FireClient(player, S.m("code.used"), BAD)
 		return
 	end
 	data.codes[code] = true
 	local result = RewardService.grant(player, data, reward)
-	Remotes.Notify:FireClient(player, "🎟️ Код " .. code .. ": " .. result .. " " .. (reward.text or ""), GOOD)
+	Remotes.Notify:FireClient(player, S.m("code.redeemed", { code = code, reward = result, text = if reward.textKey then S.m(reward.textKey) else reward.text or "" }), GOOD)
 	Remotes.Sfx:FireClient(player, "coins")
 	DataService.markDirty(player)
 end

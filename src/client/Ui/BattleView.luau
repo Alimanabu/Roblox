@@ -1,6 +1,7 @@
 -- Экран аура-баттла: раунды появляются по очереди, в конце — победа или поражение.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 
@@ -63,7 +64,7 @@ local function side(parent, member, power, alignRight, won)
 		Parent = parent,
 	}, { Theme.corner(10) })
 	if not creature then
-		Theme.label({ Size = UDim2.fromScale(1, 1), Text = "— пусто —", TextColor3 = C.Muted, ZIndex = 42, Parent = holder })
+		Theme.label({ Size = UDim2.fromScale(1, 1), Text = S.t("battle.empty"), TextColor3 = C.Muted, ZIndex = 42, Parent = holder })
 		return
 	end
 	local rarity = Rarities.get(creature.rarity)
@@ -97,7 +98,7 @@ function BattleView:show(result)
 	local token = self.token
 	self.rows:ClearAllChildren()
 	create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = self.rows })
-	self.title.Text = "⚔️ Ты  vs  " .. result.opponentName
+	self.title.Text = S.t("battle.versus", { name = result.opponentName })
 	self.result.Text = ""
 	self.footer.Text = ""
 	self.frame.Visible = true
@@ -133,11 +134,12 @@ function BattleView:show(result)
 		if self.token ~= token then
 			return
 		end
-		self.result.Text = result.won and "🏆 ПОБЕДА! Твоя аура сильнее!" or "😢 Поражение... аура подкачать бы"
+		self.result.Text = result.won and S.t("battle.win") or S.t("battle.loss")
 		self.result.TextColor3 = result.won and C.Good or C.Bad
-		local footer = "Очки ауры: " .. result.points .. " • " .. result.rank
-		if result.won and result.reward ~= "" then
-			footer = "Награда: " .. result.reward .. "   " .. footer
+		local footer = S.t("battle.footer", { points = result.points, rank = result.rank })
+		local reward = S.text(result.reward)
+		if result.won and reward ~= "" then
+			footer = S.t("battle.footer_reward", { reward = reward, footer = footer })
 		end
 		self.footer.Text = footer
 		if self.onSfx then

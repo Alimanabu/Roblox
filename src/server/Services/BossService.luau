@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Events = require(Shared.Config.Events)
 local CreatureModel = require(Shared.Util.CreatureModel)
 local Remotes = require(Shared.Remotes)
@@ -46,7 +47,7 @@ local function updateBar()
 	end
 	local ratio = math.clamp(boss.hp / boss.maxHp, 0, 1)
 	boss.fill.Size = UDim2.fromScale(ratio, 1)
-	boss.label.Text = string.format("👹 Орсо Огайо — %d / %d", math.ceil(boss.hp), boss.maxHp)
+	S.apply(boss.label, "Text", S.m("boss.health", { hp = math.ceil(boss.hp), max = boss.maxHp }))
 end
 
 local function spawnBoss()
@@ -103,7 +104,7 @@ local function spawnBoss()
 		lastShockwave = os.clock(),
 	}
 	updateBar()
-	Remotes.Notify:FireAllClients("👹 Босс-брейнрот пришёл на площадь! Бегите шлёпать!", RED)
+	Remotes.Notify:FireAllClients(S.m("boss.arrived"), RED)
 	Remotes.Sfx:FireAllClients("alarm")
 end
 
@@ -121,7 +122,7 @@ local function despawn(defeated)
 	finishedUntil = math.max(current.endsAt, bossWindowEnd() or 0, forcedUntil)
 
 	if not defeated then
-		Remotes.Notify:FireAllClients("👹 Босс сбежал... В следующий раз шлёпайте сильнее!", RED)
+		Remotes.Notify:FireAllClients(S.m("boss.escaped"), RED)
 		return
 	end
 
@@ -135,7 +136,7 @@ local function despawn(defeated)
 		end
 	end
 	Remotes.Notify:FireAllClients(
-		"🏆 Босс повержен!" .. (best and (" Лучший боец: " .. best.DisplayName) or ""),
+		if best then S.m("boss.defeated_best", { name = best.DisplayName }) else S.m("boss.defeated"),
 		GOLD
 	)
 	for player, damage in pairs(current.damage) do
@@ -147,7 +148,7 @@ local function despawn(defeated)
 				reward.creatureRarity = "aura"
 			end
 			local text = RewardService.grant(player, data, reward)
-			Remotes.Notify:FireClient(player, "👹 Награда за босса: " .. text, GOLD)
+			Remotes.Notify:FireClient(player, S.m("boss.reward", { reward = text }), GOLD)
 			Remotes.Sfx:FireClient(player, "success")
 			Actions.fire(player, "bossKill", 1)
 		end

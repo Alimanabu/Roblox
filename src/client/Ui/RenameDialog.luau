@@ -1,6 +1,7 @@
 -- Окно «Как назовёшь брейнрота?».
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 
 local Theme = require(script.Parent.Theme)
@@ -22,12 +23,12 @@ function RenameDialog.new(screenGui)
 		ZIndex = 50,
 		Parent = screenGui,
 	}, { Theme.corner(16), Theme.stroke(C.Gold, 4), Theme.padding(12) })
-	self.title = Theme.label({ Size = UDim2.new(1, 0, 0, 32), Text = "✏️ Как назовёшь брейнрота?", TextColor3 = C.Gold, ZIndex = 51, Parent = self.frame })
+	self.title = Theme.label({ Size = UDim2.new(1, 0, 0, 32), Text = S.t("rename.title"), TextColor3 = C.Gold, ZIndex = 51, Parent = self.frame })
 	self.box = create("TextBox", {
 		Position = UDim2.fromOffset(0, 42),
 		Size = UDim2.new(1, 0, 0, 50),
 		BackgroundColor3 = C.Card,
-		PlaceholderText = "Например: Вася 🤌 (до 20 символов)",
+		PlaceholderText = S.t("rename.placeholder"),
 		PlaceholderColor3 = C.Muted,
 		Text = "",
 		Font = Theme.Font,
@@ -40,7 +41,7 @@ function RenameDialog.new(screenGui)
 	Theme.button({
 		Position = UDim2.new(0, 0, 1, -48),
 		Size = UDim2.new(0.5, -6, 0, 48),
-		Text = "✅ Готово",
+		Text = S.t("rename.ok"),
 		Color = C.Good,
 		ZIndex = 51,
 		Parent = self.frame,
@@ -53,7 +54,7 @@ function RenameDialog.new(screenGui)
 	Theme.button({
 		Position = UDim2.new(0.5, 6, 1, -48),
 		Size = UDim2.new(0.5, -6, 0, 48),
-		Text = "Отмена",
+		Text = S.t("rename.cancel"),
 		Color = C.Bad,
 		ZIndex = 51,
 		Parent = self.frame,

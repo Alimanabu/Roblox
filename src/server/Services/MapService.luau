@@ -4,6 +4,7 @@
 local Lighting = game:GetService("Lighting")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local CreatureModel = require(Shared.Util.CreatureModel)
 
 local MapService = {}
@@ -120,7 +121,7 @@ local function statue()
 	label.TextScaled = true
 	label.TextColor3 = Color3.fromRGB(255, 230, 0)
 	label.TextStrokeTransparency = 0.2
-	label.Text = "🤌 Легенда: SIX SEVEN 🤌"
+	S.apply(label, "Text", S.m("map.statue"))
 	label.Parent = gui
 end
 

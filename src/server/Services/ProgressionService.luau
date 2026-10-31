@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Levels = require(Shared.Config.Levels)
 local Upgrades = require(Shared.Config.Upgrades)
 local Rebirths = require(Shared.Config.Rebirths)
@@ -43,14 +44,14 @@ function ProgressionService.addXp(player, data, amount)
 	end
 
 	ProgressionService.updateOverhead(player)
-	Remotes.Notify:FireClient(player, "⭐ Новый уровень: " .. data.level .. "!", GOLD)
+	Remotes.Notify:FireClient(player, S.m("progress.level_up", { level = data.level }), GOLD)
 	Remotes.Sfx:FireClient(player, "levelup")
-	if Levels.titleFor(data.level) ~= Levels.titleFor(oldLevel) then
-		Remotes.Notify:FireClient(player, "🏷️ Новый титул: " .. Levels.titleFor(data.level), GOLD)
+	if Levels.titleKeyFor(data.level) ~= Levels.titleKeyFor(oldLevel) then
+		Remotes.Notify:FireClient(player, S.m("progress.new_title", { title = Levels.titleFor(data.level) }), GOLD)
 	end
 	for _, capsule in ipairs(Capsules.List) do
 		if capsule.level > oldLevel and capsule.level <= data.level and data.rebirths >= capsule.rebirths then
-			Remotes.Notify:FireClient(player, "🔓 Открыта капсула: " .. capsule.name, GOOD)
+			Remotes.Notify:FireClient(player, S.m("progress.capsule_unlocked", { name = S.m(capsule.nameKey) }), GOOD)
 		end
 	end
 end
@@ -63,18 +64,18 @@ local function buyUpgrade(player, upgradeId)
 	end
 	local current = data.upgrades[upgrade.id] or 0
 	if current >= upgrade.maxLevel then
-		Remotes.Notify:FireClient(player, "Это улучшение уже на максимуме!", BAD)
+		Remotes.Notify:FireClient(player, S.m("progress.upgrade_maxed"), BAD)
 		return
 	end
 	local cost = Upgrades.cost(upgrade.id, current)
 	if data.coins < cost then
-		Remotes.Notify:FireClient(player, "Не хватает монет: нужно " .. Format.coins(cost), BAD)
+		Remotes.Notify:FireClient(player, S.m("common.not_enough_coins", { cost = Format.coins(cost) }), BAD)
 		return
 	end
 	data.coins -= cost
 	AnalyticsService.coins(player, false, cost, "Upgrade")
 	data.upgrades[upgrade.id] = current + 1
-	Remotes.Notify:FireClient(player, "⬆️ " .. upgrade.name .. ": уровень " .. (current + 1), GOOD)
+	Remotes.Notify:FireClient(player, S.m("progress.upgrade_level", { name = S.m(upgrade.nameKey), level = current + 1 }), GOOD)
 	Actions.fire(player, "upgrade", 1)
 	DataService.markDirty(player)
 end
@@ -89,21 +90,21 @@ function ProgressionService.buyFloor(player)
 	local floors = Formulas.floors(data, passes)
 	local cost = Formulas.floorCost(floors, passes)
 	if not cost then
-		Remotes.Notify:FireClient(player, "Все этажи уже построены!", BAD)
+		Remotes.Notify:FireClient(player, S.m("progress.floors_done"), BAD)
 		return
 	end
 	if data.coins < cost then
-		Remotes.Notify:FireClient(player, "Не хватает монет: нужно " .. Format.coins(cost), BAD)
+		Remotes.Notify:FireClient(player, S.m("common.not_enough_coins", { cost = Format.coins(cost) }), BAD)
 		return
 	end
 	data.coins -= cost
 	data.floors = floors + 1
 	AnalyticsService.coins(player, false, cost, "Floor")
 	local floor = Formulas.Floors[data.floors]
-	Remotes.Notify:FireClient(player, "🏗 Построен " .. floor.name .. "! Теперь мест: " .. Formulas.slots(data, passes), GOOD)
+	Remotes.Notify:FireClient(player, S.m("progress.floor_built", { floor = S.m(floor.nameKey), slots = Formulas.slots(data, passes) }), GOOD)
 	Remotes.Sfx:FireClient(player, "levelup")
 	if data.floors >= Formulas.MAX_FLOORS then
-		Remotes.Notify:FireAllClients("🏗 " .. player.DisplayName .. " достроил базу до " .. floor.name .. "а!", GOLD, true)
+		Remotes.Notify:FireAllClients(S.m("progress.floor_announce", { name = player.DisplayName, floor = S.m(floor.nameKey) }), GOLD, true)
 	end
 	Actions.fire(player, "floor", data.floors)
 	DataService.markDirty(player)
@@ -118,15 +119,15 @@ local function rebirth(player)
 	local cost = Rebirths.cost(data.rebirths)
 	local levelRequired = Rebirths.levelRequired(data.rebirths)
 	if player:GetAttribute("BeingRobbed") then
-		Remotes.Notify:FireClient(player, "У тебя сейчас крадут брейнрота! Сначала отбей его 👋", BAD)
+		Remotes.Notify:FireClient(player, S.m("progress.being_robbed"), BAD)
 		return
 	end
 	if data.level < levelRequired then
-		Remotes.Notify:FireClient(player, "Нужен " .. levelRequired .. " уровень для перерождения", BAD)
+		Remotes.Notify:FireClient(player, S.m("progress.rebirth_level", { level = levelRequired }), BAD)
 		return
 	end
 	if data.coins < cost then
-		Remotes.Notify:FireClient(player, "Нужно " .. Format.coins(cost) .. " для перерождения", BAD)
+		Remotes.Notify:FireClient(player, S.m("progress.rebirth_coins", { cost = Format.coins(cost) }), BAD)
 		return
 	end
 
@@ -138,7 +139,7 @@ local function rebirth(player)
 	data.upgrades = { speed = 0, luck = 0 }
 
 	local title = Rebirths.titleFor(data.rebirths)
-	Remotes.Notify:FireAllClients("♻️ " .. player.DisplayName .. " переродился и стал «" .. title .. "»!", GOLD, true)
+	Remotes.Notify:FireAllClients(S.m("progress.rebirth_announce", { name = player.DisplayName, title = title }), GOLD, true)
 	ProgressionService.updateOverhead(player)
 	ProgressionService.RebirthDone:Fire(player)
 	DataService.markDirty(player)
@@ -192,12 +193,12 @@ function ProgressionService.updateOverhead(player)
 		label.TextColor3 = GOLD
 		label.Parent = gui
 	end
-	local text = Levels.titleFor(data.level) .. " • ур. " .. data.level
+	local text = S.m("common.title_level", { title = Levels.titleFor(data.level), level = data.level })
 	local rebirthTitle = Rebirths.titleFor(data.rebirths)
 	if rebirthTitle then
-		text = "[" .. rebirthTitle .. "]\n" .. text
+		text = S.m("progress.overhead", { rebirth = rebirthTitle, title = text })
 	end
-	gui.Label.Text = text
+	S.apply(gui.Label, "Text", text)
 end
 
 return ProgressionService

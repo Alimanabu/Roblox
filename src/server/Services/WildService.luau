@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Formulas = require(Shared.Util.Formulas)
@@ -87,8 +88,8 @@ local function spawnWild()
 	local body = model.PrimaryPart
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "WildPrompt"
-	prompt.ActionText = "Поймать"
-	prompt.ObjectText = "Дикий " .. creature.name
+	S.apply(prompt, "ActionText", S.m("wild.catch"))
+	S.apply(prompt, "ObjectText", S.m("wild.object", { name = S.m(creature.nameKey) }))
 	prompt.HoldDuration = 0.4 + rarity.rank * 0.2
 	prompt.MaxActivationDistance = 10
 	prompt.RequiresLineOfSight = false
@@ -107,7 +108,7 @@ local function spawnWild()
 	label.TextScaled = true
 	label.TextStrokeTransparency = 0.2
 	label.TextColor3 = rarity.color
-	label.Text = "🦎 Дикий " .. creature.name .. "\n[" .. rarity.name .. "]"
+	S.apply(label, "Text", S.m("wild.label", { name = S.m(creature.nameKey), rarity = S.m(rarity.nameKey) }))
 	label.Parent = gui
 
 	model.Parent = folder
@@ -120,7 +121,7 @@ local function spawnWild()
 	}
 
 	if rarity.rank >= 5 then
-		Remotes.Notify:FireAllClients("🌟 На карте появился ДИКИЙ " .. creature.name .. " [" .. rarity.name .. "]! Лови!", rarity.color)
+		Remotes.Notify:FireAllClients(S.m("wild.announce", { name = S.m(creature.nameKey), rarity = S.m(rarity.nameKey) }), rarity.color)
 		Remotes.Sfx:FireAllClients("event")
 	end
 end
@@ -138,16 +139,16 @@ local function catch(player, prompt)
 		return
 	end
 	if #data.creatures >= Formulas.slots(data, MonetizationService.passes(player)) then
-		Remotes.Notify:FireClient(player, "На базе нет места для дикого брейнрота!", BAD)
+		Remotes.Notify:FireClient(player, S.m("wild.no_space"), BAD)
 		return
 	end
 	despawn(model)
 	FactoryService.give(player, wild.creature.id, "normal")
 	Actions.fire(player, "catchWild", 1)
-	Remotes.Notify:FireClient(player, "🦎 Пойман дикий " .. wild.creature.name .. "!", GOOD)
+	Remotes.Notify:FireClient(player, S.m("wild.caught", { name = S.m(wild.creature.nameKey) }), GOOD)
 	Remotes.Sfx:FireClient(player, "success")
 	if wild.rarity.rank >= 5 then
-		Remotes.Notify:FireAllClients("🦎 " .. player.DisplayName .. " поймал дикого " .. wild.creature.name .. "!", wild.rarity.color, true)
+		Remotes.Notify:FireAllClients(S.m("wild.caught_announce", { player = player.DisplayName, name = S.m(wild.creature.nameKey) }), wild.rarity.color, true)
 	end
 end
 

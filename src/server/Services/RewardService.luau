@@ -3,6 +3,7 @@
 -- Монеты в «минутах дохода», чтобы награда была полезна и новичку, и прокачанному.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
 local Creatures = require(Shared.Config.Creatures)
 local Formulas = require(Shared.Util.Formulas)
@@ -15,7 +16,7 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local RewardService = {}
 
--- Возвращает текст вида «💰 $1.2K + 🍀 x2 удачи на 10 мин».
+-- Возвращает сообщение вида «💰 $1.2K + 🍀 x2 удачи на 10 мин» (см. Strings).
 function RewardService.grant(player, data, reward)
 	local parts = {}
 	local coins = reward.coins or 0
@@ -31,11 +32,11 @@ function RewardService.grant(player, data, reward)
 	end
 	if reward.luckMinutes and reward.luckMinutes > 0 then
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, os.time()) + reward.luckMinutes * 60
-		table.insert(parts, "🍀 x2 удачи на " .. reward.luckMinutes .. " мин")
+		table.insert(parts, S.m("reward.luck", { minutes = reward.luckMinutes }))
 	end
 	if reward.skin and not data.skins[reward.skin] then
 		data.skins[reward.skin] = true
-		table.insert(parts, "🎨 скин")
+		table.insert(parts, S.m("reward.skin"))
 	end
 	if reward.creatureRarity then
 		local pool = Creatures.ByRarity[reward.creatureRarity]
@@ -46,15 +47,15 @@ function RewardService.grant(player, data, reward)
 			local coins = math.max(creature.income * 600, Daily.coinsFor(Formulas.totalIncome(data, passes), 10))
 			data.coins += coins
 			data.totalEarned += coins
-			table.insert(parts, "💰 " .. Format.coins(coins) .. " (база полна)")
+			table.insert(parts, S.m("reward.coins_base_full", { coins = Format.coins(coins) }))
 		elseif pool then
 			local creature = pool[math.random(1, #pool)]
 			FactoryService.give(player, creature.id, "normal")
-			table.insert(parts, "🧠 " .. creature.name)
+			table.insert(parts, S.m("reward.creature", { name = S.m(creature.nameKey) }))
 		end
 	end
 	DataService.markDirty(player)
-	return table.concat(parts, " + ")
+	return S.join(parts, " + ")
 end
 
 -- Короткое описание награды для интерфейса (без выдачи).
@@ -69,12 +70,12 @@ function RewardService.describe(player, data, reward)
 		table.insert(parts, Format.coins(coins))
 	end
 	if reward.luckMinutes then
-		table.insert(parts, "🍀x2 " .. reward.luckMinutes .. "м")
+		table.insert(parts, S.m("reward.luck_short", { minutes = reward.luckMinutes }))
 	end
 	if reward.creatureRarity then
 		table.insert(parts, "🧠")
 	end
-	return table.concat(parts, " + ")
+	return S.join(parts, " + ")
 end
 
 return RewardService

@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
@@ -35,7 +36,7 @@ local function rename(player, uid, text)
 	end
 	local now = os.clock()
 	if lastRename[player] and now - lastRename[player] < COOLDOWN then
-		Remotes.Notify:FireClient(player, "Подожди пару секунд", BAD)
+		Remotes.Notify:FireClient(player, S.m("common.wait"), BAD)
 		return
 	end
 	lastRename[player] = now
@@ -59,12 +60,12 @@ local function rename(player, uid, text)
 		entry.nickname = nil
 	else
 		if utf8.len(text) == nil or utf8.len(text) > MAX_LENGTH then
-			Remotes.Notify:FireClient(player, "Имя — до " .. MAX_LENGTH .. " символов", BAD)
+			Remotes.Notify:FireClient(player, S.m("name.too_long", { max = MAX_LENGTH }), BAD)
 			return
 		end
 		local filtered = filter(text, player)
 		if not filtered then
-			Remotes.Notify:FireClient(player, "Не получилось проверить имя, попробуй ещё раз", BAD)
+			Remotes.Notify:FireClient(player, S.m("name.filter_failed"), BAD)
 			return
 		end
 		entry.nickname = filtered
@@ -72,7 +73,7 @@ local function rename(player, uid, text)
 	DataService.markDirty(player)
 	PlotService.render(player)
 	local shown = entry.nickname and entry.nickname:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
-	Remotes.Notify:FireClient(player, shown and ("✏️ Теперь его зовут «" .. shown .. "»") or "Имя убрано", GOOD)
+	Remotes.Notify:FireClient(player, if shown then S.m("name.changed", { name = shown }) else S.m("name.removed"), GOOD)
 end
 
 function NameService.init()

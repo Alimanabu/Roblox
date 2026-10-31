@@ -4,6 +4,7 @@ local BadgeService = game:GetService("BadgeService")
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Achievements = require(Shared.Config.Achievements)
 local Remotes = require(Shared.Remotes)
 
@@ -38,7 +39,7 @@ function AchievementService.check(player)
 			if ok and done then
 				data.achievements[achievement.id] = true
 				local text = RewardService.grant(player, data, achievement.reward)
-				Remotes.Notify:FireClient(player, "🏆 Достижение «" .. achievement.name .. "»! " .. text, GOLD)
+				Remotes.Notify:FireClient(player, S.m("achievement.unlocked", { name = S.m(achievement.nameKey), reward = text }), GOLD)
 				Remotes.Sfx:FireClient(player, "levelup")
 				awardBadge(player, achievement.badgeId)
 				DataService.markDirty(player)

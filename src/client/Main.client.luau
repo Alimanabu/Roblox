@@ -5,6 +5,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 
 local State = require(script.Parent.State)
@@ -12,6 +13,7 @@ local Sfx = require(script.Parent.Sfx)
 local Music = require(script.Parent.Music)
 local LegendaryFx = require(script.Parent.LegendaryFx)
 local PetFollow = require(script.Parent.PetFollow)
+local WorldText = require(script.Parent.WorldText)
 local RenameDialog = require(script.Parent.Ui.RenameDialog)
 local DiscoFx = require(script.Parent.DiscoFx)
 local Events = require(Shared.Config.Events)
@@ -63,6 +65,7 @@ end
 
 Music.start()
 PetFollow.start()
+WorldText.start()
 local announcementsOn = true
 
 State.onChanged(function(state)
@@ -79,7 +82,7 @@ Remotes.Notify.OnClientEvent:Connect(function(text, color, isAnnouncement)
 	if isAnnouncement and not announcementsOn then
 		return
 	end
-	hud:notify(text, color)
+	hud:notify(S.text(text), color)
 end)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
@@ -115,7 +118,7 @@ end)
 -- Аура-баттлы.
 local battleInvite = TradeInvite.new(screenGui, Remotes.BattleRespond, 130)
 Remotes.BattleInvite.OnClientEvent:Connect(function(fromUserId, fromName)
-	battleInvite:show(fromUserId, "⚔️ " .. fromName .. " вызывает тебя на аура-баттл!")
+	battleInvite:show(fromUserId, S.t("battle.invite", { name = fromName }))
 	Sfx.play("alarm")
 end)
 local battleView = BattleView.new(screenGui, function(name)
@@ -131,7 +134,7 @@ end)
 -- Обмен.
 local tradeInvite = TradeInvite.new(screenGui)
 Remotes.TradeInvite.OnClientEvent:Connect(function(fromUserId, fromName)
-	tradeInvite:show(fromUserId, "🤝 " .. fromName .. " хочет обменяться брейнротами!")
+	tradeInvite:show(fromUserId, S.t("trade.invite", { name = fromName }))
 	Sfx.play("lock")
 end)
 Remotes.TradeState.OnClientEvent:Connect(function(tradeState)

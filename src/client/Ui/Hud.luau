@@ -3,6 +3,7 @@
 local TweenService = game:GetService("TweenService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Format = require(Shared.Util.Format)
 
 local Theme = require(script.Parent.Theme)
@@ -13,19 +14,19 @@ local Hud = {}
 Hud.__index = Hud
 
 local MENU = {
-	{ id = "Rewards", text = "🎁 Награды", color = Color3.fromRGB(255, 120, 60) },
-	{ id = "Factory", text = "🏭 Фабрика", color = C.Accent },
-	{ id = "Base", text = "🧠 База", color = C.Blue },
-	{ id = "Upgrades", text = "⬆️ Улучшения", color = C.Good },
-	{ id = "Rebirth", text = "♻️ Перерождение", color = C.Purple },
-	{ id = "Index", text = "📖 Индекс", color = Color3.fromRGB(80, 180, 200) },
-	{ id = "Achievements", text = "🏆 Достижения", color = Color3.fromRGB(200, 150, 40) },
-	{ id = "Trade", text = "🤝 Обмен", color = Color3.fromRGB(60, 170, 140) },
-	{ id = "Battles", text = "⚔️ Баттлы", color = Color3.fromRGB(200, 60, 90) },
-	{ id = "Skins", text = "🎨 Скины", color = Color3.fromRGB(220, 90, 200) },
-	{ id = "Shop", text = "🛒 Магазин", color = C.Gold },
-	{ id = "Help", text = "❓ Как играть", color = Color3.fromRGB(120, 120, 150) },
-	{ id = "Admin", text = "🛠 Тест", color = Color3.fromRGB(70, 70, 90), adminOnly = true },
+	{ id = "Rewards", text = S.t("hud.rewards"), color = Color3.fromRGB(255, 120, 60) },
+	{ id = "Factory", text = S.t("hud.factory"), color = C.Accent },
+	{ id = "Base", text = S.t("hud.base"), color = C.Blue },
+	{ id = "Upgrades", text = S.t("hud.upgrades"), color = C.Good },
+	{ id = "Rebirth", text = S.t("hud.rebirth"), color = C.Purple },
+	{ id = "Index", text = S.t("hud.index"), color = Color3.fromRGB(80, 180, 200) },
+	{ id = "Achievements", text = S.t("hud.achievements"), color = Color3.fromRGB(200, 150, 40) },
+	{ id = "Trade", text = S.t("hud.trade"), color = Color3.fromRGB(60, 170, 140) },
+	{ id = "Battles", text = S.t("hud.battles"), color = Color3.fromRGB(200, 60, 90) },
+	{ id = "Skins", text = S.t("hud.skins"), color = Color3.fromRGB(220, 90, 200) },
+	{ id = "Shop", text = S.t("hud.shop"), color = C.Gold },
+	{ id = "Help", text = S.t("hud.help"), color = Color3.fromRGB(120, 120, 150) },
+	{ id = "Admin", text = S.t("hud.admin"), color = Color3.fromRGB(70, 70, 90), adminOnly = true },
 }
 
 function Hud.new(screenGui, onMenu, giftsReady)
@@ -53,7 +54,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Size = UDim2.new(1, -16, 0, 26),
 		Position = UDim2.fromOffset(8, 54),
 		TextColor3 = C.Good,
-		Text = "+$0/с",
+		Text = S.t("common.per_second", { coins = "+$0" }),
 		Parent = coinsFrame,
 	})
 
@@ -70,7 +71,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.titleLabel = Theme.label({
 		Size = UDim2.new(1, -16, 0, 22),
 		Position = UDim2.fromOffset(8, 3),
-		Text = "Нуб • ур. 1",
+		Text = S.t("common.title_level", { title = S.m("level.1.name"), level = 1 }),
 		Parent = levelFrame,
 	})
 	local bar = create("Frame", {
@@ -118,7 +119,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.luckLabel = Theme.label({
 		Size = UDim2.new(1, -16, 0, 26),
 		Position = UDim2.fromOffset(8, 4),
-		Text = "🍀 Удача x1",
+		Text = S.t("hud.luck", { luck = "1" }),
 		TextColor3 = C.Good,
 		Parent = luckFrame,
 	})
@@ -215,21 +216,21 @@ function Hud:update(state)
 	self.badges.Rewards.Visible = rewardsReady
 
 	self.coinsLabel.Text = Format.coins(state.coins)
-	self.incomeLabel.Text = "+" .. Format.coins(state.income) .. "/с"
-	local title = state.title .. " • ур. " .. state.level
+	self.incomeLabel.Text = S.t("common.per_second", { coins = "+" .. Format.coins(state.income) })
+	local title = S.t("common.title_level", { title = state.title, level = state.level })
 	if state.rebirthTitle then
-		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, state.rebirthTitle)
+		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, S.text(state.rebirthTitle))
 	end
 	self.titleLabel.Text = title
 	local progress = state.xpNext > 0 and math.clamp(state.xp / state.xpNext, 0, 1) or 1
 	self.xpFill.Size = UDim2.fromScale(progress, 1)
 	self.xpLabel.Text = Format.number(state.xp) .. " / " .. Format.number(state.xpNext) .. " XP"
-	self.luckLabel.Text = string.format("🍀 Удача x%.2f", state.luck)
+	self.luckLabel.Text = S.t("hud.luck", { luck = string.format("%.2f", state.luck) })
 	if state.luckBoostLeft > 0 then
-		self.boostLabel.Text = "Буст x2: " .. Format.time(state.luckBoostLeft)
+		self.boostLabel.Text = S.t("hud.boost", { time = Format.time(state.luckBoostLeft) })
 		self.boostLabel.TextColor3 = C.Good
 	else
-		self.boostLabel.Text = state.passes.VIP and "👑 VIP: x2 монет" or ""
+		self.boostLabel.Text = state.passes.VIP and S.t("hud.vip") or ""
 		self.boostLabel.TextColor3 = C.Gold
 	end
 end

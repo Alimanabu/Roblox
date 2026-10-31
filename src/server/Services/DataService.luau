@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 local Formulas = require(Shared.Util.Formulas)
 
@@ -281,7 +282,7 @@ local function onPlayerAdded(player)
 			store = nil
 		else
 			-- Не даём играть с пустым профилем, иначе затрём настоящий прогресс.
-			player:Kick("Не получилось загрузить прогресс (возможно, ты ещё открыт на другом сервере). Перезайди через минуту!")
+			player:Kick(S.forPlayer(player, "data.load_failed"))
 			return
 		end
 	end

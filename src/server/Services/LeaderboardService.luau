@@ -4,6 +4,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 
@@ -29,7 +30,7 @@ end
 local BOARDS = {
 	{
 		key = "TopEarned_v1",
-		title = "💰 Топ по заработку",
+		title = S.m("leaderboard.top_earned"),
 		position = Vector3.new(-26, 13, 0),
 		value = function(data)
 			return encode(data.totalEarned)
@@ -40,7 +41,7 @@ local BOARDS = {
 	},
 	{
 		key = "TopRebirths_v1",
-		title = "♻️ Топ по перерождениям",
+		title = S.m("leaderboard.top_rebirths"),
 		position = Vector3.new(26, 13, 0),
 		value = function(data)
 			return data.rebirths
@@ -57,7 +58,7 @@ local function nameOf(userId)
 		return nameCache[userId]
 	end
 	local ok, name = pcall(Players.GetNameFromUserIdAsync, Players, userId)
-	nameCache[userId] = ok and name or ("Игрок " .. userId)
+	nameCache[userId] = ok and name or ("#" .. userId)
 	return nameCache[userId]
 end
 
@@ -83,7 +84,7 @@ local function buildBoard(board)
 	title.Font = Enum.Font.FredokaOne
 	title.TextScaled = true
 	title.TextColor3 = Color3.new(1, 1, 1)
-	title.Text = board.title
+	S.apply(title, "Text", board.title)
 	title.Parent = gui
 
 	local list = Instance.new("TextLabel")
@@ -97,7 +98,7 @@ local function buildBoard(board)
 	list.TextYAlignment = Enum.TextYAlignment.Top
 	list.TextColor3 = Color3.new(1, 1, 1)
 	list.RichText = true
-	list.Text = "Загрузка..."
+	S.apply(list, "Text", S.m("leaderboard.loading"))
 	list.Parent = gui
 
 	board.label = list
@@ -107,15 +108,15 @@ local MEDALS = { "🥇", "🥈", "🥉" }
 
 local function refreshBoard(board)
 	if not board.store then
-		board.label.Text = "Табло работает\nв опубликованной игре"
+		S.apply(board.label, "Text", S.m("leaderboard.published_only"))
 		return
 	end
 	local ok, pages = pcall(function()
 		return board.store:GetSortedAsync(false, TOP_COUNT)
 	end)
 	if not ok then
-		if board.label.Text == "Загрузка..." then
-			board.label.Text = "Табло работает\nв опубликованной игре"
+		if not board.loaded then
+			S.apply(board.label, "Text", S.m("leaderboard.published_only"))
 		end
 		return
 	end
@@ -130,7 +131,8 @@ local function refreshBoard(board)
 			board.format(entry.value)
 		))
 	end
-	board.label.Text = #lines > 0 and table.concat(lines, "\n") or "Пока пусто. Стань первым!"
+	board.loaded = true
+	S.apply(board.label, "Text", if #lines > 0 then table.concat(lines, "\n") else S.m("leaderboard.empty"))
 end
 
 local function writeScores()
@@ -152,11 +154,11 @@ local function setupLeaderstats(player)
 	local stats = Instance.new("Folder")
 	stats.Name = "leaderstats"
 	local income = Instance.new("StringValue")
-	income.Name = "Доход/с"
+	income.Name = S.t("leaderboard.income")
 	income.Value = "$0"
 	income.Parent = stats
 	local rebirths = Instance.new("IntValue")
-	rebirths.Name = "Перерожд."
+	rebirths.Name = S.t("leaderboard.rebirths")
 	rebirths.Parent = stats
 	stats.Parent = player
 end
@@ -183,8 +185,8 @@ function LeaderboardService.init()
 				local stats = player:FindFirstChild("leaderstats")
 				if data and stats then
 					local income = Formulas.totalIncome(data, MonetizationService.passes(player))
-					stats["Доход/с"].Value = Format.coins(income)
-					stats["Перерожд."].Value = data.rebirths
+					stats[S.t("leaderboard.income")].Value = Format.coins(income)
+					stats[S.t("leaderboard.rebirths")].Value = data.rebirths
 				end
 			end
 		end

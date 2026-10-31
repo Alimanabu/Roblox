@@ -5,6 +5,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Capsules = require(Shared.Config.Capsules)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
@@ -122,7 +123,7 @@ Panels.onRename = nil -- function(uid, currentName) — задаётся в Main
 ---------------------------------------------------------------------------
 -- ФАБРИКА
 ---------------------------------------------------------------------------
-local Factory = { title = "🏭 Фабрика брейнрота" }
+local Factory = { title = S.t("panel.factory") }
 
 function Factory.signature(state)
 	local parts = {
@@ -150,20 +151,19 @@ function Factory.build(content, state)
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = string.format(
-			"🍀 Удача x%.2f  •  ⏱ Машина: %.1f с  •  Места: %d/%d",
-			state.luck,
-			state.craftTime,
-			#state.creatures,
-			state.slots
-		),
+		Text = S.t("factory.stats", {
+			luck = string.format("%.2f", state.luck),
+			time = string.format("%.1f", state.craftTime),
+			used = #state.creatures,
+			slots = state.slots,
+		}),
 		TextColor3 = C.Muted,
 		LayoutOrder = 0,
 		Parent = content,
 	})
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 22),
-		Text = "Чем популярнее тренд — тем реже он выпадает. Удача повышает шанс редких!",
+		Text = S.t("factory.hint"),
 		TextColor3 = C.Muted,
 		LayoutOrder = 1,
 		Parent = content,
@@ -203,7 +203,7 @@ function Factory.build(content, state)
 		local chancesText = {}
 		for _, entry in ipairs(Formulas.rarityChances(capsule, state.luck, state.mods)) do
 			local rarity = Rarities.get(entry.rarity)
-			local name = entry.secret and "??? секрет" or rarity.name
+			local name = entry.secret and S.t("factory.secret") or rarity.name
 			table.insert(chancesText, colored(name, rarity.color) .. "  " .. Format.percent(entry.chance))
 		end
 		Theme.label({
@@ -221,7 +221,7 @@ function Factory.build(content, state)
 			local left = Formulas.pityThreshold(capsule) - (state.pity[capsule.id] or 0)
 			Theme.label({
 				Size = UDim2.new(1, 0, 0, 16),
-				Text = "🎯 " .. pityRarity.name .. " точно через " .. left,
+				Text = S.t("factory.pity_left", { rarity = pityRarity.name, left = left }),
 				TextColor3 = pityRarity.color,
 				LayoutOrder = 4,
 				Parent = box,
@@ -229,7 +229,7 @@ function Factory.build(content, state)
 			local canAfford = state.coins >= capsule.cost
 			Theme.button({
 				Size = UDim2.new(1, 0, 0, 40),
-				Text = "Создать " .. Format.coins(capsule.cost),
+				Text = S.t("factory.craft", { cost = Format.coins(capsule.cost) }),
 				Color = canAfford and C.Good or C.Bad,
 				LayoutOrder = 5,
 				Parent = box,
@@ -240,7 +240,7 @@ function Factory.build(content, state)
 				local active = state.autoCraft == capsule.id
 				Theme.button({
 					Size = UDim2.new(1, 0, 0, 26),
-					Text = active and "🤖 Авто: ВКЛ" or "🤖 Авто",
+					Text = active and S.t("factory.auto_on") or S.t("factory.auto"),
 					Color = active and C.Gold or C.Card,
 					LayoutOrder = 6,
 					Parent = box,
@@ -249,9 +249,9 @@ function Factory.build(content, state)
 				end)
 			end
 		else
-			local need = "🔒 Уровень " .. capsule.level
+			local need = S.t("factory.need_level", { level = capsule.level })
 			if capsule.rebirths > 0 then
-				need ..= " + " .. capsule.rebirths .. " перерожд."
+				need = S.t("factory.need_rebirths", { need = need, rebirths = capsule.rebirths })
 			end
 			Theme.label({ Size = UDim2.new(1, 0, 0, 40), Text = need, TextColor3 = C.Muted, LayoutOrder = 5, Parent = box })
 		end
@@ -261,7 +261,7 @@ end
 ---------------------------------------------------------------------------
 -- БАЗА
 ---------------------------------------------------------------------------
-local Base = { title = "🧠 Моя база" }
+local Base = { title = S.t("panel.base") }
 
 local function floorSignature(state)
 	return tostring(state.floors) .. ":" .. tostring(state.floorCost and state.coins >= state.floorCost)
@@ -275,14 +275,14 @@ local function floorCard(content, state, order)
 	local text
 	if cost then
 		local nextFloor = Formulas.Floors[floors + 1]
-		local perks = string.format("%d мест, ❤️%d", Formulas.FLOOR_SLOTS * (floors + 1), nextFloor.hp)
+		local perks = S.t("base.perks", { slots = Formulas.FLOOR_SLOTS * (floors + 1), hp = nextFloor.hp })
 		if nextFloor.income > 1 then
-			perks ..= ", доход x" .. nextFloor.income
+			perks = S.t("base.perks_income", { perks = perks, income = nextFloor.income })
 		end
-		text = string.format("🏗 Сейчас: %s (%d мест)\nДальше %s: %s", Formulas.Floors[floors].name, state.slots, nextFloor.name, perks)
+		text = S.t("base.floor_now", { floor = Formulas.Floors[floors].name, slots = state.slots, next = nextFloor.name, perks = perks })
 	else
 		local top = Formulas.Floors[Formulas.MAX_FLOORS]
-		text = string.format("🏆 База построена: %d мест\nНаверху ❤️%d и доход x%d", state.slots, top.hp, top.income)
+		text = S.t("base.complete", { slots = state.slots, hp = top.hp, income = top.income })
 	end
 	Theme.label({
 		Size = UDim2.new(cost and 0.62 or 1, 0, 1, 0),
@@ -294,7 +294,7 @@ local function floorCard(content, state, order)
 		Theme.button({
 			Size = UDim2.new(0.38, -8, 1, 0),
 			Position = UDim2.new(0.62, 8, 0, 0),
-			Text = "Построить " .. Format.coins(cost),
+			Text = S.t("base.build", { cost = Format.coins(cost) }),
 			Color = state.coins >= cost and C.Good or C.Bad,
 			Parent = box,
 		}, function()
@@ -317,18 +317,18 @@ function Base.build(content, state)
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = string.format("Места: %d/%d  •  Доход: %s/с", #state.creatures, state.slots, Format.coins(state.income)),
+		Text = S.t("base.stats", { used = #state.creatures, slots = state.slots, income = Format.coins(state.income) }),
 		TextColor3 = C.Coins,
 		LayoutOrder = 0,
 		Parent = content,
 	})
 	local social = state.social
 	local bonusParts = {
-		string.format("👥 Друзья на сервере: %d/4 (+%d%%)", social.friends, social.friends * 10),
+		S.t("base.friends", { friends = social.friends, bonus = social.friends * 10 }),
 		social.premium and "💎 Premium +10%" or "💎 Premium: +10%",
 	}
 	if social.groupEnabled then
-		table.insert(bonusParts, social.group and "⭐ Группа +10%" or "⭐ Вступи в группу: +10%")
+		table.insert(bonusParts, social.group and S.t("base.group_on") or S.t("base.group_off"))
 	end
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 22),
@@ -342,7 +342,7 @@ function Base.build(content, state)
 	if #state.creatures == 0 then
 		Theme.label({
 			Size = UDim2.new(1, -10, 0, 60),
-			Text = "Тут пусто! Иди на 🏭 Фабрику и создай первого брейнрота.",
+			Text = S.t("base.empty"),
 			TextColor3 = C.Muted,
 			LayoutOrder = 3,
 			Parent = content,
@@ -386,12 +386,12 @@ function Base.build(content, state)
 			local sellAllProps = {
 				Size = UDim2.new(0.3, -4, 1, 0),
 				Position = UDim2.new(0.7, 4, 0, 0),
-				Text = "💰 Продать всех",
+				Text = S.t("base.sell_all"),
 				Color = C.Bad,
 				Parent = row,
 			}
 			if rarity.rank >= 5 then
-				confirmButton("sellAll:" .. rarity.id, sellAllProps, "Точно? Нажми ещё", sellAll)
+				confirmButton("sellAll:" .. rarity.id, sellAllProps, S.t("base.confirm"), sellAll)
 			else
 				Theme.button(sellAllProps, sellAll)
 			end
@@ -400,7 +400,7 @@ function Base.build(content, state)
 	end
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 20),
-		Text = "Скрещивание берёт самых слабых. «Продать всех» не трогает мутантов.",
+		Text = S.t("base.hint"),
 		TextColor3 = C.Muted,
 		LayoutOrder = 50,
 		Parent = content,
@@ -440,14 +440,14 @@ function Base.build(content, state)
 			Theme.label({
 				Size = UDim2.new(0.42, 0, 0.4, 0),
 				Position = UDim2.fromScale(0, 0.6),
-				Text = colored(rarity.name, rarity.color) .. (place.floor == 2 and colored("  ⭐ 2 этаж", C.Gold) or ""),
+				Text = colored(rarity.name, rarity.color) .. (place.floor == 2 and colored("  " .. S.t("base.on_floor2"), C.Gold) or ""),
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
 			Theme.label({
 				Size = UDim2.new(0.21, 0, 1, 0),
 				Position = UDim2.fromScale(0.42, 0),
-				Text = "+" .. Format.coins(Formulas.creatureBaseIncome(entry) * (floorInfo and floorInfo.income or 1) * state.incomeMultiplier) .. "/с",
+				Text = S.t("common.per_second", { coins = "+" .. Format.coins(Formulas.creatureBaseIncome(entry) * (floorInfo and floorInfo.income or 1) * state.incomeMultiplier) }),
 				TextColor3 = C.Good,
 				Parent = row,
 			})
@@ -468,13 +468,13 @@ function Base.build(content, state)
 			local sellProps = {
 				Size = UDim2.new(0.26, -4, 1, 0),
 				Position = UDim2.new(0.74, 4, 0, 0),
-				Text = "Продать " .. Format.coins(Formulas.sellValue(entry)),
+				Text = S.t("base.sell", { coins = Format.coins(Formulas.sellValue(entry)) }),
 				Color = C.Bad,
 				Parent = row,
 			}
 			-- Редких (Аура и выше) и мутантов продаём только с подтверждением.
 			if rarity.rank >= 5 or entry.mut ~= "normal" then
-				confirmButton("sell:" .. entry.uid, sellProps, "Точно продать?", sell)
+				confirmButton("sell:" .. entry.uid, sellProps, S.t("base.confirm_sell"), sell)
 			else
 				Theme.button(sellProps, sell)
 			end
@@ -486,7 +486,7 @@ end
 ---------------------------------------------------------------------------
 -- УЛУЧШЕНИЯ
 ---------------------------------------------------------------------------
-local UpgradesPanel = { title = "⬆️ Улучшения фабрики" }
+local UpgradesPanel = { title = S.t("panel.upgrades") }
 
 function UpgradesPanel.signature(state)
 	local parts = { floorSignature(state) }
@@ -507,7 +507,7 @@ function UpgradesPanel.build(content, state)
 		local row = card({ Size = UDim2.new(1, -10, 0, 80), LayoutOrder = order }, { Theme.padding(8) })
 		Theme.label({
 			Size = UDim2.new(0.65, 0, 0.5, 0),
-			Text = upgrade.name .. "  " .. colored("ур. " .. level .. "/" .. upgrade.maxLevel, C.Muted),
+			Text = upgrade.name .. "  " .. colored(S.t("upgrades.level", { level = level, max = upgrade.maxLevel }), C.Muted),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = row,
 		})
@@ -522,7 +522,7 @@ function UpgradesPanel.build(content, state)
 		Theme.button({
 			Size = UDim2.new(0.35, -8, 1, 0),
 			Position = UDim2.new(0.65, 8, 0, 0),
-			Text = maxed and "МАКС" or Format.coins(cost),
+			Text = maxed and S.t("upgrades.max") or Format.coins(cost),
 			Color = maxed and C.CardLocked or (state.coins >= cost and C.Good or C.Bad),
 			Parent = row,
 		}, function()
@@ -535,7 +535,7 @@ end
 ---------------------------------------------------------------------------
 -- ПЕРЕРОЖДЕНИЕ
 ---------------------------------------------------------------------------
-local Rebirth = { title = "♻️ Перерождение" }
+local Rebirth = { title = S.t("hud.rebirth") }
 
 function Rebirth.signature(state)
 	local cost = Rebirths.cost(state.rebirths)
@@ -551,17 +551,17 @@ function Rebirth.build(content, state)
 	local coinsOk = state.coins >= cost
 
 	local lines = {
-		"Сейчас перерождений: " .. colored(tostring(state.rebirths), C.Gold),
-		"Следующий титул: " .. colored("«" .. nextTitle .. "»", C.Gold),
+		S.t("rebirth.count", { count = colored(tostring(state.rebirths), C.Gold) }),
+		S.t("rebirth.next_title", { title = colored(S.t("rebirth.quoted", { title = nextTitle }), C.Gold) }),
 		"",
-		colored("Ты получишь навсегда:", C.Good),
-		"+" .. math.floor(Rebirths.INCOME_BONUS * 100) .. "% дохода  •  +" .. math.floor(Rebirths.LUCK_BONUS * 100) .. "% удачи",
+		colored(S.t("rebirth.gain"), C.Good),
+		S.t("rebirth.bonus", { income = math.floor(Rebirths.INCOME_BONUS * 100), luck = math.floor(Rebirths.LUCK_BONUS * 100) }),
 		"",
-		colored("Ты потеряешь:", C.Bad),
-		"монеты, брейнротов на базе и улучшения",
-		colored("(уровень, Индекс и этажи базы остаются)", C.Muted),
+		colored(S.t("rebirth.lose"), C.Bad),
+		S.t("rebirth.lose_list"),
+		colored(S.t("rebirth.keep"), C.Muted),
 		"",
-		(levelOk and "✅" or "❌") .. " Уровень " .. levelRequired .. " (у тебя " .. state.level .. ")",
+		(levelOk and "✅" or "❌") .. " " .. S.t("rebirth.level_req", { need = levelRequired, level = state.level }),
 		(coinsOk and "✅" or "❌") .. " " .. Format.coins(cost),
 	}
 	Theme.label({
@@ -574,11 +574,11 @@ function Rebirth.build(content, state)
 	})
 	confirmButton("rebirth", {
 		Size = UDim2.new(0.6, 0, 0, 56),
-		Text = "♻️ ПЕРЕРОДИТЬСЯ",
+		Text = S.t("rebirth.button"),
 		Color = (levelOk and coinsOk) and C.Purple or C.CardLocked,
 		LayoutOrder = 2,
 		Parent = content,
-	}, "⚠️ Точно? Нажми ещё раз", function()
+	}, S.t("rebirth.confirm"), function()
 		Remotes.Rebirth:FireServer()
 	end)
 end
@@ -586,7 +586,7 @@ end
 ---------------------------------------------------------------------------
 -- ИНДЕКС (коллекция)
 ---------------------------------------------------------------------------
-local Index = { title = "📖 Индекс брейнротов" }
+local Index = { title = S.t("panel.index") }
 
 function Index.signature(state)
 	local count = 0
@@ -604,7 +604,7 @@ function Index.build(content, state)
 	end
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = "Открыто: " .. found .. " / " .. #Creatures.List .. "  (новый брейнрот = x3 опыта)",
+		Text = S.t("index.count", { found = found, total = #Creatures.List }),
 		TextColor3 = C.Coins,
 		LayoutOrder = 0,
 		Parent = content,
@@ -656,7 +656,7 @@ end
 ---------------------------------------------------------------------------
 -- МАГАЗИН
 ---------------------------------------------------------------------------
-local Shop = { title = "🛒 Магазин" }
+local Shop = { title = S.t("hud.shop") }
 
 function Shop.signature(state)
 	local parts = {}
@@ -670,28 +670,28 @@ end
 
 function Shop.build(content, state)
 	list(content, 8)
-	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = "Геймпассы (навсегда)", TextColor3 = C.Gold, LayoutOrder = 0, Parent = content })
+	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = S.t("shop.passes"), TextColor3 = C.Gold, LayoutOrder = 0, Parent = content })
 
 	local order = 1
-	local function row(item, owned, onBuy, blocked)
+	local function row(kind, item, owned, onBuy, blocked)
 		order += 1
 		local box = card({ Size = UDim2.new(1, -10, 0, 64), LayoutOrder = order }, { Theme.padding(8) })
-		Theme.label({ Size = UDim2.new(0.65, 0, 0.55, 0), Text = item.name, TextXAlignment = Enum.TextXAlignment.Left, Parent = box })
+		Theme.label({ Size = UDim2.new(0.65, 0, 0.55, 0), Text = S.t(kind .. "." .. item.key .. ".name"), TextXAlignment = Enum.TextXAlignment.Left, Parent = box })
 		Theme.label({
 			Size = UDim2.new(0.65, 0, 0.4, 0),
 			Position = UDim2.fromScale(0, 0.6),
-			Text = item.desc,
+			Text = S.t(kind .. "." .. item.key .. ".desc"),
 			TextColor3 = C.Muted,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = box,
 		})
 		local text, color
 		if owned then
-			text, color = "✅ Куплено", C.CardLocked
+			text, color = S.t("shop.owned"), C.CardLocked
 		elseif blocked then
-			text, color = "Недоступно в твоём регионе", C.CardLocked
+			text, color = S.t("shop.region"), C.CardLocked
 		elseif item.id == 0 then
-			text, color = "Скоро", C.CardLocked
+			text, color = S.t("shop.soon"), C.CardLocked
 		else
 			text, color = "R$ " .. item.price, C.Good
 		end
@@ -710,17 +710,17 @@ function Shop.build(content, state)
 	end
 
 	for _, pass in ipairs(Monetization.GamePasses) do
-		row(pass, state.passes[pass.key], function()
+		row("pass", pass, state.passes[pass.key], function()
 			MarketplaceService:PromptGamePassPurchase(player, pass.id)
 		end)
 	end
 
 	order += 1
-	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = "Бусты", TextColor3 = C.Gold, LayoutOrder = order, Parent = content })
+	Theme.label({ Size = UDim2.new(1, -10, 0, 30), Text = S.t("shop.boosts"), TextColor3 = C.Gold, LayoutOrder = order, Parent = content })
 	-- Там, где Roblox запрещает платные случайные награды, не продаём то, что к ним ведёт.
 	local randomRestricted = player:GetAttribute("PaidRandomItemsRestricted") ~= false
 	for _, product in ipairs(Monetization.Products) do
-		row(product, false, function()
+		row("product", product, false, function()
 			MarketplaceService:PromptProductPurchase(player, product.id)
 		end, product.leadsToRandom and randomRestricted)
 	end
@@ -729,7 +729,7 @@ end
 ---------------------------------------------------------------------------
 -- НАГРАДЫ: ежедневная серия и задания
 ---------------------------------------------------------------------------
-local Rewards = { title = "🎁 Награды и задания" }
+local Rewards = { title = S.t("panel.rewards") }
 local codeDraft = "" -- текст промокода не теряется, когда окно перерисовывается
 
 -- Сколько минут игрок уже в игре за этот заход.
@@ -753,7 +753,7 @@ function Rewards.signature(state)
 		tostring(r.canClaim),
 		r.nextDay,
 		r.streak,
-		r.rewards[1],
+		S.text(r.rewards[1]),
 		math.floor(playMinutes(state)),
 		tostring(state.wheel.freeAvailable),
 		state.wheel.extraSpins,
@@ -762,7 +762,7 @@ function Rewards.signature(state)
 		table.insert(parts, tostring(gift.claimed))
 	end
 	for _, quest in ipairs(r.quests) do
-		table.insert(parts, quest.text .. quest.progress .. tostring(quest.claimed))
+		table.insert(parts, quest.index .. ":" .. quest.progress .. tostring(quest.claimed))
 	end
 	return table.concat(parts, "|")
 end
@@ -772,7 +772,7 @@ function Rewards.build(content, state)
 	list(content, 10)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = "Заходи каждый день — на 7-й день мега-награда!",
+		Text = S.t("rewards.hint"),
 		TextColor3 = C.Coins,
 		LayoutOrder = 0,
 		Parent = content,
@@ -800,11 +800,11 @@ function Rewards.build(content, state)
 			BackgroundColor3 = done and C.CardLocked or C.Card,
 			Parent = row,
 		}, { Theme.stroke(current and C.Gold or (day == 7 and C.Accent or C.Card), current and 4 or 2), Theme.padding(4) })
-		Theme.label({ Size = UDim2.new(1, 0, 0, 22), Text = (done and "✅ " or "") .. "День " .. day, Parent = cell })
+		Theme.label({ Size = UDim2.new(1, 0, 0, 22), Text = (done and "✅ " or "") .. S.t("rewards.day", { day = day }), Parent = cell })
 		Theme.label({
 			Size = UDim2.new(1, 0, 1, -24),
 			Position = UDim2.fromOffset(0, 24),
-			Text = text,
+			Text = S.text(text),
 			TextColor3 = day == 7 and C.Gold or C.Muted,
 			Parent = cell,
 		})
@@ -823,7 +823,7 @@ function Rewards.build(content, state)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Text = "🎡 Шансы колеса: " .. table.concat(oddsParts, " • "),
+		Text = S.t("rewards.wheel_odds", { odds = table.concat(oddsParts, " • ") }),
 		TextScaled = false,
 		TextSize = 14,
 		TextWrapped = true,
@@ -841,8 +841,8 @@ function Rewards.build(content, state)
 	local canSpin = wheel.freeAvailable or wheel.extraSpins > 0
 	Theme.button({
 		Size = UDim2.new(0.6, -6, 1, 0),
-		Text = wheel.freeAvailable and "🎡 Крутить колесо (бесплатно!)"
-			or (wheel.extraSpins > 0 and ("🎡 Крутить колесо (" .. wheel.extraSpins .. ")") or "🎡 Бесплатное вращение завтра"),
+		Text = wheel.freeAvailable and S.t("rewards.spin_free")
+			or (wheel.extraSpins > 0 and S.t("rewards.spin", { count = wheel.extraSpins }) or S.t("rewards.spin_tomorrow")),
 		Color = canSpin and C.Gold or C.CardLocked,
 		Parent = wheelRow,
 	}, function()
@@ -855,8 +855,8 @@ function Rewards.build(content, state)
 	Theme.button({
 		Size = UDim2.new(0.4, 0, 1, 0),
 		Position = UDim2.new(0.6, 6, 0, 0),
-		Text = spinsBlocked and "Покупка недоступна"
-			or (spinsProduct.id ~= 0 and ("+3 вращения R$ " .. spinsProduct.price) or "+3 вращения (скоро)"),
+		Text = spinsBlocked and S.t("rewards.spins_blocked")
+			or (spinsProduct.id ~= 0 and S.t("rewards.spins_buy", { price = spinsProduct.price }) or S.t("rewards.spins_soon")),
 		Color = (spinsProduct.id ~= 0 and not spinsBlocked) and C.Purple or C.CardLocked,
 		Parent = wheelRow,
 	}, function()
@@ -869,7 +869,7 @@ function Rewards.build(content, state)
 	local minutes = playMinutes(state)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = "⏰ Подарки за игру (ты играешь " .. math.floor(minutes) .. " мин)",
+		Text = S.t("rewards.gifts", { minutes = math.floor(minutes) }),
 		TextColor3 = C.Coins,
 		LayoutOrder = 60,
 		Parent = content,
@@ -892,11 +892,11 @@ function Rewards.build(content, state)
 		local ready = minutes >= gift.minutes
 		local text, color
 		if gift.claimed then
-			text, color = "✅ " .. gift.minutes .. " мин", C.CardLocked
+			text, color = S.t("rewards.gift_done", { minutes = gift.minutes }), C.CardLocked
 		elseif ready then
-			text, color = "🎁 Забрать!\n" .. gift.reward, C.Good
+			text, color = S.t("rewards.gift_claim", { reward = gift.reward }), C.Good
 		else
-			text, color = "⏰ через " .. math.ceil(gift.minutes - minutes) .. " мин\n" .. gift.reward, C.Card
+			text, color = S.t("rewards.gift_wait", { minutes = math.ceil(gift.minutes - minutes), reward = gift.reward }), C.Card
 		end
 		Theme.button({ Text = text, Color = color, LayoutOrder = index, Parent = giftGrid }, function()
 			Remotes.ClaimGift:FireServer(index)
@@ -913,7 +913,7 @@ function Rewards.build(content, state)
 	local codeBox = create("TextBox", {
 		Size = UDim2.new(0.65, -8, 1, 0),
 		BackgroundColor3 = C.Card,
-		PlaceholderText = "🎟️ Промокод (например, SIXSEVEN)",
+		PlaceholderText = S.t("rewards.code_placeholder"),
 		PlaceholderColor3 = C.Muted,
 		Text = codeDraft,
 		Font = Theme.Font,
@@ -928,7 +928,7 @@ function Rewards.build(content, state)
 	Theme.button({
 		Size = UDim2.new(0.35, 0, 1, 0),
 		Position = UDim2.fromScale(0.65, 0),
-		Text = "Ввести код",
+		Text = S.t("rewards.code_enter"),
 		Color = C.Purple,
 		Parent = codeRow,
 	}, function()
@@ -939,7 +939,7 @@ function Rewards.build(content, state)
 
 	Theme.button({
 		Size = UDim2.new(0.5, 0, 0, 48),
-		Text = r.canClaim and ("🎁 Забрать день " .. r.nextDay) or "✅ Приходи завтра",
+		Text = r.canClaim and S.t("rewards.claim_day", { day = r.nextDay }) or S.t("rewards.come_back"),
 		Color = r.canClaim and C.Good or C.CardLocked,
 		LayoutOrder = 2,
 		Parent = content,
@@ -949,7 +949,7 @@ function Rewards.build(content, state)
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = "📋 Задания на сегодня (новые через " .. Format.time(r.secondsToReset) .. ")",
+		Text = S.t("rewards.quests", { time = Format.time(r.secondsToReset) }),
 		TextColor3 = C.Coins,
 		LayoutOrder = 3,
 		Parent = content,
@@ -959,7 +959,7 @@ function Rewards.build(content, state)
 		local box = card({ Size = UDim2.new(1, -10, 0, 70), LayoutOrder = 10 + order }, { Theme.padding(8) })
 		Theme.label({
 			Size = UDim2.new(0.65, 0, 0.5, 0),
-			Text = quest.text,
+			Text = S.text(quest.text),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = box,
 		})
@@ -978,7 +978,7 @@ function Rewards.build(content, state)
 
 		local text, color
 		if quest.claimed then
-			text, color = "✅ Получено", C.CardLocked
+			text, color = S.t("rewards.received"), C.CardLocked
 		elseif done then
 			text, color = "🎁 " .. quest.reward, C.Good
 		else
@@ -1000,23 +1000,23 @@ end
 ---------------------------------------------------------------------------
 -- КАК ИГРАТЬ
 ---------------------------------------------------------------------------
-local Help = { title = "❓ Как играть" }
+local Help = { title = S.t("hud.help") }
 
 local HELP_SECTIONS = {
-	{ "🏭 Фабрика", "Покупай мем-капсулы и создавай брейнротов. Чем популярнее тренд, тем реже он выпадает: Нормис → Лоу-ки → Ризз → Сигма → Аура → Скибиди → Брейнрот Бог → SIX SEVEN 🤌" },
-	{ "🧠 База", "Брейнроты стоят на твоей базе и приносят монеты каждую секунду. Когда места кончатся, продай слабых или скрести 3 одинаковой редкости в 1 редкий." },
-	{ "🏗 Этажи", "Сначала у тебя 5 мест прямо на земле. Построй 1 этаж за $100K (10 мест), потом 2 этаж за $100M (ещё 10 мест). Наверх встают самые сильные: там доход x2 и их труднее украсть. Строить — у жёлтой таблички на базе или в ⬆️ Улучшениях. Этажи остаются даже после перерождения." },
-	{ "✨ Мутации", "Иногда брейнрот выходит Золотым (x2), Алмазным (x3), Радужным (x5) или с Мутацией 67 (x6.7 дохода)!" },
-	{ "🦎 Дикие брейнроты", "По карте бегают дикие брейнроты. Подойди и зажми E — кто первый поймал, того и брейнрот! Иногда появляются редкие — об этом узнает весь сервер." },
-	{ "✏️ Имена", "В 🧠 Базе нажми на имя брейнрота и придумай ему своё — его увидят все над твоей базой." },
-	{ "🐾 Питомец", "В 🧠 Базе нажми 🐾 у любого брейнрота — он будет бегать за тобой по всей карте. Пусть все видят твою легендарку!" },
-	{ "🦹 Кража", "Подойди к чужому брейнроту и шлёпай его Шлёпалкой, пока не кончится ❤️ (на земле 5, на 1 этаже 10, на 2 этаже 20). Когда он оглушён 💫 — зажми F и беги на свою базу за 60 секунд! Если тебя шлёпнут, брейнрот вернётся хозяину." },
-	{ "🔒 Защита", "Встань на голубую кнопку замка на своей базе: она закроется на 60 секунд. Вора можно шлёпнуть Шлёпалкой (клавиша 1)." },
-	{ "⚔️ Аура-баттлы", "Вызови игрока или потренируйся с ботом: 3 твоих сильнейших брейнрота против 3 его. Сила зависит от дохода, но бывают апсеты! Ничего не теряешь, за победы — очки ауры, ранги и монеты." },
-	{ "👹 Босс", "Каждый час в :30 на площадь приходит огромный босс-брейнрот. Шлёпайте его всем сервером! Кто ударил больше всех, получит Ауру." },
-	{ "🎉 Ивенты", "Каждые 15 минут идёт ивент: удача, деньги, мутации или турбо. А каждый час в 6-7 минуту наступает МИНУТА 67: шанс SIX SEVEN x6.7!" },
-	{ "♻️ Перерождение", "Сбрасывает монеты и брейнротов, но навсегда даёт +50% дохода, +10% удачи и крутой титул." },
-	{ "🎁 Награды", "Заходи каждый день за наградой, на 7-й день мега-награда. Выполняй 3 задания в день." },
+	{ S.t("hud.factory"), S.t("help.1.body") },
+	{ S.t("hud.base"), S.t("help.2.body") },
+	{ S.t("help.3.title"), S.t("help.3.body") },
+	{ S.t("help.4.title"), S.t("help.4.body") },
+	{ S.t("help.5.title"), S.t("help.5.body") },
+	{ S.t("help.6.title"), S.t("help.6.body") },
+	{ S.t("help.7.title"), S.t("help.7.body") },
+	{ S.t("help.8.title"), S.t("help.8.body") },
+	{ S.t("help.9.title"), S.t("help.9.body") },
+	{ S.t("help.10.title"), S.t("help.10.body") },
+	{ S.t("help.11.title"), S.t("help.11.body") },
+	{ S.t("help.12.title"), S.t("help.12.body") },
+	{ S.t("hud.rebirth"), S.t("help.13.body") },
+	{ S.t("hud.rewards"), S.t("help.14.body") },
 }
 
 function Help.signature()
@@ -1052,7 +1052,7 @@ end
 ---------------------------------------------------------------------------
 -- ОБМЕН
 ---------------------------------------------------------------------------
-local Trade = { title = "🤝 Обмен брейнротами" }
+local Trade = { title = S.t("panel.trade") }
 Panels.trade = nil -- состояние обмена с сервера (nil — обмена нет)
 
 function Trade.signature(state)
@@ -1117,7 +1117,7 @@ function Trade.build(content, state)
 		list(content, 8)
 		Theme.label({
 			Size = UDim2.new(1, -10, 0, 50),
-			Text = "Выбери игрока и предложи обмен. Каждый кладёт до 6 брейнротов, потом оба жмут «Готов».",
+			Text = S.t("trade.hint"),
 			TextColor3 = C.Muted,
 			LayoutOrder = 0,
 			Parent = content,
@@ -1136,7 +1136,7 @@ function Trade.build(content, state)
 				Theme.button({
 					Size = UDim2.new(0.4, -6, 1, 0),
 					Position = UDim2.new(0.6, 6, 0, 0),
-					Text = "🤝 Предложить",
+					Text = S.t("trade.offer"),
 					Color = C.Good,
 					Parent = row,
 				}, function()
@@ -1148,7 +1148,7 @@ function Trade.build(content, state)
 		if others == 0 then
 			Theme.label({
 				Size = UDim2.new(1, -10, 0, 40),
-				Text = "На сервере больше никого нет 😢",
+				Text = S.t("trade.nobody"),
 				LayoutOrder = 1,
 				Parent = content,
 			})
@@ -1161,7 +1161,7 @@ function Trade.build(content, state)
 	for _, uid in ipairs(trade.myOffer) do
 		selected[uid] = true
 	end
-	local mine = column(content, 0, "Ты отдаёшь (" .. #trade.myOffer .. "/6)")
+	local mine = column(content, 0, S.t("trade.you_give", { count = #trade.myOffer }))
 	local sorted = table.clone(state.creatures)
 	table.sort(sorted, function(a, b)
 		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
@@ -1179,18 +1179,18 @@ function Trade.build(content, state)
 		end)
 	end
 
-	local theirs = column(content, 0.5, trade.partnerName .. " отдаёт")
+	local theirs = column(content, 0.5, S.t("trade.they_give", { name = trade.partnerName }))
 	for order, entry in ipairs(trade.theirOffer) do
 		offerRow(theirs, order, entry, false, nil)
 	end
 
 	local status
 	if trade.confirmAt then
-		status = "⏳ Обмен через " .. math.max(0, math.ceil(trade.confirmAt - workspace:GetServerTimeNow())) .. " с..."
+		status = S.t("trade.countdown", { seconds = math.max(0, math.ceil(trade.confirmAt - workspace:GetServerTimeNow())) })
 	else
-		status = (trade.myReady and "✅ Ты готов" or "Ты не готов")
+		status = (trade.myReady and S.t("trade.you_ready") or S.t("trade.you_not_ready"))
 			.. "  •  "
-			.. (trade.theirReady and ("✅ " .. trade.partnerName .. " готов") or (trade.partnerName .. " не готов"))
+			.. S.t(if trade.theirReady then "trade.they_ready" else "trade.they_not_ready", { name = trade.partnerName })
 	end
 	Theme.label({
 		Size = UDim2.new(1, 0, 0, 26),
@@ -1202,7 +1202,7 @@ function Trade.build(content, state)
 	Theme.button({
 		Size = UDim2.new(0.5, -6, 0, 44),
 		Position = UDim2.fromOffset(0, 340),
-		Text = trade.myReady and "❌ Не готов" or "✅ Готов",
+		Text = trade.myReady and S.t("trade.unready") or S.t("trade.ready"),
 		Color = trade.myReady and C.Gold or C.Good,
 		Parent = content,
 	}, function()
@@ -1211,7 +1211,7 @@ function Trade.build(content, state)
 	Theme.button({
 		Size = UDim2.new(0.5, -6, 0, 44),
 		Position = UDim2.new(0.5, 6, 0, 340),
-		Text = "🚪 Выйти из обмена",
+		Text = S.t("trade.leave"),
 		Color = C.Bad,
 		Parent = content,
 	}, function()
@@ -1222,12 +1222,12 @@ end
 ---------------------------------------------------------------------------
 -- НАСТРОЙКИ
 ---------------------------------------------------------------------------
-local SettingsPanel = { title = "⚙️ Настройки" }
+local SettingsPanel = { title = S.t("panel.settings") }
 
 local SETTINGS = {
-	{ key = "music", name = "🎵 Музыка" },
-	{ key = "sfx", name = "🔊 Звуки" },
-	{ key = "announcements", name = "📢 Объявления сервера (кто что выбил/украл)" },
+	{ key = "music", name = S.t("settings.music") },
+	{ key = "sfx", name = S.t("settings.sfx") },
+	{ key = "announcements", name = S.t("settings.announcements") },
 }
 
 function SettingsPanel.signature(state)
@@ -1252,7 +1252,7 @@ function SettingsPanel.build(content, state)
 		Theme.button({
 			Size = UDim2.new(0.3, -8, 1, 0),
 			Position = UDim2.new(0.7, 8, 0, 0),
-			Text = on and "ВКЛ" or "ВЫКЛ",
+			Text = on and S.t("settings.on") or S.t("settings.off"),
 			Color = on and C.Good or C.Bad,
 			Parent = row,
 		}, function()
@@ -1265,7 +1265,7 @@ end
 ---------------------------------------------------------------------------
 -- СКИНЫ
 ---------------------------------------------------------------------------
-local SkinsPanel = { title = "🎨 Скины брейнротов" }
+local SkinsPanel = { title = S.t("panel.skins") }
 local selectedSkin = nil -- выбранный скин; nil = «снять скин»
 
 function SkinsPanel.signature(state)
@@ -1283,7 +1283,7 @@ function SkinsPanel.build(content, state, panels)
 	list(content, 8)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 24),
-		Text = "Скины только для красоты. Выбери скин, потом нажми «Надеть» у брейнрота.",
+		Text = S.t("skins.hint"),
 		TextColor3 = C.Muted,
 		LayoutOrder = 0,
 		Parent = content,
@@ -1317,11 +1317,11 @@ function SkinsPanel.build(content, state, panels)
 		Theme.label({ Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 64), Text = skin.name, Parent = box })
 		local text, color
 		if owned then
-			text, color = isSelected and "✅ Выбран" or "Выбрать", isSelected and C.Gold or C.Good
+			text, color = isSelected and S.t("skins.selected") or S.t("skins.select"), isSelected and C.Gold or C.Good
 		elseif skin.price then
 			text, color = Format.coins(skin.price), state.coins >= skin.price and C.Good or C.Bad
 		else
-			text, color = "🔒 Секрет", C.CardLocked
+			text, color = S.t("skins.secret"), C.CardLocked
 		end
 		Theme.button({
 			Size = UDim2.new(1, 0, 0, 36),
@@ -1341,7 +1341,7 @@ function SkinsPanel.build(content, state, panels)
 
 	Theme.button({
 		Size = UDim2.new(0.5, 0, 0, 36),
-		Text = selectedSkin == nil and "✅ Режим «снять скин»" or "Снять скины (выбрать)",
+		Text = selectedSkin == nil and S.t("skins.remove_mode") or S.t("skins.remove_select"),
 		Color = selectedSkin == nil and C.Gold or C.Card,
 		LayoutOrder = 2,
 		Parent = content,
@@ -1366,7 +1366,7 @@ function SkinsPanel.build(content, state, panels)
 		Theme.button({
 			Size = UDim2.new(0.35, -6, 1, 0),
 			Position = UDim2.new(0.65, 6, 0, 0),
-			Text = selectedSkin and "🎨 Надеть" or "Снять",
+			Text = selectedSkin and S.t("skins.put_on") or S.t("skins.remove"),
 			Color = selectedSkin and C.Purple or C.Bad,
 			Parent = row,
 		}, function()
@@ -1379,7 +1379,7 @@ end
 ---------------------------------------------------------------------------
 -- АУРА-БАТТЛЫ
 ---------------------------------------------------------------------------
-local BattlesPanel = { title = "⚔️ Аура-баттлы" }
+local BattlesPanel = { title = S.t("help.10.title") }
 
 function BattlesPanel.signature(state)
 	local b = state.battles
@@ -1395,14 +1395,14 @@ function BattlesPanel.build(content, state)
 	list(content, 8)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 30),
-		Text = "✨ " .. b.rank .. " • очки ауры: " .. b.points .. " • побед " .. b.wins .. " / поражений " .. b.losses,
+		Text = S.t("battles.stats", { rank = b.rank, points = b.points, wins = b.wins, losses = b.losses }),
 		TextColor3 = C.Gold,
 		LayoutOrder = 0,
 		Parent = content,
 	})
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 22),
-		Text = "Сражаются 3 твоих сильнейших брейнрота. Ничего не теряешь! Наград за победы сегодня: " .. b.rewardsLeft,
+		Text = S.t("battles.hint", { left = b.rewardsLeft }),
 		TextColor3 = C.Muted,
 		LayoutOrder = 1,
 		Parent = content,
@@ -1421,7 +1421,7 @@ function BattlesPanel.build(content, state)
 		}),
 	})
 	if #b.team == 0 then
-		Theme.label({ Size = UDim2.new(1, 0, 1, 0), Text = "Сначала создай брейнротов на 🏭 Фабрике", TextColor3 = C.Muted, Parent = teamRow })
+		Theme.label({ Size = UDim2.new(1, 0, 1, 0), Text = S.t("battles.no_team"), TextColor3 = C.Muted, Parent = teamRow })
 	end
 	for _, member in ipairs(b.team) do
 		local creature = Creatures.get(member.id)
@@ -1438,7 +1438,7 @@ function BattlesPanel.build(content, state)
 
 	Theme.button({
 		Size = UDim2.new(0.6, 0, 0, 46),
-		Text = "🤖 Тренировка с ботом",
+		Text = S.t("battles.train"),
 		Color = C.Blue,
 		LayoutOrder = 3,
 		Parent = content,
@@ -1453,7 +1453,7 @@ function BattlesPanel.build(content, state)
 			Theme.button({
 				Size = UDim2.new(0.4, -6, 1, 0),
 				Position = UDim2.new(0.6, 6, 0, 0),
-				Text = "⚔️ Вызвать",
+				Text = S.t("battles.challenge"),
 				Color = C.Accent,
 				Parent = row,
 			}, function()
@@ -1467,7 +1467,7 @@ end
 ---------------------------------------------------------------------------
 -- ДОСТИЖЕНИЯ
 ---------------------------------------------------------------------------
-local AchievementsPanel = { title = "🏆 Достижения" }
+local AchievementsPanel = { title = S.t("hud.achievements") }
 
 function AchievementsPanel.signature(state)
 	return tostring(state.achievements.count)
@@ -1477,7 +1477,7 @@ function AchievementsPanel.build(content, state)
 	list(content, 6)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
-		Text = "Получено: " .. state.achievements.count .. " / " .. state.achievements.total,
+		Text = S.t("achievements.count", { count = state.achievements.count, total = state.achievements.total }),
 		TextColor3 = C.Coins,
 		LayoutOrder = 0,
 		Parent = content,
@@ -1512,36 +1512,36 @@ end
 ---------------------------------------------------------------------------
 -- ТЕСТ (только админы / Studio)
 ---------------------------------------------------------------------------
-local Admin = { title = "🛠 Тест-команды" }
+local Admin = { title = S.t("panel.admin") }
 
 local ADMIN_BUTTONS = {
 	{ "💰 +1K", "coins", 1000 },
 	{ "💰 +1M", "coins", 1000000 },
 	{ "💰 +1B", "coins", 1000000000 },
-	{ "⭐ +1 уровень", "levels", 1 },
-	{ "⭐ +10 уровней", "levels", 10 },
-	{ "Сигма", "creature", "sigma" },
-	{ "Аура", "creature", "aura" },
-	{ "Скибиди", "creature", "skibidi" },
-	{ "Брейнрот Бог", "creature", "god" },
+	{ S.t("admin.level1"), "levels", 1 },
+	{ S.t("admin.level10"), "levels", 10 },
+	{ S.t("rarity.sigma.name"), "creature", "sigma" },
+	{ S.t("rarity.aura.name"), "creature", "aura" },
+	{ S.t("rarity.skibidi.name"), "creature", "skibidi" },
+	{ S.t("rarity.god.name"), "creature", "god" },
 	{ "SIX SEVEN", "creature", "sixseven" },
-	{ "Мутант 67", "mutant" },
-	{ "🍀 Шторм удачи", "event", "luck_storm" },
-	{ "💰 Денежный дождь", "event", "money_rain" },
-	{ "🧬 Мутаген", "event", "mutant_fog" },
-	{ "⚡ Турбо", "event", "turbo" },
-	{ "🤌 Минута 67", "event", "minute67" },
-	{ "👹 Босс", "event", "boss" },
-	{ "🦎 Дикий брейнрот", "wild" },
-	{ "🎃 Сезон Хэллоуин", "season", "halloween" },
-	{ "🎄 Сезон Новый год", "season", "newyear" },
-	{ "💘 Сезон Валентин", "season", "valentine" },
-	{ "☀️ Сезон Лето", "season", "summer" },
-	{ "Выключить сезон", "season", "" },
-	{ "📚 Пропустить обучение", "skipTutorial" },
-	{ "🎁 Сбросить награды дня", "resetDaily" },
-	{ "🏗 Снести этажи", "removeFloors" },
-	{ "⚠️ СБРОС ПРОГРЕССА", "reset" },
+	{ S.t("admin.mutant"), "mutant" },
+	{ S.t("event.luck_storm.name"), "event", "luck_storm" },
+	{ S.t("event.money_rain.name"), "event", "money_rain" },
+	{ S.t("admin.mutagen"), "event", "mutant_fog" },
+	{ S.t("admin.turbo"), "event", "turbo" },
+	{ S.t("admin.minute67"), "event", "minute67" },
+	{ S.t("help.11.title"), "event", "boss" },
+	{ S.t("admin.wild_button"), "wild" },
+	{ S.t("admin.season_halloween"), "season", "halloween" },
+	{ S.t("admin.season_newyear"), "season", "newyear" },
+	{ S.t("admin.season_valentine"), "season", "valentine" },
+	{ S.t("admin.season_summer"), "season", "summer" },
+	{ S.t("admin.season_off_button"), "season", "" },
+	{ S.t("admin.skip_tutorial"), "skipTutorial" },
+	{ S.t("admin.reset_daily"), "resetDaily" },
+	{ S.t("admin.remove_floors"), "removeFloors" },
+	{ S.t("admin.reset"), "reset" },
 }
 
 function Admin.signature()
@@ -1552,7 +1552,7 @@ function Admin.build(content)
 	list(content, 8)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 24),
-		Text = "Только для проверки игры. Видно в Studio и админам из Config/Admins.",
+		Text = S.t("admin.hint"),
 		TextColor3 = C.Muted,
 		LayoutOrder = 0,
 		Parent = content,

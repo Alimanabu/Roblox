@@ -1,6 +1,7 @@
 -- Плашка справа: какой ивент идёт сейчас или какой будет следующим.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Events = require(Shared.Config.Events)
 local Format = require(Shared.Util.Format)
 
@@ -49,9 +50,9 @@ function EventBanner:update()
 		self.info.TextColor3 = C.Text
 	else
 		local nextEvent, startsAt = Events.nextEvent(now)
-		self.title.Text = "Следующий ивент"
+		self.title.Text = S.t("event.next")
 		self.title.TextColor3 = C.Muted
-		self.info.Text = nextEvent.name .. " через " .. Format.time(startsAt - now)
+		self.info.Text = S.t("event.next_in", { name = nextEvent.name, time = Format.time(startsAt - now) })
 		self.info.TextColor3 = nextEvent.color
 		self.stroke.Color = C.Muted
 	end

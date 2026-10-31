@@ -14,6 +14,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local StarterPack = game:GetService("StarterPack")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
@@ -77,9 +78,9 @@ local function displayName(entry)
 	local creature = Creatures.get(entry.id)
 	local mutation = Mutations.get(entry.mut)
 	if mutation.id == "normal" then
-		return creature.name
+		return S.m(creature.nameKey)
 	end
-	return mutation.name .. " " .. creature.name
+	return S.m("creature.mutated", { mutation = S.m(mutation.nameKey), name = S.m(creature.nameKey) })
 end
 
 function StealService.isLocked(owner)
@@ -159,7 +160,7 @@ local function makeCarryVisual(thief, entry)
 	label.TextScaled = true
 	label.TextColor3 = rarity.color
 	label.TextStrokeTransparency = 0.2
-	label.Text = "🦹 " .. displayName(entry)
+	S.apply(label, "Text", S.m("steal.carry_label", { name = displayName(entry) }))
 	label.Parent = gui
 
 	model.Parent = character
@@ -205,11 +206,11 @@ local function endCarry(thief, success, reason)
 	-- Перед зачислением ещё раз проверяем место: вор мог забить базу, пока бежал.
 	local thiefData = success and DataService.get(thief)
 	if success and not thiefData then
-		success, reason = false, "вор вышел"
+		success, reason = false, S.m("steal.reason_thief_left")
 	elseif success and Formulas.isFromPastLife(entry, thief.UserId, thiefData.rebirths) then
-		success, reason = false, "своего брейнрота из прошлой жизни вернуть нельзя"
+		success, reason = false, S.m("steal.reason_past_life")
 	elseif success and #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
-		success, reason = false, "на твоей базе нет места"
+		success, reason = false, S.m("steal.reason_no_space")
 	end
 
 	if success then
@@ -227,12 +228,12 @@ local function endCarry(thief, success, reason)
 			ProgressionService.addXp(thief, thiefData, rarity.xp)
 			DataService.markDirty(thief)
 			PlotService.render(thief)
-			Remotes.Notify:FireClient(thief, "🦹 Украдено: " .. name .. "!", GOOD)
+			Remotes.Notify:FireClient(thief, S.m("steal.stolen", { name = name }), GOOD)
 			Remotes.Sfx:FireClient(thief, "success")
 
 			if rarity.rank >= 5 then
 				Remotes.Notify:FireAllClients(
-					"🚨 " .. thief.DisplayName .. " украл " .. name .. " у " .. owner.DisplayName .. "!",
+					S.m("steal.announce", { thief = thief.DisplayName, name = name, owner = owner.DisplayName }),
 					rarity.color,
 					true
 				)
@@ -242,7 +243,7 @@ local function endCarry(thief, success, reason)
 		if ownerData then
 			ownerData.stats.lostToThieves = (ownerData.stats.lostToThieves or 0) + 1
 			DataService.markDirty(owner)
-			Remotes.Notify:FireClient(owner, "😭 " .. thief.DisplayName .. " украл твоего " .. name .. "!", BAD)
+			Remotes.Notify:FireClient(owner, S.m("steal.lost", { thief = thief.DisplayName, name = name }), BAD)
 			Remotes.Sfx:FireClient(owner, "lose")
 			-- Сразу сохраняем хозяина: в его прошлых сохранениях брейнрот ещё числился,
 			-- и если сервер упадёт, он оказался бы у двоих.
@@ -258,11 +259,11 @@ local function endCarry(thief, success, reason)
 		DataService.markDirty(owner)
 		PlotService.render(owner)
 		if owner.Parent then
-			Remotes.Notify:FireClient(owner, "✅ " .. name .. " вернулся домой!", GOOD)
+			Remotes.Notify:FireClient(owner, S.m("steal.returned", { name = name }), GOOD)
 		end
 	end
 	if thief.Parent then
-		Remotes.Notify:FireClient(thief, "❌ Кража не удалась: " .. reason, BAD)
+		Remotes.Notify:FireClient(thief, S.m("steal.failed", { reason = reason }), BAD)
 	end
 end
 
@@ -282,7 +283,7 @@ local function startSteal(thief, prompt)
 		holdStart[thief] = nil
 		if not hintAt[thief] or os.clock() - hintAt[thief] > 2 then
 			hintAt[thief] = os.clock()
-			Remotes.Notify:FireClient(thief, "👋 Сначала выбей ❤️: шлёпай его Шлёпалкой!", WARN)
+			Remotes.Notify:FireClient(thief, S.m("steal.hit_first"), WARN)
 		end
 		return
 	end
@@ -300,11 +301,11 @@ local function startSteal(thief, prompt)
 	end
 
 	if StealService.isLocked(owner) then
-		Remotes.Notify:FireClient(thief, "🔒 База закрыта!", BAD)
+		Remotes.Notify:FireClient(thief, S.m("steal.base_locked"), BAD)
 		return
 	end
 	if carries[thief] then
-		Remotes.Notify:FireClient(thief, "Ты уже несёшь брейнрота!", BAD)
+		Remotes.Notify:FireClient(thief, S.m("steal.already_carrying"), BAD)
 		return
 	end
 	local thiefData = DataService.get(thief)
@@ -313,7 +314,7 @@ local function startSteal(thief, prompt)
 		return
 	end
 	if #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
-		Remotes.Notify:FireClient(thief, "У тебя на базе нет места!", BAD)
+		Remotes.Notify:FireClient(thief, S.m("steal.no_space"), BAD)
 		return
 	end
 	local humanoid = humanoidOf(thief)
@@ -341,7 +342,7 @@ local function startSteal(thief, prompt)
 		visual = visual,
 		highlight = highlight,
 		diedConn = humanoid.Died:Connect(function()
-			endCarry(thief, false, "тебя победили")
+			endCarry(thief, false, S.m("steal.reason_defeated"))
 		end),
 	}
 	humanoid.WalkSpeed = StealService.CARRY_SPEED
@@ -361,8 +362,8 @@ local function startSteal(thief, prompt)
 		if carry.highlight then
 			carry.highlight.FillColor = Color3.fromRGB(255, 240, 60)
 		end
-		Remotes.Notify:FireClient(thief, "⚡ Ловушка! Ты оглушён на " .. stun .. " с", BAD)
-		Remotes.Notify:FireClient(owner, "⚡ Ловушка сработала! Беги шлёпать вора!", GOOD)
+		Remotes.Notify:FireClient(thief, S.m("steal.trap_thief", { seconds = stun }), BAD)
+		Remotes.Notify:FireClient(owner, S.m("steal.trap_owner"), GOOD)
 		task.delay(stun, function()
 			if carries[thief] == carry and humanoid.Parent then
 				humanoid.WalkSpeed = StealService.CARRY_SPEED
@@ -379,8 +380,8 @@ local function startSteal(thief, prompt)
 	PlotService.render(owner)
 
 	local name = displayName(entry)
-	Remotes.Notify:FireClient(thief, "🏃 Неси " .. name .. " на свою базу!", WARN)
-	Remotes.Notify:FireClient(owner, "⚠️ " .. thief.DisplayName .. " крадёт " .. name .. "! Догони и шлёпни!", BAD)
+	Remotes.Notify:FireClient(thief, S.m("steal.carry", { name = name }), WARN)
+	Remotes.Notify:FireClient(owner, S.m("steal.alarm", { thief = thief.DisplayName, name = name }), BAD)
 	Remotes.Sfx:FireClient(owner, "alarm")
 end
 
@@ -392,17 +393,17 @@ local function onLockPrompt(player, prompt)
 	end
 	-- Защиту при входе можно «продлить» замком (это шаг обучения), обычный замок — нет.
 	if StealService.isLocked(player) and lockKind[player] == "lock" then
-		Remotes.Notify:FireClient(player, "База уже закрыта", WARN)
+		Remotes.Notify:FireClient(player, S.m("steal.already_locked"), WARN)
 		return
 	end
 	local wait = (lockReadyAt[player] or 0) - now()
 	if wait > 0 then
-		Remotes.Notify:FireClient(player, "⏳ Замок перезаряжается: ещё " .. math.ceil(wait) .. " с", WARN)
+		Remotes.Notify:FireClient(player, S.m("steal.lock_cooldown", { seconds = math.ceil(wait) }), WARN)
 		return
 	end
 	setLock(player, StealService.LOCK_TIME, "lock")
 	Actions.fire(player, "lock", 1)
-	Remotes.Notify:FireClient(player, "🔒 База закрыта на " .. StealService.LOCK_TIME .. " секунд", GOOD)
+	Remotes.Notify:FireClient(player, S.m("steal.locked", { seconds = StealService.LOCK_TIME }), GOOD)
 	Remotes.Sfx:FireClient(player, "lock")
 end
 
@@ -451,15 +452,16 @@ local function hitBrainrot(player, root)
 	Remotes.Sfx:FireClient(player, "slap")
 
 	local prompt = target.PrimaryPart and target.PrimaryPart:FindFirstChild("StealPrompt")
-	local name = prompt and prompt.ObjectText or "брейнрота"
+	local creatureId = prompt and prompt:GetAttribute("CreatureId")
+	local name = if creatureId then S.m(Creatures.get(creatureId).nameKey) else S.m("steal.brainrot")
 	if hp == 0 then
 		target:SetAttribute("StunnedUntil", now() + StealService.STUN_TIME)
-		Remotes.Notify:FireClient(player, "💫 " .. name .. " оглушён! Зажми F и хватай!", GOOD)
-		Remotes.Notify:FireClient(targetOwner, "💫 " .. name .. " оглушён, его сейчас украдут! Беги шлёпни вора!", BAD)
+		Remotes.Notify:FireClient(player, S.m("steal.stunned_thief", { name = name }), GOOD)
+		Remotes.Notify:FireClient(targetOwner, S.m("steal.stunned_owner", { name = name }), BAD)
 		Remotes.Sfx:FireClient(targetOwner, "alarm")
 	elseif not hitAlertAt[targetOwner] or os.clock() - hitAlertAt[targetOwner] > 8 then
 		hitAlertAt[targetOwner] = os.clock()
-		Remotes.Notify:FireClient(targetOwner, "⚠️ " .. player.DisplayName .. " бьёт твоего " .. name .. "! ❤️ " .. hp, WARN)
+		Remotes.Notify:FireClient(targetOwner, S.m("steal.being_hit", { player = player.DisplayName, name = name, hp = hp }), WARN)
 		Remotes.Sfx:FireClient(targetOwner, "alarm")
 	end
 	PlotService.refreshHp(target)
@@ -524,8 +526,8 @@ local function slap(player)
 						Actions.fire(player, "slap", 1)
 						if carries[other] then
 							Actions.fire(player, "slapThief", 1)
-							endCarry(other, false, player.DisplayName .. " тебя шлёпнул!")
-							Remotes.Notify:FireClient(player, "👋 Шлёп! Вор уронил брейнрота!", GOOD)
+							endCarry(other, false, S.m("steal.reason_slapped", { name = player.DisplayName }))
+							Remotes.Notify:FireClient(player, S.m("steal.slap_thief"), GOOD)
 							Remotes.Sfx:FireClient(player, "success")
 						end
 					end
@@ -538,8 +540,8 @@ end
 
 local function createSlapper()
 	local tool = Instance.new("Tool")
-	tool.Name = "Шлёпалка"
-	tool.ToolTip = "Шлёпни вора — он уронит брейнрота! Шлёпай чужих брейнротов, чтобы украсть."
+	S.apply(tool, "Name", S.m("steal.slapper"))
+	S.apply(tool, "ToolTip", S.m("steal.slapper_tip"))
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
 
@@ -586,7 +588,7 @@ end
 function StealService.init()
 	DataService.onClose(function()
 		closing = true
-		StealService.cancelAll("сервер выключается")
+		StealService.cancelAll(S.m("steal.reason_shutdown"))
 	end)
 
 	-- Пока вор несёт брейнрота, он должен попадать в сохранение хозяина.
@@ -644,18 +646,18 @@ function StealService.init()
 		setLock(player, StealService.JOIN_SHIELD, "shield")
 		task.delay(3, function()
 			if player.Parent then
-				Remotes.Notify:FireClient(player, "🛡️ Твоя база защищена " .. StealService.JOIN_SHIELD .. " секунд", GOOD)
+				Remotes.Notify:FireClient(player, S.m("steal.shield", { seconds = StealService.JOIN_SHIELD }), GOOD)
 			end
 		end)
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
 		-- Вор вышел — брейнрот возвращается.
-		endCarry(player, false, "вор вышел")
+		endCarry(player, false, S.m("steal.reason_thief_left"))
 		-- Хозяин вышел — все кражи его брейнротов отменяются.
 		for thief, carry in pairs(carries) do
 			if carry.owner == player then
-				endCarry(thief, false, "хозяин ушёл из игры")
+				endCarry(thief, false, S.m("steal.reason_owner_left"))
 			end
 		end
 		lockedUntil[player] = nil
@@ -702,7 +704,7 @@ function StealService.init()
 				if plot and root and PlotService.isInside(plot, root.Position) then
 					endCarry(thief, true)
 				elseif t > carry.deadline then
-					endCarry(thief, false, "время вышло")
+					endCarry(thief, false, S.m("steal.reason_timeout"))
 				end
 			end
 		end

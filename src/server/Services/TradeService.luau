@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Formulas = require(Shared.Util.Formulas)
 local Remotes = require(Shared.Remotes)
 
@@ -104,27 +105,27 @@ local function request(player, targetUserId)
 	end
 	-- В некоторых странах обмен платными предметами запрещён (правила Roblox).
 	if not PolicyService.tradingAllowed(player) then
-		Remotes.Notify:FireClient(player, "Обмен недоступен в твоём регионе", BAD)
+		Remotes.Notify:FireClient(player, S.m("trade.region_you"), BAD)
 		return
 	end
 	if not PolicyService.tradingAllowed(target) then
-		Remotes.Notify:FireClient(player, "У этого игрока обмен недоступен", BAD)
+		Remotes.Notify:FireClient(player, S.m("trade.region_them"), BAD)
 		return
 	end
 	local now = os.clock()
 	if lastRequest[player] and now - lastRequest[player] < TradeService.REQUEST_COOLDOWN then
-		Remotes.Notify:FireClient(player, "Подожди немного перед новым приглашением", BAD)
+		Remotes.Notify:FireClient(player, S.m("trade.invite_cooldown"), BAD)
 		return
 	end
 	if trades[player] or trades[target] then
-		Remotes.Notify:FireClient(player, "Кто-то из вас уже в обмене", BAD)
+		Remotes.Notify:FireClient(player, S.m("trade.busy"), BAD)
 		return
 	end
 	lastRequest[player] = now
 	invites[target] = invites[target] or {}
 	invites[target][player.UserId] = now
 	Remotes.TradeInvite:FireClient(target, player.UserId, player.DisplayName)
-	Remotes.Notify:FireClient(player, "📨 Приглашение отправлено: " .. target.DisplayName, INFO)
+	Remotes.Notify:FireClient(player, S.m("trade.invite_sent", { name = target.DisplayName }), INFO)
 end
 
 local function respond(player, fromUserId, accept)
@@ -137,14 +138,14 @@ local function respond(player, fromUserId, accept)
 		return
 	end
 	if accept ~= true then
-		Remotes.Notify:FireClient(from, player.DisplayName .. " отклонил обмен", BAD)
+		Remotes.Notify:FireClient(from, S.m("trade.declined", { name = player.DisplayName }), BAD)
 		return
 	end
 	if not PolicyService.tradingAllowed(player) or not PolicyService.tradingAllowed(from) then
 		return
 	end
 	if trades[player] or trades[from] then
-		Remotes.Notify:FireClient(player, "Кто-то из вас уже в обмене", BAD)
+		Remotes.Notify:FireClient(player, S.m("trade.busy"), BAD)
 		return
 	end
 	if not DataService.get(player) or not DataService.get(from) then
@@ -187,7 +188,7 @@ local function execute(trade)
 	local a, b = trade.a, trade.b
 	local dataA, dataB = DataService.get(a), DataService.get(b)
 	if not dataA or not dataB then
-		return "игрок вышел"
+		return S.m("trade.err_left")
 	end
 	local function collect(data, uids)
 		local entries = {}
@@ -203,10 +204,10 @@ local function execute(trade)
 	local giveA = collect(dataA, trade.offers[a])
 	local giveB = collect(dataB, trade.offers[b])
 	if not giveA or not giveB then
-		return "брейнрота из предложения больше нет"
+		return S.m("trade.err_missing")
 	end
 	if #giveA == 0 and #giveB == 0 then
-		return "обмен пустой"
+		return S.m("trade.err_empty")
 	end
 	-- Нельзя «спрятать» брейнротов у друга на время перерождения и забрать обратно.
 	local function returnsAfterRebirth(entries, receiver, receiverData)
@@ -218,17 +219,17 @@ local function execute(trade)
 		return false
 	end
 	if returnsAfterRebirth(giveA, b, dataB) or returnsAfterRebirth(giveB, a, dataA) then
-		return "своего брейнрота из прошлой жизни (до перерождения) вернуть нельзя"
+		return S.m("trade.err_past_life")
 	end
 	local function fits(player, data, giving, getting)
 		local after = #data.creatures - #giving + #getting
 		return after <= Formulas.slots(data, MonetizationService.passes(player)) or after <= #data.creatures
 	end
 	if not fits(a, dataA, giveA, giveB) then
-		return "у " .. a.DisplayName .. " не хватает мест на базе"
+		return S.m("trade.err_no_space", { name = a.DisplayName })
 	end
 	if not fits(b, dataB, giveB, giveA) then
-		return "у " .. b.DisplayName .. " не хватает мест на базе"
+		return S.m("trade.err_no_space", { name = b.DisplayName })
 	end
 
 	-- Всё проверено — меняем за один шаг (без yield'ов).
@@ -281,11 +282,11 @@ local function setReady(player, ready)
 		end
 		local err = execute(trade)
 		if err then
-			endTrade(trade, "❌ Обмен отменён: " .. err, BAD)
+			endTrade(trade, S.m("trade.cancelled", { reason = err }), BAD)
 			return
 		end
 		local a, b = trade.a, trade.b
-		endTrade(trade, "🤝 Обмен завершён!", GOOD)
+		endTrade(trade, S.m("trade.done"), GOOD)
 		for _, participant in ipairs({ a, b }) do
 			DataService.markDirty(participant)
 			PlotService.render(participant)
@@ -299,7 +300,7 @@ end
 local function cancel(player)
 	local trade = trades[player]
 	if trade then
-		endTrade(trade, "Обмен отменён: " .. player.DisplayName .. " вышел из обмена", BAD)
+		endTrade(trade, S.m("trade.partner_left", { name = player.DisplayName }), BAD)
 	end
 end
 
@@ -312,7 +313,7 @@ function TradeService.init()
 	DataService.onClose(function()
 		for _, trade in pairs(trades) do
 			if not trade.closed then
-				endTrade(trade, "Обмен отменён: сервер перезапускается", BAD)
+				endTrade(trade, S.m("trade.server_restart"), BAD)
 			end
 		end
 	end)

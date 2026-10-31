@@ -1,5 +1,7 @@
 -- Красивые числа: 1500 -> 1.5K, 2300000 -> 2.3M.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Format = {}
 
 local SUFFIXES = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc" }
@@ -43,7 +45,7 @@ function Format.percent(fraction)
 	elseif percent >= 0.01 then
 		return string.format("%.2f%%", percent)
 	end
-	return string.format("1 к %s", Format.number(math.floor(1 / fraction + 0.5)))
+	return S.t("format.one_in", { n = Format.number(math.floor(1 / fraction + 0.5)) })
 end
 
 function Format.time(seconds)
@@ -51,7 +53,7 @@ function Format.time(seconds)
 	local minutes = math.floor(seconds / 60)
 	local hours = math.floor(minutes / 60)
 	if hours > 0 then
-		return string.format("%d ч %02d мин", hours, minutes % 60)
+		return S.t("format.hours", { hours = hours, minutes = string.format("%02d", minutes % 60) })
 	end
 	return string.format("%d:%02d", minutes, seconds % 60)
 end

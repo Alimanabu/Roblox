@@ -1,6 +1,7 @@
 -- Колесо удачи: 1 бесплатное вращение в день + купленные за Robux.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
 local Remotes = require(Shared.Remotes)
 
@@ -46,7 +47,7 @@ local function spin(player)
 	elseif data.wheel.extraSpins > 0 then
 		data.wheel.extraSpins -= 1
 	else
-		Remotes.Notify:FireClient(player, "Вращения кончились. Бесплатное будет завтра 🎡", BAD)
+		Remotes.Notify:FireClient(player, S.m("wheel.no_spins"), BAD)
 		return
 	end
 	lastSpin[player] = now
@@ -59,7 +60,7 @@ local function spin(player)
 	DataService.markDirty(player)
 	task.delay(SPIN_COOLDOWN, function()
 		if player.Parent then
-			Remotes.Notify:FireClient(player, "🎡 Колесо: " .. slot.name .. " → " .. text, GOLD)
+			Remotes.Notify:FireClient(player, S.m("wheel.result", { name = S.m(slot.nameKey), reward = text }), GOLD)
 			Remotes.Sfx:FireClient(player, "success")
 		end
 	end)

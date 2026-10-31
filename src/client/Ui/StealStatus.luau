@@ -1,6 +1,7 @@
 -- Плашки внизу экрана: «неси брейнрота домой» и состояние замка своей базы.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Format = require(Shared.Util.Format)
 
 local Theme = require(script.Parent.Theme)
@@ -55,7 +56,7 @@ function StealStatus:update(player, plots)
 	local deadline = player:GetAttribute("CarryDeadline")
 	if deadline then
 		self.carry.Visible = true
-		self.carryLabel.Text = "🏃 Неси брейнрота на свою базу! " .. Format.time(deadline - serverNow)
+		self.carryLabel.Text = S.t("status.carry", { time = Format.time(deadline - serverNow) })
 	else
 		self.carry.Visible = false
 	end
@@ -77,15 +78,15 @@ function StealStatus:update(player, plots)
 	local left = (myPlot:GetAttribute("LockedUntil") or 0) - serverNow
 	if left > 0 then
 		local shield = myPlot:GetAttribute("LockKind") == "shield"
-		self.lockLabel.Text = (shield and "🛡️ Защита " or "🔒 База закрыта ") .. Format.time(left)
+		self.lockLabel.Text = S.t(if shield then "status.shield" else "status.locked", { time = Format.time(left) })
 		self.lockLabel.TextColor3 = C.Good
 		self.lockStroke.Color = C.Good
 	elseif (myPlot:GetAttribute("LockReadyAt") or 0) > serverNow then
-		self.lockLabel.Text = "⏳ Замок через " .. Format.time(myPlot:GetAttribute("LockReadyAt") - serverNow)
+		self.lockLabel.Text = S.t("status.lock_ready", { time = Format.time(myPlot:GetAttribute("LockReadyAt") - serverNow) })
 		self.lockLabel.TextColor3 = C.Gold
 		self.lockStroke.Color = C.Gold
 	else
-		self.lockLabel.Text = "🔓 База открыта!"
+		self.lockLabel.Text = S.t("status.open")
 		self.lockLabel.TextColor3 = C.Bad
 		self.lockStroke.Color = C.Bad
 	end

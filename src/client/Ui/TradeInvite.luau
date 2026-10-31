@@ -2,6 +2,7 @@
 -- respondRemote получает (fromUserId, accept).
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Remotes = require(Shared.Remotes)
 
 local Theme = require(script.Parent.Theme)
@@ -30,7 +31,7 @@ function TradeInvite.new(screenGui, respondRemote, yOffset)
 	self.accept = Theme.button({
 		Size = UDim2.new(0.5, -4, 0, 40),
 		Position = UDim2.new(0, 0, 1, -40),
-		Text = "✅ Принять",
+		Text = S.t("invite.accept"),
 		Color = C.Good,
 		ZIndex = 21,
 		Parent = self.frame,
@@ -40,7 +41,7 @@ function TradeInvite.new(screenGui, respondRemote, yOffset)
 	self.decline = Theme.button({
 		Size = UDim2.new(0.5, -4, 0, 40),
 		Position = UDim2.new(0.5, 4, 1, -40),
-		Text = "❌ Нет",
+		Text = S.t("invite.decline"),
 		Color = C.Bad,
 		ZIndex = 21,
 		Parent = self.frame,

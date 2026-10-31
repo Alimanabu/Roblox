@@ -6,6 +6,7 @@ local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
@@ -206,7 +207,7 @@ function LegendaryFx.play(screenGui, info, onSfx)
 	if mutation.id ~= "normal" then
 		name = mutation.name .. " " .. name
 	end
-	local headline = rarity.id == "sixseven" and "🤌 SIX... SEVEN!!! 🤌" or "🌟 ЛЕГЕНДАРНЫЙ ДРОП! 🌟"
+	local headline = rarity.id == "sixseven" and "🤌 SIX... SEVEN!!! 🤌" or S.t("fx.legendary")
 	banner(screenGui, headline .. "\n" .. info.name .. ": " .. name, color)
 	if onSfx then
 		onSfx("rare")

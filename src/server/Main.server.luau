@@ -108,4 +108,4 @@ SocialService.init()
 WheelService.init()
 AnalyticsService.init()
 
-print("🧠 Brainrot Factory запущена! 🤌")
+print("🧠 Brainrot Factory started! 🤌")

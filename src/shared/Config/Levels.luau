@@ -1,6 +1,8 @@
 -- Уровни игрока. Опыт даётся за каждый созданный брейнрот (чем реже — тем больше).
 -- Уровни открывают новые капсулы и дают титулы.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Levels = {}
 
 Levels.MAX_LEVEL = 67
@@ -12,26 +14,31 @@ end
 
 -- Титулы: с какого уровня даётся.
 Levels.Titles = {
-	{ level = 1, name = "Нуб" },
-	{ level = 3, name = "Школьник" },
-	{ level = 6, name = "Мемолог" },
-	{ level = 10, name = "Тиктокер" },
-	{ level = 15, name = "Рилсмейкер" },
-	{ level = 22, name = "Вирусный" },
-	{ level = 30, name = "Легенда трендов" },
-	{ level = 40, name = "Брейнрот-магнат" },
-	{ level = 50, name = "Император мемов" },
-	{ level = 67, name = "Король 67 🤌" },
+	{ level = 1 },
+	{ level = 3 },
+	{ level = 6 },
+	{ level = 10 },
+	{ level = 15 },
+	{ level = 22 },
+	{ level = 30 },
+	{ level = 40 },
+	{ level = 50 },
+	{ level = 67 },
 }
 
-function Levels.titleFor(level)
-	local title = Levels.Titles[1].name
+function Levels.titleKeyFor(level)
+	local reached = Levels.Titles[1].level
 	for _, entry in ipairs(Levels.Titles) do
 		if level >= entry.level then
-			title = entry.name
+			reached = entry.level
 		end
 	end
-	return title
+	return "level." .. reached .. ".name"
+end
+
+-- Сообщение (см. Strings): титул покажет клиент на языке игрока.
+function Levels.titleFor(level)
+	return S.m(Levels.titleKeyFor(level))
 end
 
 return Levels

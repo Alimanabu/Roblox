@@ -3,6 +3,7 @@
 local TweenService = game:GetService("TweenService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
@@ -56,10 +57,10 @@ function Reveal:show(result, state)
 
 	local badges = {}
 	if result.fused then
-		table.insert(badges, "🧬 СКРЕЩИВАНИЕ")
+		table.insert(badges, S.t("reveal.fused"))
 	end
 	if result.isNew then
-		table.insert(badges, "✨ НОВЫЙ!")
+		table.insert(badges, S.t("reveal.new"))
 	end
 	if rarity.id == "sixseven" then
 		table.insert(badges, "🤌 SIX... SEVEN!!! 🤌")
@@ -75,7 +76,7 @@ function Reveal:show(result, state)
 	self.rarity.TextColor3 = rarity.color
 	self.stroke.Color = rarity.color
 	local multiplier = state and state.incomeMultiplier or 1
-	self.income.Text = "+" .. Format.coins(Formulas.creatureBaseIncome(result) * multiplier) .. "/с"
+	self.income.Text = S.t("common.per_second", { coins = "+" .. Format.coins(Formulas.creatureBaseIncome(result) * multiplier) })
 
 	if self.preview then
 		self.preview:Destroy()

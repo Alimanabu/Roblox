@@ -2,6 +2,8 @@
 -- Используется и сервером (для расчётов), и клиентом (чтобы показывать цифры).
 -- passes — таблица { VIP = true, LUCKY = true, ... } с купленными геймпассами.
 
+local S = require(script.Parent.Parent.Strings)
+
 local Config = script.Parent.Parent.Config
 local Rarities = require(Config.Rarities)
 local Creatures = require(Config.Creatures)
@@ -29,11 +31,14 @@ Formulas.OFFLINE_MAX_SECONDS = 3 * 60 * 60
 -- hp — сколько раз вор должен шлёпнуть брейнрота, прежде чем его можно схватить.
 Formulas.FLOOR_SLOTS = 10
 Formulas.Floors = {
-	[0] = { name = "Земля", slots = 5, hp = 5, income = 1, stealTime = 1 },
-	{ name = "1 этаж", cost = 100_000, slots = 10, hp = 10, income = 1, stealTime = 1 },
-	{ name = "2 этаж", cost = 100_000_000, slots = 10, hp = 20, income = 2, stealTime = 2 },
+	[0] = { slots = 5, hp = 5, income = 1, stealTime = 1 },
+	{ cost = 100_000, slots = 10, hp = 10, income = 1, stealTime = 1 },
+	{ cost = 100_000_000, slots = 10, hp = 20, income = 2, stealTime = 2 },
 }
 Formulas.MAX_FLOORS = #Formulas.Floors
+for index = 0, Formulas.MAX_FLOORS do
+	S.fill(Formulas.Floors[index], "floor." .. index, "name")
+end
 
 -- Сколько этажей построено (геймпасс «Огромная база» сразу даёт 1 этаж).
 function Formulas.floors(data, passes)

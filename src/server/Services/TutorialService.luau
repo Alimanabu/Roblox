@@ -1,6 +1,7 @@
 -- Обучение: ведёт новичка по первым шагам и даёт за них монеты.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local S = require(Shared.Strings)
 local Tutorial = require(Shared.Config.Tutorial)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -32,9 +33,9 @@ local function onAction(player, kind, amount)
 	tutorial.step += 1
 	tutorial.progress = 0
 	if Tutorial.Steps[tutorial.step] then
-		Remotes.Notify:FireClient(player, "✅ Отлично! +" .. Format.coins(step.reward), GOLD)
+		Remotes.Notify:FireClient(player, S.m("tutorial.step_done", { coins = Format.coins(step.reward) }), GOLD)
 	else
-		Remotes.Notify:FireClient(player, "🎓 Обучение пройдено! +" .. Format.coins(step.reward) .. ". Теперь собери SIX SEVEN 🤌", GOLD)
+		Remotes.Notify:FireClient(player, S.m("tutorial.finished", { coins = Format.coins(step.reward) }), GOLD)
 	end
 	DataService.markDirty(player)
 end
@@ -47,7 +48,7 @@ function TutorialService.snapshot(data)
 	return {
 		index = data.tutorial.step,
 		total = #Tutorial.Steps,
-		text = step.text,
+		text = S.m(step.textKey),
 		progress = data.tutorial.progress,
 		count = step.count,
 		menu = step.menu,

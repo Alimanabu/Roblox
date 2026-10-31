@@ -2,6 +2,7 @@
 
 local Players = game:GetService("Players")
 
+local S = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Strings)
 local Theme = require(script.Parent.Theme)
 local create = Theme.create
 local C = Theme.Colors
@@ -50,8 +51,8 @@ function TutorialBanner:update(state)
 		self:setLockHighlight(false)
 		return
 	end
-	self.step.Text = string.format("📚 Обучение %d/%d", tutorial.index, tutorial.total)
-	local text = tutorial.text
+	self.step.Text = S.t("tutorial.step", { index = tutorial.index, total = tutorial.total })
+	local text = S.text(tutorial.text)
 	if tutorial.count > 1 then
 		text ..= string.format("  (%d/%d)", tutorial.progress, tutorial.count)
 	end

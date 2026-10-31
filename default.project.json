@@ -12,6 +12,11 @@
         "$path": "src/server"
       }
     },
+    "LocalizationService": {
+      "Translations": {
+        "$path": "src/localization/Translations.csv"
+      }
+    },
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
