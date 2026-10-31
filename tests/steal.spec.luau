@@ -178,7 +178,9 @@ scenario("бег на чите 40 студов/с: кража отклонена
 	check(ownerHas(entry), "брейнрот не вернулся хозяину")
 end)
 
--- Вор бежит по кругу и всё время прыгает: 7,2 студа вверх и вниз за секунду.
+-- Вор бежит по кругу и всё время прыгает. Гравитация Roblox 196,2: прыжок на 7,2 студа
+-- длится 0,54 с, с приземлением 0,6 с, поэтому вверх выходит 12 студов в секунду.
+local JUMP_SECONDS = 0.6
 local function jumpInCircles(seconds)
 	local center = rootOf(thief).Position
 	local dt = 0.1
@@ -186,7 +188,7 @@ local function jumpInCircles(seconds)
 	local radius = StealService.CARRY_SPEED / 0.4
 	for step = 1, steps do
 		local time = step * dt
-		local phase = time % 1
+		local phase = (time % JUMP_SECONDS) / JUMP_SECONDS
 		local height = 7.2 * 4 * phase * (1 - phase)
 		moveTo(thief, center + Vector3.new(math.cos(time * 0.4) * radius - radius, height, math.sin(time * 0.4) * radius))
 		World.advance(dt)

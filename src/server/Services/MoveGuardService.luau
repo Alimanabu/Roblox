@@ -12,7 +12,7 @@ MoveGuardService.SAMPLE_EVERY = 0.2
 MoveGuardService.SPEED_MARGIN = 1.35 -- запас к скорости: прыжки, склоны, неровная отправка позиции
 MoveGuardService.LAG_SECONDS = 3 -- запас пути = 3 с бега (48 студов при 16, 36 при 12): столько обрыва связи прощаем
 MoveGuardService.MIN_LAG_SPEED = 12 -- оглушённый вор стоит на месте, но запас у него не сгорает
-MoveGuardService.CLIMB_RATE = 10 -- студов вверх в секунду: прыжок 7,2 примерно за 1 с, пандус 6,8
+MoveGuardService.CLIMB_RATE = 15 -- студов вверх в секунду: прыжки подряд дают 12 (7,2 за 0,6 с), пандус 6,8
 MoveGuardService.MAX_CLIMB = 10 -- меньше высоты 2 этажа (14): за один раз туда не попасть
 MoveGuardService.DROP_BELOW = -30 -- ниже этого запаса кража срывается: это уже не сбой связи
 MoveGuardService.TELEPORT_GRACE = 1 -- секунд после переноса сервером: клиент ещё шлёт старую позицию,
