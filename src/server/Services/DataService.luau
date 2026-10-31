@@ -188,10 +188,12 @@ function DataService.save(player, release)
 	toSave.session = if release then nil else { jobId = game.JobId, time = os.time() }
 
 	local stolenSession = false
+	local skipped = false
 	local ok, err = withRetries(function()
 		return store:UpdateAsync(keyFor(player), function(saved)
 			-- Проверяем ещё раз внутри: игрок мог уйти, пока это сохранение ждало очереди.
 			if releasing[player] and not release then
+				skipped = true
 				return nil
 			end
 			if sessionOwnedByOther(saved) then
@@ -207,6 +209,8 @@ function DataService.save(player, release)
 		return false
 	elseif stolenSession then
 		warn("[DataService] Сессию", player.Name, "занял другой сервер, сохранение пропущено")
+		return false
+	elseif skipped then
 		return false
 	end
 	return true

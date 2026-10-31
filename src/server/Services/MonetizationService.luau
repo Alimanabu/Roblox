@@ -13,26 +13,49 @@ local DataService = require(script.Parent.DataService)
 
 local MonetizationService = {}
 
+-- Геймпассы игрока изменились: база могла вырасти (см. PlotService).
+MonetizationService.PassesChanged = Instance.new("BindableEvent")
+
+local PASS_CHECK_ATTEMPTS = 4
+
 local ownedPasses = {} -- [player] = { VIP = true, ... }
 
 function MonetizationService.passes(player)
 	return ownedPasses[player] or {}
 end
 
-local function refreshPasses(player)
-	local owned = {}
-	for _, pass in ipairs(Monetization.GamePasses) do
-		if pass.id ~= 0 then
-			local ok, has = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
-			if ok and has then
-				owned[pass.key] = true
-			end
+-- Сбой запроса не значит «не куплено»: без повтора купленный геймпасс пропал бы до перезахода.
+local function ownsPass(player, pass)
+	for attempt = 1, PASS_CHECK_ATTEMPTS do
+		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
+		if ok then
+			return result
+		end
+		warn("[MonetizationService] Не удалось проверить геймпасс", pass.key, "у", player.Name, "попытка", attempt, result)
+		if attempt < PASS_CHECK_ATTEMPTS then
+			task.wait(attempt * 1.5)
+		end
+		if not player.Parent then
+			return false
 		end
 	end
-	-- Бонус за друзей хранится в той же таблице — не теряем его при обновлении.
-	owned.socialBonus = ownedPasses[player] and ownedPasses[player].socialBonus or nil
+	return false
+end
+
+local function refreshPasses(player)
+	-- Дополняем таблицу, а не заменяем: пока идут повторы, игрок мог купить геймпасс,
+	-- а ещё в ней хранится бонус за друзей.
+	local owned = ownedPasses[player] or {}
 	ownedPasses[player] = owned
-	DataService.markDirty(player)
+	for _, pass in ipairs(Monetization.GamePasses) do
+		if pass.id ~= 0 and player.Parent and ownsPass(player, pass) then
+			owned[pass.key] = true
+		end
+	end
+	if player.Parent then
+		DataService.markDirty(player)
+		MonetizationService.PassesChanged:Fire(player)
+	end
 end
 
 function MonetizationService.setSocialBonus(player, bonus)
@@ -76,19 +99,19 @@ local function processReceipt(receiptInfo)
 	end
 
 	local receiptId = tostring(receiptInfo.PurchaseId)
-	if DataService.hasReceipt(data, receiptId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted
+	if not DataService.hasReceipt(data, receiptId) then
+		local product = Monetization.ProductById[receiptInfo.ProductId]
+		if not product or not grantProduct(player, data, product) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+
+		DataService.addReceipt(data, receiptId)
+		DataService.markDirty(player)
 	end
 
-	local product = Monetization.ProductById[receiptInfo.ProductId]
-	if not product or not grantProduct(player, data, product) then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-
-	DataService.addReceipt(data, receiptId)
-	DataService.markDirty(player)
 	-- Подтверждаем покупку Roblox только после успешного сохранения: если сервер
-	-- упадёт раньше, Roblox повторит выдачу на следующем заходе.
+	-- упадёт раньше, Roblox повторит выдачу на следующем заходе. Повторный чек тоже
+	-- сохраняем: уже выдано не значит уже записано, прошлое сохранение могло не пройти.
 	if not DataService.save(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
@@ -108,6 +131,7 @@ function MonetizationService.init()
 				end
 			end
 			DataService.markDirty(player)
+			MonetizationService.PassesChanged:Fire(player)
 		end
 	end)
 

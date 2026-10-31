@@ -757,6 +757,7 @@ function PlotService.init()
 	FactoryService.CreaturesChanged.Event:Connect(PlotService.render)
 	ProgressionService.RebirthDone.Event:Connect(PlotService.render)
 	ProgressionService.FloorBuilt.Event:Connect(PlotService.render)
+	MonetizationService.PassesChanged.Event:Connect(PlotService.render)
 
 	-- Табличка стройки: хозяин покупает следующий этаж.
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
