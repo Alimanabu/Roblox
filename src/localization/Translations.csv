@@ -517,6 +517,7 @@ leaderboard.rebirths,Rebirths,,,Перерожд.
 map.statue,🤌 Legend: SIX SEVEN 🤌,,,🤌 Легенда: SIX SEVEN 🤌
 fx.legendary,🌟 LEGENDARY DROP! 🌟,,,🌟 ЛЕГЕНДАРНЫЙ ДРОП! 🌟
 data.load_failed,Couldn't load your progress (you may still be connected to another server). Please rejoin in a minute!,,,"Не получилось загрузить прогресс (возможно, ты ещё открыт на другом сервере). Перезайди через минуту!"
+data.store_unavailable,"Saving is unavailable right now, so your progress would be lost. Please rejoin in a few minutes!",,,"Сохранения сейчас недоступны, и твой прогресс пропал бы. Перезайди через несколько минут!"
 creature.bananito_ninjini.name,Bananito Ninjini,,,Бананито Ниндзини
 creature.bananito_ninjini.desc,A banana ninja. Trying really hard.,,,Банан-ниндзя. Очень старается.
 creature.tostino_volantino.name,Tostino Volantino,,,Тостино Волантино

@@ -271,6 +271,11 @@ local function onPlayerAdded(player)
 	while pendingRelease[player.UserId] do
 		task.wait(0.1)
 	end
+	-- Некуда сохранять: прогресс и покупки пропали бы при выходе. В Studio без API это нормально.
+	if not store and not RunService:IsStudio() then
+		player:Kick(S.forPlayer(player, "data.store_unavailable"))
+		return
+	end
 	local data
 	if store then
 		local ok, result = loadWithLock(player)

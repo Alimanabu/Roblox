@@ -235,7 +235,10 @@ local function addPlayer(userId)
 		nextUserId += 1
 		userId = nextUserId
 	end
-	local player = { UserId = userId, Name = "Игрок" .. userId, Parent = Players, Kick = function() end }
+	local player = { UserId = userId, Name = "Игрок" .. userId, Parent = Players }
+	function player:Kick(message)
+		self.kickMessage = message
+	end
 	Players.list[userId] = player
 	Players.PlayerAdded:Fire(player)
 	return player
@@ -526,16 +529,19 @@ scenario("игрок ушёл во время паузы: повторов бо�
 	check(MarketplaceService.calls[userId .. ":" .. vip.id] == 1, "уход в паузе: запросы продолжились")
 end)
 
-scenario("нет DataStore на боевом сервере: покупка не подтверждается", function()
+scenario("нет DataStore на боевом сервере: игрока не пускаем, покупка не подтверждается", function()
 	withFreshServices({ noStore = true, studio = false }, function(data)
 		local player = addPlayer()
 		runUntilIdle()
+		check(player.kickMessage ~= nil, "нет хранилища: игрока пустили играть без сохранения")
+		check(string.find(player.kickMessage or "", "Saving is unavailable", 1, true) ~= nil, "нет хранилища: непонятное сообщение")
+		check(data.get(player) == nil, "нет хранилища: остался профиль")
 		local id = newPurchaseId()
 		local writes = store.writes
 		check(receipt(player.UserId, id, SPINS.id) == Decision.NotProcessedYet, "нет хранилища: подтверждено без записи")
 		check(receipt(player.UserId, id, SPINS.id) == Decision.NotProcessedYet, "нет хранилища: повтор чека подтверждён без записи")
-		check(data.get(player).wheel.extraSpins == 3, "нет хранилища: повтор чека выдан второй раз")
 		check(store.writes == writes, "нет хранилища: запись в DataStore")
+		check(data.save(player) == false, "нет хранилища: сохранение без профиля отчиталось об успехе")
 	end)
 end)
 
@@ -543,6 +549,7 @@ scenario("нет DataStore в Studio: тестовая покупка работ
 	withFreshServices({ noStore = true, studio = true }, function(data)
 		local player = addPlayer()
 		runUntilIdle()
+		check(player.kickMessage == nil, "Studio: игрока выгнали без API")
 		check(receipt(player.UserId, newPurchaseId(), SPINS.id) == Decision.PurchaseGranted, "Studio: тестовая покупка не подтверждена")
 		check(data.get(player).wheel.extraSpins == 3, "Studio: нет 3 вращений")
 	end)

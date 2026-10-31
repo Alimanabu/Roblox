@@ -601,6 +601,7 @@ local Source = {
 
 	-- Сохранения
 	["data.load_failed"] = "Couldn't load your progress (you may still be connected to another server). Please rejoin in a minute!",
+	["data.store_unavailable"] = "Saving is unavailable right now, so your progress would be lost. Please rejoin in a few minutes!",
 
 	-- Брейнроты
 	["creature.bananito_ninjini.name"] = "Bananito Ninjini",
