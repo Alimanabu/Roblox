@@ -9,13 +9,38 @@
 
 **🧠 Brainrot Factory 🤌 [SIX SEVEN]**
 
-Запасные варианты: «Брейнрот Фабрика 🤌», «Brainrot Factory 67», «Steal & Craft Brainrot».
+Запасные варианты: «Brainrot Factory 67», «Steal & Craft Brainrot».
+Русское название для перевода: «Брейнрот Фабрика 🤌» (Localization → Game Information).
 В квадратных скобках в начале названия принято писать про обновления, например
 `[🎃 HALLOWEEN] Brainrot Factory 🤌`, когда идёт сезон.
 
 ## 2. Описание игры (вставить в Creator Dashboard → Basic Info → Description)
 
-### Русское
+### English (основное, поле Description)
+```
+🧠 Craft brainrots in your own meme factory! 🤌
+
+🏭 Drop meme capsules into the machine and get brainrots: from Normie to the legendary SIX SEVEN!
+💰 Brainrots earn coins every second, even while you're away.
+🦹 Steal brainrots from other bases! Defend yours with a lock and the Slapper.
+⚔️ Aura battles: whose aura is stronger?
+🦎 Catch wild brainrots on the map!
+👹 A boss on the plaza every hour. 🤌 MINUTE 67 with a disco every hour!
+🐾 Pick your favorite brainrot as a pet and give it a name.
+🎃 Seasonal brainrots you can't get later!
+
+🎟️ CODES (enter them in 🎁 Rewards):
+SIXSEVEN — x2 luck for 30 minutes
+BRAINROT — 10 minutes of income
+RIZZ — free Rizz brainrot
+SIGMA — coins + luck
+RELEASE — coins + luck
+SKIN67 — secret Skin 67
+
+👍 Like and favorite the game: a new code every 1000 likes!
+```
+
+### Русский перевод (Localization → Game Information → Russian)
 ```
 🧠 Создавай брейнротов на своей фабрике мемов! 🤌
 
@@ -39,19 +64,6 @@ SKIN67 — секретный «Скин 67»
 👍 Ставь лайк и добавляй в избранное — за каждые 1000 лайков новый код!
 ```
 
-### English (для автоперевода можно не писать, но так игру лучше находят)
-```
-🧠 Craft brainrots in your own meme factory! 🤌
-
-🏭 Drop meme capsules into the machine: from Normie to the legendary SIX SEVEN!
-💰 Brainrots earn coins every second — even while you're offline.
-🦹 Steal brainrots from other bases! Defend yours with a lock and the Slapper.
-⚔️ Aura battles • 🦎 Catch wild brainrots • 👹 Hourly boss • 🤌 Minute 67 disco party
-🐾 Pets & custom names • 🎃 Limited seasonal brainrots
-
-🎟️ CODES: SIXSEVEN, BRAINROT, RIZZ, SIGMA, RELEASE, SKIN67
-```
-
 Совет: добавляй новые коды на 1K / 5K / 10K лайков и пиши их в описании и в группе.
 Код добавляется одной строкой в `src/shared/Config/Codes.luau`.
 
@@ -68,9 +80,9 @@ SKIN67 — секретный «Скин 67»
 Текст: «BRAINROT FACTORY 🤌».
 
 **Обложка 2:** вор бежит с брейнротом над головой, за ним хозяин со Шлёпалкой.
-Текст: «УКРАДИ БРЕЙНРОТА!».
+Текст: «STEAL THE BRAINROT!».
 
-**Обложка 3:** диско-шар над площадью, все танцуют. Текст: «МИНУТА 67 🤌».
+**Обложка 3:** диско-шар над площадью, все танцуют. Текст: «MINUTE 67 🤌».
 
 Как сделать:
 - Проще всего: зайти в игру в Studio, расставить сцену (через 🛠 Тест выдать брейнротов,
@@ -89,27 +101,29 @@ SKIN67 — секретный «Скин 67»
 скопировать **ID** и вписать в `src/shared/Config/Monetization.luau` вместо `id = 0`.
 
 ### Геймпассы (покупаются навсегда)
-| key в конфиге | Название | Описание | Цена |
+Название и описание в Creator Dashboard пиши по-английски: их показывает окно покупки Roblox.
+
+| key в конфиге | Name | Description | Цена |
 |---|---|---|---|
-| `VIP` | VIP | x2 монет навсегда | 199 R$ |
-| `LUCKY` | Счастливчик | x1.5 удачи навсегда | 249 R$ |
-| `BIG_BASE` | Огромная база | 1 этаж сразу + 2 этаж за полцены | 149 R$ |
-| `AUTO_CRAFT` | Авто-фабрика | Машина сама создаёт брейнротов | 299 R$ |
-| `FAST_MACHINE` | Турбо-машина | Машина работает в 2 раза быстрее | 99 R$ |
+| `VIP` | VIP | x2 coins forever | 199 R$ |
+| `LUCKY` | Lucky | x1.5 luck forever | 249 R$ |
+| `BIG_BASE` | Huge Base | Floor 1 right away + Floor 2 at half price | 149 R$ |
+| `AUTO_CRAFT` | Auto Factory | The machine crafts brainrots by itself | 299 R$ |
+| `FAST_MACHINE` | Turbo Machine | The machine runs 2x faster | 99 R$ |
 
 Если при входе игрока Roblox не ответил на проверку, сервер ждёт до 9 с на геймпасс
 (паузы 1,5 / 3 / 4,5 с), потом проверяет геймпасс в фоне раз в 60 с. Перезаход не нужен.
 
 ### Разовые покупки (Developer Products)
-| key в конфиге | Название | Что даёт | Цена |
+| key в конфиге | Name | Description | Цена |
 |---|---|---|---|
-| `LUCK_BOOST` | Буст удачи x2 | x2 удачи на 15 минут | 49 R$ |
-| `COINS_SMALL` | Мешок монет | 10 минут дохода (мин. $5K) | 29 R$ |
-| `SPINS_3` | 3 вращения колеса | +3 вращения колеса удачи | 39 R$ |
-| `COINS_BIG` | Сундук монет | 1 час дохода (мин. $50K) | 129 R$ |
+| `LUCK_BOOST` | Luck Boost x2 | x2 luck for 15 minutes | 49 R$ |
+| `COINS_SMALL` | Bag of Coins | 10 minutes of income (min. 5K) | 29 R$ |
+| `SPINS_3` | 3 Wheel Spins | Spin the lucky wheel 3 more times | 39 R$ |
+| `COINS_BIG` | Chest of Coins | 1 hour of income (min. 50K) | 129 R$ |
 
 Пример: создал геймпасс VIP, его ID `123456789` → в конфиге
-`{ key = "VIP", id = 123456789, ... }`. Пока `id = 0`, в магазине кнопка «Скоро».
+`{ key = "VIP", id = 123456789, ... }`. Пока `id = 0`, в магазине кнопка «Soon».
 
 Шансы капсул и колеса удачи показаны в игре — Roblox требует раскрывать шансы случайных
 наград, которые прямо или косвенно (через монеты) можно получить за Robux.
@@ -154,8 +168,8 @@ SKIN67 — секретный «Скин 67»
 
 Где: Creations → игра → **Associated Items → Badges**. Создание бейджа может стоить Robux.
 Лучше сделать 5–6 главных, а не все 30+:
-- «Первый брейнрот» (`first`), «SIX SEVEN!!!» (`sixseven`), «Встреча с Богом» (`god`),
-  «Мастер-вор» (`thief10`), «Охотник на боссов» (`boss`), «Ходячий Индекс» (`indexAll`).
+- First Brainrot (`first`), SIX SEVEN!!! (`sixseven`), Meeting God (`god`),
+  Master Thief (`thief10`), Boss Hunter (`boss`), Walking Index (`indexAll`).
 
 ID бейджа вписать в `src/shared/Config/Achievements.luau`, добавив к нужному достижению
 `badgeId = 123456789`.
@@ -173,7 +187,7 @@ Creator Store → **Audio** → ищи бесплатную музыку (у Rob
 ID треков → `src/shared/Config/Music.luau` (`"rbxassetid://ID"`).
 Звуки (крафт, кража, шлепок, уровень) можно заменить в `src/shared/Config/Sounds.luau`.
 
-## 8. Свой UserId для панели «🛠 Тест»
+## 8. Свой UserId для панели «🛠 Test»
 
 Свой UserId видно в адресе профиля: `roblox.com/users/ЭТО_ЧИСЛО/profile`.
 Впиши в `src/shared/Config/Admins.luau`. Только админы видят панель в опубликованной игре.
@@ -183,7 +197,9 @@ ID треков → `src/shared/Config/Music.luau` (`"rbxassetid://ID"`).
 - **Game Settings → Security → Enable Studio Access to API Services** — включить.
 - **Places → Max Players = 8** (на карте 8 баз).
 - **Genre:** Simulator / Tycoon. **Devices:** компьютер, телефон, планшет, консоль.
-- **Localization:** исходный язык Russian, автоматический перевод включить (см. README).
+- **Localization:** исходный язык **English**. Русский уже в игре (таблица `Translations.csv`),
+  для него автоперевод не нужен. Описание и название на русском впиши вручную.
+  Automatic Translation для других языков можно включить: основа теперь английская.
 - **Questionnaire / Maturity:** честно заполнить анкету возрастного рейтинга
   (в игре мультяшное «шлёпанье» без крови и урона).
 - Опубликовать: File → Publish to Roblox.
