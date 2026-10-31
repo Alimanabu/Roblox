@@ -78,7 +78,7 @@ check(mine.PrimaryPart.StealPrompt.Enabled == false, "кнопка кражи н
 check(far.PrimaryPart.StealPrompt.Enabled == true, "нет кнопки кражи на чужой базе")
 local otherPlayer = players[5]
 local lockButton = PlotService.getPlot(otherPlayer).model.LockButton
-shared_require("Services/MoveGuardService").teleported(otherPlayer)
+shared_require("Services/MoveGuardService").teleported(otherPlayer, lockButton.Position)
 otherPlayer.Character:PivotTo(lockButton.CFrame)
 World.prompt(lockButton.LockPrompt, otherPlayer, 0)
 World.advance(0.2 + BaseAnimator.REFRESH_EVERY + 0.05) -- сервер ставит атрибут в своём цикле

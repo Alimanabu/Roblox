@@ -15,10 +15,13 @@ MoveGuardService.MIN_LAG_SPEED = 12 -- оглушённый вор стоит н
 MoveGuardService.CLIMB_RATE = 10 -- студов вверх в секунду: прыжок 7,2 примерно за 1 с, пандус 6,8
 MoveGuardService.MAX_CLIMB = 10 -- меньше высоты 2 этажа (14): за один раз туда не попасть
 MoveGuardService.DROP_BELOW = -30 -- ниже этого запаса кража срывается: это уже не сбой связи
-MoveGuardService.TELEPORT_GRACE = 1 -- секунд после переноса сервером: клиент ещё шлёт старую позицию
+MoveGuardService.TELEPORT_GRACE = 1 -- секунд после переноса сервером: клиент ещё шлёт старую позицию,
+-- в это время путь считаем от ближайшей из точек «откуда» и «куда»: другие места не бесплатны
 MoveGuardService.KNOCKBACK_SECONDS = 1.5 -- сколько длится отлёт от удара
 
-local tracks = {} -- [player] = { root, position, time, budget, graceUntil, free, freeUntil }
+-- Запас живёт дольше персонажа: сброс и смерть не должны возвращать его.
+local tracks = {} -- [player] = { root, position, time, budget, climb, graceUntil, serverFrom, serverTo, free, freeUntil }
+local spawnPoint = Vector3.zero -- сюда Roblox ставит нового персонажа
 
 local function rootOf(player)
 	local character = player.Character
@@ -39,28 +42,41 @@ function MoveGuardService.maxBudget(speed)
 	return MoveGuardService.LAG_SECONDS * math.max(speed, MoveGuardService.MIN_LAG_SPEED)
 end
 
+function MoveGuardService.setSpawnPoint(position)
+	spawnPoint = position
+end
+
+-- Сколько стоит дойти до position: сразу после переноса сервером — от ближайшей известной точки.
+local function pathTo(track, position, now)
+	local moved, up = horizontal(track.position, position), climb(track.position, position)
+	if now < track.graceUntil then
+		for _, point in ipairs({ track.serverFrom, track.serverTo }) do
+			moved = math.min(moved, horizontal(point, position))
+			up = math.min(up, climb(point, position))
+		end
+	end
+	return moved, up
+end
+
 local function observe(player)
 	local root = rootOf(player)
-	if not root then
-		tracks[player] = nil
-		return nil
+	local track = tracks[player]
+	if not root or not root:IsDescendantOf(workspace) then
+		return track
 	end
 	local now = os.clock()
-	local track = tracks[player]
-	if not track or track.root ~= root then
-		-- Новый персонаж появляется, где решит сервер: с него ничего не спрашиваем.
-		track = { root = root, position = root.Position, time = now, budget = MoveGuardService.maxBudget(16), climb = MoveGuardService.MAX_CLIMB, graceUntil = now + MoveGuardService.TELEPORT_GRACE, free = 0, freeUntil = 0 }
+	if not track then
+		track = { time = now, budget = MoveGuardService.maxBudget(16), climb = MoveGuardService.MAX_CLIMB, graceUntil = 0, free = 0, freeUntil = 0 }
 		tracks[player] = track
-		return track
+	end
+	if track.root ~= root then
+		-- Новый персонаж начинает путь с точки спавна, дальше его ведёт сервер.
+		track.root, track.position, track.graceUntil = root, spawnPoint, 0
 	end
 
-	local moved = horizontal(track.position, root.Position)
-	local up = climb(track.position, root.Position)
+	local moved, up = pathTo(track, root.Position, now)
 	local elapsed = now - track.time
 	track.position, track.time = root.Position, now
-	if now < track.graceUntil then
-		return track
-	end
 	if now < track.freeUntil then
 		local forgiven = math.min(track.free, moved)
 		track.free -= forgiven
@@ -92,10 +108,11 @@ function MoveGuardService.couldWalk(from, since, to, speed)
 	return horizontal(from, to) <= speed * MoveGuardService.SPEED_MARGIN * (os.clock() - since)
 end
 
--- Сервер сам перенёс персонажа (телепорт домой, забор замка).
-function MoveGuardService.teleported(player)
+-- Сервер сам переносит персонажа в target (телепорт домой, забор замка). Вызывать до переноса.
+function MoveGuardService.teleported(player, target)
 	local track = observe(player)
 	if track then
+		track.serverFrom, track.serverTo = track.position, target
 		track.graceUntil = os.clock() + MoveGuardService.TELEPORT_GRACE
 	end
 end

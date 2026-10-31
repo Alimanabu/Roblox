@@ -99,6 +99,7 @@ local function buildWorld()
 	spawn.Material = Enum.Material.SmoothPlastic
 	spawn.Duration = 0 -- без пузыря силового поля
 	spawn.Parent = workspace
+	MoveGuardService.setSpawnPoint(spawn.Position)
 
 	local sign = part({
 		Name = "TitleSign",
@@ -733,8 +734,9 @@ local function teleportHome(player, character)
 	end
 	task.wait(0.2)
 	if character.Parent and plotOf[player] == plot then
-		MoveGuardService.teleported(player)
-		character:PivotTo(plot.cframe * CFrame.new(0, 5, PLOT_SIZE / 2 - 8))
+		local target = plot.cframe * CFrame.new(0, 5, PLOT_SIZE / 2 - 8)
+		MoveGuardService.teleported(player, target.Position)
+		character:PivotTo(target)
 	end
 end
 

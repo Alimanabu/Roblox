@@ -703,8 +703,9 @@ function StealService.init()
 						for _, other in ipairs(Players:GetPlayers()) do
 							local root = other ~= owner and rootOf(other)
 							if root and PlotService.isInside(plot, root.Position) then
-								MoveGuardService.teleported(other)
-								other.Character:PivotTo(PlotService.outsideCFrame(plot, root.Position))
+								local outside = PlotService.outsideCFrame(plot, root.Position)
+								MoveGuardService.teleported(other, outside.Position)
+								other.Character:PivotTo(outside)
 							end
 						end
 					end

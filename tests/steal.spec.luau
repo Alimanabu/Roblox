@@ -38,7 +38,7 @@ end
 
 -- Честный перенос между сценариями: сервер ставит игрока и прощает прыжок.
 local function place(player, position)
-	MoveGuard.teleported(player)
+	MoveGuard.teleported(player, position)
 	moveTo(player, position)
 	World.advance(MoveGuard.TELEPORT_GRACE + 4)
 end
@@ -314,7 +314,7 @@ scenario("забор замка выталкивает вора: это не т�
 	local entry, model = give()
 	grab(entry, model)
 	local from = rootOf(thief).Position
-	MoveGuard.teleported(thief)
+	MoveGuard.teleported(thief, from + Vector3.new(45, 0, 0))
 	moveTo(thief, from + Vector3.new(45, 0, 0))
 	World.advance(0.3)
 	moveTo(thief, from) -- клиент ещё шлёт старую позицию
@@ -367,21 +367,109 @@ scenario("замок: закрыть базу издалека нельзя", fu
 	check(StealService.isLocked(owner), "база не закрылась у кнопки")
 end)
 
-scenario("новый персонаж появляется где угодно: это не телепорт", function()
-	local old = thief.Character
+-- Новый персонаж: сервер Roblox создаёт его заново, клиент тут же может его двигать.
+local function respawn(position)
 	local character = Instance.new("Model")
 	character.Name = "Thief"
 	local root = Instance.new("Part")
 	root.Name = "HumanoidRootPart"
 	root.Parent = character
-	root.CFrame = CFrame.new(homeOf(ownerPlot))
+	root.CFrame = CFrame.new(position)
+	character.PrimaryPart = root
 	Instance.new("Humanoid").Parent = character
 	character.Parent = workspace
 	thief.Character = character
+	return character
+end
+
+local SPAWN = Vector3.new(0, 3, 0)
+
+scenario("честный респавн: персонаж на спавне, сервер переносит домой, действовать можно", function()
+	local old = thief.Character
+	place(thief, homeOf(thiefPlot))
+	local character = respawn(SPAWN)
+	thief.CharacterAdded:Fire(character)
 	World.advance(0.5)
-	check(MoveGuard.canAct(thief), "новый персонаж считается телепортом")
+	check(PlotService.isInside(thiefPlot, rootOf(thief).Position), "сервер не перенёс нового персонажа домой")
+	check(MoveGuard.canAct(thief), "честный респавн считается телепортом")
 	thief.Character = old
-	World.advance(1.5)
+end)
+
+scenario("обход: сброс персонажа и появление у чужой базы отклонены", function()
+	local _, model = give()
+	local spot = model:GetAttribute("BaseCFrame").Position - Vector3.new(0, 0, 3)
+	local old = thief.Character
+	place(thief, homeOf(thiefPlot))
+	local hp = model:GetAttribute("Hp")
+	respawn(spot)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "новый персонаж у чужой базы не пойман")
+	slap()
+	check(model:GetAttribute("Hp") == hp, "шлепок нового персонажа у чужой базы прошёл")
+	thief.Character = old
+end)
+
+scenario("сброс персонажа не обнуляет минус", function()
+	local old = thief.Character
+	local home = homeOf(thiefPlot)
+	place(thief, home)
+	moveTo(thief, home + Vector3.new(200, 0, 0))
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "прыжок на 200 студов не пойман")
+	thief.Character = nil
+	World.advance(0.3)
+	respawn(SPAWN)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "сброс персонажа обнулил минус")
+	thief.Character = old
+end)
+
+scenario("обход: в окне после переноса принимаются только старая точка и точка переноса", function()
+	local home = homeOf(thiefPlot)
+	local target = home + Vector3.new(10, 0, 0)
+	place(thief, home)
+	MoveGuard.teleported(thief, target)
+	moveTo(thief, target)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "перенос сервера считается телепортом")
+	moveTo(thief, home)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "старая позиция клиента считается телепортом")
+	moveTo(thief, home + Vector3.new(200, 0, 0))
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "в окне принята посторонняя позиция")
+	MoveGuard.teleported(thief, home)
+	moveTo(thief, home)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "перенос сервером обнулил минус")
+end)
+
+scenario("обход: забор выталкивает, в это окно прыжок к чужой базе отклонён", function()
+	World.advance(30) -- замок прошлого сценария перезарядился
+	local plotModel = ownerPlot.model
+	local inside = ownerPlot.cframe.Position + Vector3.new(0, 3, 0)
+	place(owner, plotModel.LockButton.Position + Vector3.new(0, 3, 0))
+	World.prompt(plotModel.LockButton.LockPrompt, owner, 0)
+	World.advance(0.3)
+	check(StealService.isLocked(owner), "база не закрылась")
+	place(thief, inside)
+	check(not PlotService.isInside(ownerPlot, rootOf(thief).Position), "забор не вытолкнул вора")
+	check(MoveGuard.canAct(thief), "выталкивание забором считается телепортом")
+
+	-- Шаг за забор: сервер вытолкнет на следующем обходе, и начнётся окно после переноса.
+	local edge = rootOf(thief).Position
+	moveTo(thief, edge + (inside - edge).Unit * 8)
+	check(PlotService.isInside(ownerPlot, rootOf(thief).Position), "вор не вошёл за забор")
+	for _ = 1, 10 do
+		if not PlotService.isInside(ownerPlot, rootOf(thief).Position) then
+			break
+		end
+		World.advance(0.05)
+	end
+	check(not PlotService.isInside(ownerPlot, rootOf(thief).Position), "забор не вытолкнул вора второй раз")
+	moveTo(thief, homeOf(thiefPlot))
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief) == false, "окно забора дало свободный перенос")
 end)
 
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)
