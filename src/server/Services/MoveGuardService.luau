@@ -1,7 +1,8 @@
 -- Проверка скорости: позицию персонажа присылает клиент, поэтому читер может «телепортироваться».
--- Сервер следит, сколько игрок прошёл и за какое время. У каждого есть запас пути: он растёт
--- со скоростью бега и тратится на каждый студ. Запас ушёл в минус — игрок не мог дойти сюда сам,
--- и пока запас не вернётся (столько, сколько занял бы путь пешком), кража, шлепок и поимка отклоняются.
+-- Сервер следит, сколько игрок прошёл и за какое время. У каждого есть запас пути по горизонтали:
+-- он растёт со скоростью бега и тратится на каждый студ. Подъём считается отдельно, иначе прыжки
+-- съедали бы путь. Запас ушёл в минус — игрок не мог дойти сюда сам, и пока запас не вернётся
+-- (столько, сколько занял бы путь пешком), кража, шлепок и поимка отклоняются.
 
 local Players = game:GetService("Players")
 
@@ -9,7 +10,11 @@ local MoveGuardService = {}
 
 MoveGuardService.SAMPLE_EVERY = 0.2
 MoveGuardService.SPEED_MARGIN = 1.35 -- запас к скорости: прыжки, склоны, неровная отправка позиции
-MoveGuardService.MAX_BUDGET = 50 -- студов: столько можно накопить, это ~4 с обрыва связи на бегу
+MoveGuardService.LAG_SECONDS = 3 -- запас пути = 3 с бега (48 студов при 16, 36 при 12): столько обрыва связи прощаем
+MoveGuardService.MIN_LAG_SPEED = 12 -- оглушённый вор стоит на месте, но запас у него не сгорает
+MoveGuardService.CLIMB_RATE = 10 -- студов вверх в секунду: прыжок 7,2 примерно за 1 с, пандус 6,8
+MoveGuardService.MAX_CLIMB = 10 -- меньше высоты 2 этажа (14): за один раз туда не попасть
+MoveGuardService.DROP_BELOW = -30 -- ниже этого запаса кража срывается: это уже не сбой связи
 MoveGuardService.TELEPORT_GRACE = 1 -- секунд после переноса сервером: клиент ещё шлёт старую позицию
 MoveGuardService.KNOCKBACK_SECONDS = 1.5 -- сколько длится отлёт от удара
 
@@ -20,11 +25,18 @@ local function rootOf(player)
 	return character and character:FindFirstChild("HumanoidRootPart")
 end
 
--- Падение не считаем: вниз можно лететь быстрее бега.
-local function distance(from, to)
+local function horizontal(from, to)
 	local dx, dz = to.X - from.X, to.Z - from.Z
-	local up = math.max(0, to.Y - from.Y)
-	return math.sqrt(dx * dx + dz * dz + up * up)
+	return math.sqrt(dx * dx + dz * dz)
+end
+
+-- Падение не считаем: вниз можно лететь быстрее бега.
+local function climb(from, to)
+	return math.max(0, to.Y - from.Y)
+end
+
+function MoveGuardService.maxBudget(speed)
+	return MoveGuardService.LAG_SECONDS * math.max(speed, MoveGuardService.MIN_LAG_SPEED)
 end
 
 local function observe(player)
@@ -37,12 +49,13 @@ local function observe(player)
 	local track = tracks[player]
 	if not track or track.root ~= root then
 		-- Новый персонаж появляется, где решит сервер: с него ничего не спрашиваем.
-		track = { root = root, position = root.Position, time = now, budget = MoveGuardService.MAX_BUDGET, graceUntil = now + MoveGuardService.TELEPORT_GRACE, free = 0, freeUntil = 0 }
+		track = { root = root, position = root.Position, time = now, budget = MoveGuardService.maxBudget(16), climb = MoveGuardService.MAX_CLIMB, graceUntil = now + MoveGuardService.TELEPORT_GRACE, free = 0, freeUntil = 0 }
 		tracks[player] = track
 		return track
 	end
 
-	local moved = distance(track.position, root.Position)
+	local moved = horizontal(track.position, root.Position)
+	local up = climb(track.position, root.Position)
 	local elapsed = now - track.time
 	track.position, track.time = root.Position, now
 	if now < track.graceUntil then
@@ -56,19 +69,27 @@ local function observe(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local speed = humanoid and humanoid.WalkSpeed or 16
-	track.budget = math.min(MoveGuardService.MAX_BUDGET, track.budget + speed * MoveGuardService.SPEED_MARGIN * elapsed) - moved
+	local cap = MoveGuardService.maxBudget(speed)
+	track.budget = math.min(cap, track.budget + speed * MoveGuardService.SPEED_MARGIN * elapsed) - moved
+	track.climb = math.min(MoveGuardService.MAX_CLIMB, track.climb + MoveGuardService.CLIMB_RATE * elapsed) - up
 	return track
 end
 
 -- false: игрок оказался там, куда не мог дойти. Проверять перед каждым действием на сервере.
 function MoveGuardService.canAct(player)
 	local track = observe(player)
-	return track == nil or track.budget >= 0
+	return track == nil or (track.budget >= 0 and track.climb >= 0)
+end
+
+-- true: запас ушёл далеко в минус, это не сбой связи. Несущий брейнрота его роняет.
+function MoveGuardService.exceeded(player)
+	local track = observe(player)
+	return track ~= nil and (track.budget < MoveGuardService.DROP_BELOW or track.climb < MoveGuardService.DROP_BELOW)
 end
 
 -- Мог ли игрок со скоростью speed пройти от from до to, начав в момент since (os.clock()).
 function MoveGuardService.couldWalk(from, since, to, speed)
-	return distance(from, to) <= speed * MoveGuardService.SPEED_MARGIN * (os.clock() - since)
+	return horizontal(from, to) <= speed * MoveGuardService.SPEED_MARGIN * (os.clock() - since)
 end
 
 -- Сервер сам перенёс персонажа (телепорт домой, забор замка).

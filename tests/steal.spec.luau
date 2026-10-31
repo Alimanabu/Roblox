@@ -178,6 +178,73 @@ scenario("бег на чите 40 студов/с: кража отклонена
 	check(ownerHas(entry), "брейнрот не вернулся хозяину")
 end)
 
+-- Вор бежит по кругу и всё время прыгает: 7,2 студа вверх и вниз за секунду.
+local function jumpInCircles(seconds)
+	local center = rootOf(thief).Position
+	local dt = 0.1
+	local steps = math.floor(seconds / dt)
+	local radius = StealService.CARRY_SPEED / 0.4
+	for step = 1, steps do
+		local time = step * dt
+		local phase = time % 1
+		local height = 7.2 * 4 * phase * (1 - phase)
+		moveTo(thief, center + Vector3.new(math.cos(time * 0.4) * radius - radius, height, math.sin(time * 0.4) * radius))
+		World.advance(dt)
+		check(not MoveGuard.exceeded(thief), "прыжки считаются читом на " .. time .. " с")
+	end
+	moveTo(thief, center)
+	World.advance(0.2)
+end
+
+scenario("честный вор прыгает 30 с без остановки: кража проходит", function()
+	local entry, model = give()
+	grab(entry, model)
+	local count = stolenCount()
+	jumpInCircles(30)
+	check(thief:GetAttribute("CarryDeadline") ~= nil, "прыжки сорвали кражу")
+	check(MoveGuard.canAct(thief), "после прыжков игрок не может действовать")
+	walk(thief, homeOf(thiefPlot), StealService.CARRY_SPEED)
+	World.advance(0.5)
+	check(stolenCount() == count + 1, "кража с прыжками не засчитана")
+	check(not ownerHas(entry), "брейнрот остался у хозяина")
+end)
+
+scenario("телепорт на 50 студов без брейнрота: шлепок отклонён", function()
+	local _, model = give()
+	local spot = model:GetAttribute("BaseCFrame").Position - Vector3.new(0, 0, 3)
+	place(thief, spot + Vector3.new(50, 0, 0))
+	local hp = model:GetAttribute("Hp")
+	moveTo(thief, spot)
+	slap()
+	check(model:GetAttribute("Hp") == hp, "шлепок после прыжка на 50 студов прошёл")
+end)
+
+scenario("телепорт на 50 студов с брейнротом: ловится, второй срывает кражу", function()
+	local entry, model = give()
+	grab(entry, model)
+	local count = stolenCount()
+	local from = rootOf(thief).Position
+	local direction = (homeOf(thiefPlot) - from).Unit
+	moveTo(thief, from + direction * 50)
+	World.advance(0.2)
+	check(MoveGuard.canAct(thief) == false, "прыжок на 50 студов не пойман")
+	check(thief:GetAttribute("CarryDeadline") ~= nil, "один небольшой минус сорвал кражу")
+	moveTo(thief, from + direction * 100)
+	World.advance(0.3)
+	check(thief:GetAttribute("CarryDeadline") == nil, "второй прыжок не сорвал кражу")
+	check(ownerHas(entry), "брейнрот не вернулся хозяину")
+	check(stolenCount() == count, "прыжки засчитаны как кража")
+end)
+
+scenario("прыжок на 2 этаж с земли: действие отклонено", function()
+	local _, model = give()
+	local spot = model:GetAttribute("BaseCFrame").Position - Vector3.new(0, 0, 3)
+	place(thief, spot)
+	moveTo(thief, spot + Vector3.new(0, 14, 0))
+	check(MoveGuard.canAct(thief) == false, "подъём на 14 студов за миг не пойман")
+	moveTo(thief, spot)
+end)
+
 scenario("мог ли дойти: расстояние, скорость и время", function()
 	local from = Vector3.new(0, 0, 0)
 	local started = World.now() - 2
@@ -222,7 +289,7 @@ scenario("после удара до своей базы рукой подать
 	local count = stolenCount()
 	local home = homeOf(thiefPlot)
 	local distance = (home - rootOf(thief).Position).Magnitude
-	check(distance < MoveGuard.MAX_BUDGET + 60 * MoveGuard.KNOCKBACK_SECONDS, "базы слишком далеко для этого сценария")
+	check(distance < MoveGuard.maxBudget(StealService.CARRY_SPEED) + 60 * MoveGuard.KNOCKBACK_SECONDS, "базы слишком далеко для этого сценария")
 	MoveGuard.knockback(thief, 60)
 	moveTo(thief, home)
 	World.advance(1)

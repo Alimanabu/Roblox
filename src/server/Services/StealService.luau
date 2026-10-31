@@ -715,12 +715,13 @@ function StealService.init()
 			for thief, carry in pairs(carries) do
 				local plot = PlotService.getPlot(thief)
 				local root = rootOf(thief)
-				if not MoveGuardService.canAct(thief) then
+				if MoveGuardService.exceeded(thief) then
 					endCarry(thief, false, S.m("steal.reason_too_fast"))
 				elseif
 					plot
 					and root
 					and PlotService.isInside(plot, root.Position)
+					and MoveGuardService.canAct(thief)
 					and MoveGuardService.couldWalk(carry.startPosition, carry.startClock, root.Position, StealService.CARRY_SPEED)
 				then
 					endCarry(thief, true)
