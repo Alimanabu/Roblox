@@ -446,6 +446,33 @@ scenario("обход: в окне после переноса принимают
 	check(MoveGuard.canAct(thief) == false, "перенос сервером обнулил минус")
 end)
 
+scenario("дальний перенос: старая позиция клиента в окне не считается телепортом", function()
+	local home = homeOf(thiefPlot)
+	local target = home + Vector3.new(120, 0, 0)
+	place(thief, home)
+	MoveGuard.teleported(thief, target)
+	moveTo(thief, target)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "дальний перенос сервера считается телепортом")
+	moveTo(thief, home) -- клиент ещё шлёт позицию до переноса: от точки «откуда» пути нет
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "старая позиция после дальнего переноса считается телепортом")
+end)
+
+scenario("перенос вниз: старая позиция выше точки «куда» не считается подъёмом", function()
+	local home = homeOf(thiefPlot)
+	local target = home + Vector3.new(5, -30, 0)
+	place(thief, home)
+	MoveGuard.teleported(thief, target)
+	moveTo(thief, target)
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "перенос вниз считается телепортом")
+	moveTo(thief, home) -- подъём на 30 студов от точки «куда», от точки «откуда» подъёма нет
+	World.advance(0.1)
+	check(MoveGuard.canAct(thief), "старая позиция сверху считается подъёмом")
+	check(not MoveGuard.exceeded(thief), "старая позиция сверху срывает кражу")
+end)
+
 scenario("обход: забор выталкивает, в это окно прыжок к чужой базе отклонён", function()
 	World.advance(30) -- замок прошлого сценария перезарядился
 	local plotModel = ownerPlot.model
