@@ -1,4 +1,4 @@
--- Симуляция с покупками: игрок купил VIP и 2 этаж, ушёл, вернулся. Настоящие сервисы,
+-- Симуляция с покупками: игрок купил VIP, 2 этаж, монеты и вращения, ушёл, вернулся. Настоящие сервисы,
 -- боевой режим (не Studio), DataStore в памяти переживает выход игрока.
 
 local failures = 0
@@ -21,6 +21,13 @@ for index, pass in ipairs(Monetization.GamePasses) do
 	pass.id = 2000 + index
 end
 local VIP = Monetization.GamePassByKey.VIP
+for index, product in ipairs(Monetization.Products) do
+	product.id = 1000 + index
+	Monetization.ProductById[product.id] = product
+end
+local COINS_SMALL = Monetization.ProductByKey.COINS_SMALL
+local SPINS = Monetization.ProductByKey.SPINS_3
+local Decision = Enum.ProductPurchaseDecision
 
 local marketplace = World.services.MarketplaceService
 local owned = {}
@@ -62,8 +69,21 @@ ProgressionService.buyFloor(player)
 World.advance(0.5)
 check(data.floors == 2, "2 этаж не построен: " .. tostring(data.floors))
 check(data.coins == START_COINS - 100e3 - 100e6, "этажи стоят не столько: " .. tostring(data.coins))
+
+-- Разовые покупки идут так, как их присылает Roblox: чеком. Брейнротов ещё нет, дохода нет,
+-- поэтому мешок монет даёт ровно свой минимум.
+local function receipt(purchaseId, product)
+	return marketplace.ProcessReceipt({ PlayerId = USER, PurchaseId = purchaseId, ProductId = product.id })
+end
+local COINS_AFTER_FLOORS = 399900000
+local COINS_AFTER_RECEIPT = COINS_AFTER_FLOORS + COINS_SMALL.minCoins
+check(data.coins == COINS_AFTER_FLOORS, "монеты до чека: " .. tostring(data.coins))
+check(receipt("rejoin-coins", COINS_SMALL) == Decision.PurchaseGranted, "чек монет не подтверждён")
+check(receipt("rejoin-spins", SPINS) == Decision.PurchaseGranted, "чек вращений не подтверждён")
+check(data.coins == COINS_AFTER_RECEIPT, "монеты после чека: " .. tostring(data.coins))
+check(data.wheel.extraSpins == SPINS.amount, "вращения после чека: " .. tostring(data.wheel.extraSpins))
+
 FactoryService.give(player, "bananito_ninjini", "normal")
-World.advance(0.5)
 local coinsBefore = data.coins
 local creaturesBefore = #data.creatures
 
@@ -72,16 +92,27 @@ World.advance(5)
 check(DataService.get(player) == nil, "профиль остался после выхода")
 
 local back = World.addPlayer(USER, "Buyer")
-World.advance(2)
+-- Читаем сразу: с первой же секунды в игре брейнрот начнёт приносить монеты.
 local loaded = DataService.get(back)
 check(loaded ~= nil, "профиль не загрузился после перезахода")
+check(coinsBefore == COINS_AFTER_RECEIPT, "монеты перед уходом: " .. tostring(coinsBefore))
+check(loaded.coins == coinsBefore, "монеты после перезахода: " .. tostring(loaded.coins))
+check(loaded.wheel.extraSpins == SPINS.amount, "вращения после перезахода: " .. tostring(loaded.wheel.extraSpins))
+check(DataService.hasReceipt(loaded, "rejoin-coins"), "чек монет потерян")
+check(DataService.hasReceipt(loaded, "rejoin-spins"), "чек вращений потерян")
+
+-- Roblox повторил чеки: второй выдачи нет.
+check(receipt("rejoin-coins", COINS_SMALL) == Decision.PurchaseGranted, "повтор чека монет не подтверждён")
+check(receipt("rejoin-spins", SPINS) == Decision.PurchaseGranted, "повтор чека вращений не подтверждён")
+check(loaded.coins == coinsBefore, "повтор чека выдал монеты второй раз: " .. tostring(loaded.coins))
+check(loaded.wheel.extraSpins == SPINS.amount, "повтор чека выдал вращения второй раз: " .. tostring(loaded.wheel.extraSpins))
+World.advance(2)
 check(rawequal(loaded, data) == false, "профиль не прочитан заново из сохранения")
 local passes = MonetizationService.passes(back)
 check(passes.VIP == true, "VIP потерян после перезахода")
 check(loaded.floors == 2, "2 этаж потерян после перезахода: " .. tostring(loaded.floors))
 check(Formulas.floors(loaded, passes) == 2, "этажи не считаются после перезахода")
 check(Formulas.slots(loaded, passes) == 20, "мест не 20: " .. tostring(Formulas.slots(loaded, passes)))
-check(loaded.coins >= coinsBefore, "монеты потеряны после перезахода")
 check(#loaded.creatures == creaturesBefore, "брейнроты потеряны после перезахода")
 check(Formulas.incomeMultiplier(loaded, passes) == multiplierBefore * 2, "VIP не даёт x2 после перезахода")
 check(Formulas.floorCost(2, passes) == nil, "после перезахода снова предлагает строить")
