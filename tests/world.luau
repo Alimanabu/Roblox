@@ -2,7 +2,7 @@
 -- Время виртуальное (World.advance), сеть мгновенная, но копирует таблицы, как настоящая.
 -- Нужна там, где важен весь путь: от кнопки в окне до сервера и обратно на экран.
 
-World = { errors = {}, texts = {}, sent = {}, locale = __LOCALE or "en-us", studio = true }
+World = { errors = {}, texts = {}, sent = {}, calls = 0, locale = __LOCALE or "en-us", studio = true }
 
 local clock = 0
 local START_TIME = 1794312600 -- 2026-11-10, вне сезонов
@@ -85,6 +85,10 @@ end
 
 function World.now()
 	return clock
+end
+
+function World.realClock()
+	return realOs.clock()
 end
 
 -- Сигналы ---------------------------------------------------------------------
@@ -386,10 +390,12 @@ Meta.__newindex = function(self, key, value)
 end
 
 function Inst:IsA(class)
+	World.calls += 1
 	local own = self.ClassName
 	return own == class or (class == "BasePart" and PARTS[own] == true) or (class == "PVInstance" and own == "Model")
 end
 function Inst:GetChildren()
+	World.calls += 1
 	return table.clone(raw(self).children)
 end
 function Inst:GetDescendants()
@@ -403,6 +409,7 @@ function Inst:GetDescendants()
 	return out
 end
 function Inst:FindFirstChild(name, recursive)
+	World.calls += 1
 	local list = if recursive then self:GetDescendants() else raw(self).children
 	for _, child in ipairs(list) do
 		if child.Name == name then
@@ -501,6 +508,7 @@ function Inst:SetAttribute(name, value)
 	end
 end
 function Inst:GetAttribute(name)
+	World.calls += 1
 	return raw(self).attrs[name]
 end
 function Inst:GetAttributes()

@@ -14,6 +14,7 @@ local Music = require(script.Parent.Music)
 local LegendaryFx = require(script.Parent.LegendaryFx)
 local PetFollow = require(script.Parent.PetFollow)
 local WorldText = require(script.Parent.WorldText)
+local BaseAnimator = require(script.Parent.BaseAnimator)
 local RenameDialog = require(script.Parent.Ui.RenameDialog)
 local DiscoFx = require(script.Parent.DiscoFx)
 local Events = require(Shared.Config.Events)
@@ -190,13 +191,10 @@ task.spawn(function()
 	end
 end)
 
--- Брейнроты на базах покачиваются и крутятся; редкие переливаются радугой.
--- Кнопку «Украсть» видно только на чужих базах, кнопку замка — только на своей.
-local plots = workspace:WaitForChild("Plots")
+BaseAnimator.start(workspace:WaitForChild("Plots"), player)
+
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
-	local serverNow = workspace:GetServerTimeNow()
-	local camera = workspace.CurrentCamera
 	tutorial:animate(t)
 
 	-- Босс на площади покачивается и поворачивается.
@@ -204,56 +202,5 @@ RunService.RenderStepped:Connect(function()
 	local bossBase = boss and boss:GetAttribute("BaseCFrame")
 	if bossBase then
 		boss:PivotTo(bossBase * CFrame.new(0, math.abs(math.sin(t * 1.5)) * 2, 0) * CFrame.Angles(0, math.sin(t * 0.7) * 0.6, 0))
-	end
-	for _, plot in ipairs(plots:GetChildren()) do
-		local isMine = plot:GetAttribute("OwnerUserId") == player.UserId
-		local locked = (plot:GetAttribute("LockedUntil") or 0) > serverNow
-		local lockButton = plot:FindFirstChild("LockButton")
-		local lockPrompt = lockButton and lockButton:FindFirstChild("LockPrompt")
-		if lockPrompt then
-			local shieldOnly = plot:GetAttribute("LockKind") == "shield"
-			local ready = (plot:GetAttribute("LockReadyAt") or 0) <= serverNow
-			lockPrompt.Enabled = isMine and ready and (not locked or shieldOnly)
-		end
-		-- Табличка стройки: этажи покупает только хозяин.
-		local buildSign = plot:FindFirstChild("BuildSign")
-		local buildPrompt = buildSign and buildSign:FindFirstChild("BuildPrompt")
-		if buildPrompt then
-			buildPrompt.Enabled = isMine and plot:GetAttribute("CanBuild") == true
-		end
-		local folder = plot:FindFirstChild("Creatures")
-		if folder then
-			for _, model in ipairs(folder:GetChildren()) do
-				local body = model:IsA("Model") and model.PrimaryPart
-				if body then
-					local stealPrompt = body:FindFirstChild("StealPrompt")
-					if stealPrompt then
-						stealPrompt.Enabled = not isMine and not locked and plot:GetAttribute("OwnerUserId") ~= nil
-					end
-					local base = model:GetAttribute("BaseCFrame")
-					-- Анимируем только тех, кто близко к камере — экономим FPS на телефонах.
-					if base and camera and (base.Position - camera.CFrame.Position).Magnitude < 140 then
-						local phase = base.Position.X * 0.3 + base.Position.Z * 0.2
-						if DiscoFx.isActive() then
-							-- Дискотека: прыгают в такт и крутятся.
-							model:PivotTo(
-								base
-									* CFrame.new(0, math.abs(math.sin(t * 6)) * 2.2, 0)
-									* CFrame.Angles(0, t * 4 + phase, math.sin(t * 6) * 0.25)
-							)
-						else
-							model:PivotTo(
-								base
-									* CFrame.new(0, math.abs(math.sin(t * 2 + phase)) * 0.5, 0)
-									* CFrame.Angles(0, math.sin(t * 0.8 + phase) * 0.35, 0)
-							)
-						end
-						if model:GetAttribute("Rainbow") then
-							body.Color = Color3.fromHSV((t * 0.3 + phase * 0.05) % 1, 0.7, 1)
-						end
-					end
-				end
-			end
-		end
 	end
 end)
