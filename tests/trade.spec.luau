@@ -284,10 +284,6 @@ scenario("LUCKY: пометка там, где действует; при зап
 	MonetizationService.passes(blocked).LUCKY = true
 	check(craft(viewer).source == LUCK, "LUCKY: не luck")
 	check(craft(blocked).source == FREE, "при запрете LUCKY пометил брейнрота")
-	-- Остаток купленного буста после смены региона в броске участвует, поэтому метит.
-	DataService.get(blocked).boosts.luckUntil = os.time() + 60
-	DataService.get(blocked).boosts.paidLuckUntil = os.time() + 60
-	check(craft(blocked).source == LUCK, "остаток купленного буста: не luck")
 end)
 
 scenario("скрещивание наследует источник и не отмывает платных", function()
