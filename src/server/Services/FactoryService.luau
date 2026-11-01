@@ -164,8 +164,9 @@ local function craft(player, capsuleId, silent)
 		return fail(S.m("common.not_enough_coins", { cost = Format.coins(capsule.cost) }))
 	end
 	local restricted = PolicyService.paidRandomRestricted(player)
-	if Formulas.randomCoins(data, restricted) < capsule.cost then
-		return fail(S.m("shop.bought_coins"))
+	local earned = Formulas.randomCoins(data, restricted)
+	if earned < capsule.cost then
+		return fail(S.m("shop.bought_coins", { coins = Format.coins(capsule.cost - earned) }))
 	end
 
 	lastCraft[player] = now

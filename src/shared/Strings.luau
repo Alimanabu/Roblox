@@ -154,7 +154,7 @@ local Source = {
 	["shop.passes"] = "Game Passes (forever)",
 	["shop.owned"] = "✅ Owned",
 	["shop.region"] = "Not available in your region",
-	["shop.bought_coins"] = "🔒 In your region coins bought with Robux can't go to capsules, luck upgrades or rebirth. Only earned coins count.",
+	["shop.bought_coins"] = "🔒 Earn {coins} more. Bought coins only work on floors and skins",
 	["shop.soon"] = "Soon",
 	["shop.boosts"] = "Boosts",
 
@@ -219,6 +219,7 @@ local Source = {
 	["wheel.no_spins"] = "Out of spins. Next free one is tomorrow 🎡",
 	["wheel.result"] = "🎡 Wheel: {name} → {reward}",
 	["wheel.title"] = "🎡 LUCKY WHEEL",
+	["wheel.spins_kept"] = "🎡 Bought spins don't work here. They stay on your account",
 
 	-- Промокоды
 	["code.skin67.text"] = "Skin 67 unlocked! Put it on in 🎨 Skins",
@@ -263,9 +264,9 @@ local Source = {
 	["trade.err_missing"] = "a brainrot from the offer is gone",
 	["trade.err_empty"] = "the trade is empty",
 	["trade.err_past_life"] = "you can't take back your own brainrot from a past life (before rebirth)",
-	["trade.err_random"] = "a brainrot from bought coins or paid luck can't be traded in one player's region",
-	["trade.random_you"] = "🔒 You can't trade this brainrot in your region: it came from bought coins or paid luck",
-	["trade.random_them"] = "🔒 {name} can't receive this brainrot in their region: it came from bought coins or paid luck",
+	["trade.err_random"] = "a brainrot from Robux can't be traded, start again without it",
+	["trade.random_you"] = "🔒 This brainrot came from Robux, so you can't trade it. Pick another brainrot",
+	["trade.random_them"] = "🔒 {name} can't take brainrots from Robux. Pick another brainrot",
 	["trade.err_no_space"] = "{name} doesn't have enough base spots",
 	["trade.cancelled"] = "❌ Trade cancelled: {reason}",
 	["trade.done"] = "🤝 Trade complete!",

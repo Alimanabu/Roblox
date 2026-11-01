@@ -130,16 +130,27 @@ local function randomCoins(state)
 	return Formulas.randomCoins(state, randomRestricted())
 end
 
-local function boughtCoinsLocked(state)
-	return randomRestricted() and state.boughtCoins > 0
+-- Объяснение в окне: при запрете купленные монеты есть, но на эти цены их не потратить.
+-- Говорим про самую дешёвую из таких цен. Пустая строка: объяснять нечего.
+local function boughtCoinsText(state, costs)
+	if not randomRestricted() or state.boughtCoins <= 0 then
+		return ""
+	end
+	local earned = randomCoins(state)
+	local cheapest
+	for _, cost in ipairs(costs) do
+		if cost > earned and cost <= state.coins and (not cheapest or cost < cheapest) then
+			cheapest = cost
+		end
+	end
+	return cheapest and S.t("shop.bought_coins", { coins = Format.coins(cheapest - earned) }) or ""
 end
 
--- Объяснение в окне: часть монет при запрете нельзя тратить на случайные награды.
-local function boughtCoinsNotice(content, state)
-	if boughtCoinsLocked(state) then
+local function boughtCoinsNotice(content, text)
+	if text ~= "" then
 		Theme.label({
 			Size = UDim2.new(1, -10, 0, 40),
-			Text = S.t("shop.bought_coins"),
+			Text = text,
 			TextColor3 = C.Bad,
 			LayoutOrder = -1,
 			Parent = content,
@@ -165,6 +176,18 @@ end
 ---------------------------------------------------------------------------
 local Factory = { title = S.t("panel.factory") }
 
+-- Цены капсул, которые игрок сейчас может открыть.
+local function capsuleCosts(state)
+	local costs = {}
+	local serverNow = workspace:GetServerTimeNow()
+	for _, capsule in ipairs(Capsules.List) do
+		if Formulas.capsuleInSeason(capsule, serverNow) and Formulas.capsuleUnlocked(capsule, state) then
+			table.insert(costs, capsule.cost)
+		end
+	end
+	return costs
+end
+
 function Factory.signature(state)
 	local parts = {
 		state.level,
@@ -173,7 +196,7 @@ function Factory.signature(state)
 		state.mods.secret,
 		tostring(state.autoCraft),
 		tostring(state.passes.AUTO_CRAFT),
-		tostring(boughtCoinsLocked(state)),
+		boughtCoinsText(state, capsuleCosts(state)),
 	}
 	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
@@ -189,7 +212,7 @@ end
 
 function Factory.build(content, state, panels)
 	list(content, 10)
-	boughtCoinsNotice(content, state)
+	boughtCoinsNotice(content, boughtCoinsText(state, capsuleCosts(state)))
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
@@ -544,8 +567,19 @@ local function upgradeCoins(state, upgrade)
 	return if upgrade.leadsToRandom then randomCoins(state) else state.coins
 end
 
+local function upgradeCosts(state)
+	local costs = {}
+	for _, upgrade in ipairs(Upgrades.List) do
+		local level = state.upgrades[upgrade.id] or 0
+		if upgrade.leadsToRandom and level < upgrade.maxLevel then
+			table.insert(costs, Upgrades.cost(upgrade.id, level))
+		end
+	end
+	return costs
+end
+
 function UpgradesPanel.signature(state)
-	local parts = { floorSignature(state), tostring(boughtCoinsLocked(state)) }
+	local parts = { floorSignature(state), boughtCoinsText(state, upgradeCosts(state)) }
 	for _, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
 		table.insert(parts, level .. ":" .. (upgradeCoins(state, upgrade) >= Upgrades.cost(upgrade.id, level) and 1 or 0))
@@ -555,7 +589,7 @@ end
 
 function UpgradesPanel.build(content, state)
 	list(content, 10)
-	boughtCoinsNotice(content, state)
+	boughtCoinsNotice(content, boughtCoinsText(state, upgradeCosts(state)))
 	floorCard(content, state, 0)
 	for order, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
@@ -596,13 +630,13 @@ local Rebirth = { title = S.t("hud.rebirth") }
 
 function Rebirth.signature(state)
 	local cost = Rebirths.cost(state.rebirths)
-	return table.concat({ state.rebirths, state.level, randomCoins(state) >= cost and 1 or 0, tostring(boughtCoinsLocked(state)) }, "|")
+	return table.concat({ state.rebirths, state.level, randomCoins(state) >= cost and 1 or 0, boughtCoinsText(state, { cost }) }, "|")
 end
 
 function Rebirth.build(content, state)
 	list(content, 10)
-	boughtCoinsNotice(content, state)
 	local cost = Rebirths.cost(state.rebirths)
+	boughtCoinsNotice(content, boughtCoinsText(state, { cost }))
 	local levelRequired = Rebirths.levelRequired(state.rebirths)
 	local nextTitle = Rebirths.titleFor(state.rebirths + 1)
 	local levelOk = state.level >= levelRequired

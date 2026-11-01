@@ -50,7 +50,7 @@ local function spin(player)
 	elseif data.wheel.extraSpins > 0 then
 		-- Лишние вращения бывают только купленные: это платная случайная награда.
 		if PolicyService.paidRandomRestricted(player) then
-			Remotes.Notify:FireClient(player, S.m("shop.region"), BAD)
+			Remotes.Notify:FireClient(player, S.m("wheel.spins_kept"), BAD)
 			return
 		end
 		data.wheel.extraSpins -= 1

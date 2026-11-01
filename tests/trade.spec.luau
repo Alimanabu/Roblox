@@ -235,6 +235,11 @@ local function lastState(player)
 	return nil
 end
 
+-- Текст отказа: сколько заработанных монет не хватает на эту цену.
+local function earnMore(data, cost)
+	return S.t("shop.bought_coins", { coins = Format.coins(cost - math.max(data.coins - data.boughtCoins, 0)) })
+end
+
 local function scenario(name, body)
 	scenarios += 1
 	local before = failures
@@ -441,7 +446,7 @@ end)
 
 scenario("тексты отказа на языке игрока", function()
 	local russian = World.locale == "ru-ru"
-	for _, key in ipairs({ "trade.random_you", "trade.random_them", "trade.err_random", "shop.bought_coins" }) do
+	for _, key in ipairs({ "trade.random_you", "trade.random_them", "trade.err_random", "shop.bought_coins", "wheel.spins_kept" }) do
 		local hasRussian = string.find(S.t(key, { name = "X" }), "[\208\209]") ~= nil
 		check(hasRussian == russian, key .. ": не тот язык: " .. S.t(key, { name = "X" }))
 	end
@@ -452,14 +457,14 @@ print("— Купленные монеты при запрете —")
 scenario("капсула на купленные монеты при запрете: отказ сервера и объяснение в окне", function()
 	local data = restrictedWallet(viewer, CAPSULE.cost, CAPSULE.cost)
 	openPanel("hud.factory")
-	check(hasText(S.t("shop.bought_coins")), "окно фабрики: нет объяснения")
+	check(hasText(earnMore(data, CAPSULE.cost)), "окно фабрики: нет объяснения с числом")
 	World.advance(10)
 	data.coins = CAPSULE.cost
 	World.click(World.find(gui, S.t("factory.craft", { cost = Format.coins(CAPSULE.cost) })))
 	World.advance(0.3)
 	check(#data.creatures == 0, "капсула открылась на купленные монеты")
 	check(data.coins == CAPSULE.cost and data.boughtCoins == CAPSULE.cost, "монеты списаны при отказе")
-	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+	check(lastNotify(viewer) == earnMore(data, CAPSULE.cost), "нет сообщения сервера: " .. lastNotify(viewer))
 end)
 
 scenario("заработанных не хватает одной монеты: отказ", function()
@@ -487,7 +492,8 @@ scenario("без запрета купленные тратятся как ра�
 	DataService.sendNow(viewer)
 	World.advance(0.3)
 	openPanel("hud.factory")
-	check(not hasText(S.t("shop.bought_coins")), "окно: объяснение без запрета")
+	check(not hasText(earnMore(data, CAPSULE.cost * 2)), "окно: объяснение без запрета")
+	check(not hasText(earnMore({ coins = 0, boughtCoins = 0 }, CAPSULE.cost)), "окно: объяснение без запрета")
 	check(craft(viewer).source == COINS, "разрешённому отказано в купленных монетах")
 end)
 
@@ -505,11 +511,11 @@ scenario("улучшение удачи при запрете только на 
 	local cost = Upgrades.cost("luck", 0)
 	local data = restrictedWallet(viewer, cost, cost)
 	openPanel("hud.upgrades")
-	check(hasText(S.t("shop.bought_coins")), "окно улучшений: нет объяснения")
+	check(hasText(earnMore(data, cost)), "окно улучшений: нет объяснения с числом")
 	fromPlayer(Remotes.BuyUpgrade, viewer, "luck")
 	check(data.upgrades.luck == 0, "удача куплена за купленные монеты")
 	check(data.coins == cost, "монеты списаны при отказе")
-	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+	check(lastNotify(viewer) == earnMore(data, cost), "нет сообщения сервера: " .. lastNotify(viewer))
 
 	data = restrictedWallet(viewer, cost + 7, 7)
 	fromPlayer(Remotes.BuyUpgrade, viewer, "luck")
@@ -553,13 +559,15 @@ scenario("перерождение при запрете: окно объясн�
 	local cost = Rebirths.cost(data.rebirths)
 	restrictedWallet(viewer, cost, cost)
 	openPanel("hud.rebirth")
-	check(hasText(S.t("shop.bought_coins")), "окно перерождения: нет объяснения")
+	DataService.sendNow(viewer)
+	World.advance(0.3)
+	check(hasText(earnMore(data, cost)), "окно перерождения: нет объяснения с числом")
 	-- До запроса монеты могли вырасти: новый уровень приносит награды.
 	local before = data.coins
 	fromPlayer(Remotes.Rebirth, viewer)
 	check(data.rebirths == 0, "перерождение за купленные монеты")
 	check(data.coins == before, "монеты сгорели при отказе: " .. tostring(data.coins))
-	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+	check(lastNotify(viewer) == earnMore(data, cost), "нет сообщения сервера: " .. lastNotify(viewer))
 end)
 
 scenario("монеты с купленного вращения считаются купленными, с бесплатного нет", function()
@@ -623,6 +631,41 @@ scenario("остаток купленного буста при запрете �
 	free.boosts.paidLuckUntil = now + 60
 	free.boosts.luckUntil = now + 120
 	check(MonetizationService.luck(viewer, free, now) == MonetizationService.luck(viewer, free, now + 500) * Formulas.LUCK_BOOST_MULT, "без запрета купленный буст не работает")
+end)
+
+-- Метка 40 пикселей с TextScaled: длиннее текст станет нечитаемым.
+local SHORT_TEXTS = {
+	{ "shop.bought_coins", { coins = "$999.99T" } },
+	{ "trade.random_you" },
+	{ "trade.random_them", { name = string.rep("Щ", 20) } },
+	{ "trade.cancelled", { reason = S.m("trade.err_random") } },
+	{ "wheel.spins_kept" },
+}
+
+scenario("тексты отказа короче 90 знаков, говорят причину и что делать", function()
+	for _, item in ipairs(SHORT_TEXTS) do
+		local text = S.t(item[1], item[2])
+		check(utf8.len(text) < 90, item[1] .. ": длина " .. tostring(utf8.len(text)) .. ": " .. text)
+		check(string.find(text, "{", 1, true) == nil, "незаполненный параметр: " .. text)
+	end
+	local advice = if World.locale == "ru-ru" then "Выбери другого" else "Pick another"
+	check(string.find(S.t("trade.random_you"), advice, 1, true) ~= nil, "random_you: нет совета")
+	check(string.find(S.t("trade.random_them", { name = "X" }), advice, 1, true) ~= nil, "random_them: нет совета")
+	local simple = S.t("trade.err_random")
+	for _, word in ipairs({ "region", "регион", "luck", "удач" }) do
+		check(string.find(simple, word, 1, true) == nil, "err_random: слово " .. word)
+	end
+end)
+
+scenario("купленное вращение при запрете: вращения остаются, сообщение об этом", function()
+	local data = DataService.get(blocked)
+	data.wheel.extraSpins = 3
+	data.wheel.lastFreeDay = Daily.today()
+	World.advance(5)
+	fromPlayer(Remotes.SpinWheel, blocked)
+	check(data.wheel.extraSpins == 3, "вращение потрачено")
+	check(lastNotify(blocked) == S.t("wheel.spins_kept"), "нет сообщения: " .. lastNotify(blocked))
+	data.wheel.extraSpins = 0
 end)
 
 print("— Старые сохранения —")
