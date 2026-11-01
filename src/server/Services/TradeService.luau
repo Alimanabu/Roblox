@@ -47,6 +47,21 @@ local function findEntry(data, uid)
 	return nil
 end
 
+-- Там, где Roblox запрещает платные случайные награды, их результат нельзя ни отдать, ни получить.
+-- Возвращает сообщение для отдающего или nil.
+local function paidRandomRefusal(entries, giver, receiver)
+	local giverRestricted = PolicyService.paidRandomRestricted(giver)
+	if not giverRestricted and not PolicyService.paidRandomRestricted(receiver) then
+		return nil
+	end
+	for _, entry in ipairs(entries) do
+		if Formulas.isPaidRandom(entry) then
+			return if giverRestricted then S.m("trade.random_you") else S.m("trade.random_them", { name = receiver.DisplayName })
+		end
+	end
+	return nil
+end
+
 -- Что видит игрок в окне обмена.
 local function stateFor(trade, player)
 	local partner = partnerOf(trade, player)
@@ -66,6 +81,7 @@ local function stateFor(trade, player)
 		myReady = trade.ready[player] == true,
 		theirReady = trade.ready[partner] == true,
 		confirmAt = trade.confirmAt,
+		notice = trade.notices[player],
 	}
 end
 
@@ -158,6 +174,7 @@ local function respond(player, fromUserId, accept)
 		ready = {},
 		confirmAt = nil,
 		token = 0,
+		notices = {}, -- [player] = почему сервер отказал, показывается в окне обмена
 	}
 	trades[from] = trade
 	trades[player] = trade
@@ -170,13 +187,22 @@ local function setOffer(player, uids)
 	if not trade or not data or type(uids) ~= "table" or #uids > TradeService.MAX_OFFER then
 		return
 	end
-	local clean, seen = {}, {}
+	local clean, seen, entries = {}, {}, {}
 	for _, uid in ipairs(uids) do
-		if type(uid) ~= "string" or seen[uid] or not findEntry(data, uid) then
+		local entry = type(uid) == "string" and not seen[uid] and findEntry(data, uid)
+		if not entry then
 			return
 		end
 		seen[uid] = true
 		table.insert(clean, uid)
+		table.insert(entries, entry)
+	end
+	-- Предложение остаётся прежним: готовность не снимаем, только объясняем отказ.
+	local refusal = paidRandomRefusal(entries, player, partnerOf(trade, player))
+	trade.notices[player] = refusal
+	if refusal then
+		sendState(trade)
+		return
 	end
 	trade.offers[player] = clean
 	resetReady(trade)
@@ -221,6 +247,10 @@ local function execute(trade)
 	if returnsAfterRebirth(giveA, b, dataB) or returnsAfterRebirth(giveB, a, dataA) then
 		return S.m("trade.err_past_life")
 	end
+	-- Ответ Roblox о запрете мог прийти уже после того, как брейнрота положили в обмен.
+	if paidRandomRefusal(giveA, a, b) or paidRandomRefusal(giveB, b, a) then
+		return S.m("trade.err_random")
+	end
 	local function fits(player, data, giving, getting)
 		local after = #data.creatures - #giving + #getting
 		return after <= Formulas.slots(data, MonetizationService.passes(player)) or after <= #data.creatures
@@ -245,7 +275,7 @@ local function execute(trade)
 				table.clone(Formulas.lineageOf(entry, giver.UserId, 0)),
 				{ [tostring(receiver.UserId)] = data.rebirths }
 			)
-			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, lineage = lineage })
+			table.insert(data.creatures, { uid = tostring(data.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, source = entry.source, skin = entry.skin, lineage = lineage })
 			data.nextUid += 1
 			data.index[entry.id] = true
 		end

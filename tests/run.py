@@ -150,10 +150,13 @@ def main():
     screens_ru = world("screens.spec.luau", "ru-ru")
     steal = world("steal.spec.luau", "en-us")
     policy = world("policy.spec.luau", "en-us")
+    trade = world("trade.spec.luau", "en-us")
+    trade_ru = world("trade.spec.luau", "ru-ru")
     rejoin = world("rejoin.spec.luau", "en-us")
     frames = world("frames.spec.luau", "en-us")
 
-    return economy or purchases or dictionary or strings or screens or screens_ru or steal or policy or rejoin or frames
+    return (economy or purchases or dictionary or strings or screens or screens_ru or steal or policy or trade or trade_ru
+            or rejoin or frames)
 
 
 if __name__ == "__main__":

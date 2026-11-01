@@ -50,13 +50,15 @@ local SHOWCASE_COOLDOWN = 15 -- не чаще раза в 15 с на игрок�
 local lastShowcase = {} -- [player] = os.clock()
 
 -- showcase = true — это действительно редкая находка (см. craft): запускаем шоу.
-local function addCreature(player, data, creatureId, mutationId, paid, lineage, showcase)
+-- source: откуда брейнрот (см. Formulas.SOURCE_FREE).
+local function addCreature(player, data, creatureId, mutationId, paid, lineage, showcase, source)
 	-- lineage: кто владел брейнротом и в каком «поколении» (см. Formulas.lineageOf).
 	local entry = {
 		uid = tostring(data.nextUid),
 		id = creatureId,
 		mut = mutationId,
 		paid = paid,
+		source = source,
 		lineage = Formulas.mergeLineage(lineage or {}, { [tostring(player.UserId)] = data.rebirths }),
 	}
 	data.nextUid += 1
@@ -108,13 +110,13 @@ local function addCreature(player, data, creatureId, mutationId, paid, lineage, 
 end
 
 -- Выдать брейнрота напрямую (награды, тест-команды). Возвращает запись.
-function FactoryService.give(player, creatureId, mutationId)
+function FactoryService.give(player, creatureId, mutationId, source)
 	local data = DataService.get(player)
 	if not data or not Creatures.get(creatureId) then
 		return nil
 	end
 	local rank = Rarities.get(Creatures.get(creatureId).rarity).rank
-	return (addCreature(player, data, creatureId, mutationId or "normal", nil, nil, rank >= Rarities.get("god").rank))
+	return (addCreature(player, data, creatureId, mutationId or "normal", nil, nil, rank >= Rarities.get("god").rank, source or Formulas.SOURCE_FREE))
 end
 
 -- Возвращает true, если получилось создать.
@@ -163,7 +165,11 @@ local function craft(player, capsuleId, silent)
 
 	lastCraft[player] = now
 	fullWarned[player] = nil
+	-- Купленные монеты капсула тратит первыми. Прочие траты их не уменьшают, пока монет хватает,
+	-- поэтому ошибка возможна только в сторону «за купленные».
+	local bought = math.min(data.boughtCoins, data.coins)
 	data.coins -= capsule.cost
+	data.boughtCoins = math.max(bought - capsule.cost, 0)
 	AnalyticsService.coins(player, false, capsule.cost, "Capsule")
 	data.stats.crafted += 1
 
@@ -183,7 +189,13 @@ local function craft(player, capsuleId, silent)
 
 	local showcase = Rarities.get(rarityId).rank >= Rarities.get("god").rank
 		and Rarities.get(rarityId).rank >= Rarities.get(pityRarity).rank
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost, nil, showcase)
+	local source = Formulas.SOURCE_FREE
+	if MonetizationService.paidLuck(player, data, os.time()) then
+		source = Formulas.SOURCE_LUCK
+	elseif bought > 0 then
+		source = Formulas.SOURCE_COINS
+	end
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost, nil, showcase, source)
 	Actions.fire(player, "craft", 1)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
@@ -279,9 +291,14 @@ local function fuse(player, rarityId)
 	-- Если среди скрещённых был чужой брейнрот, результат «наследует» его происхождение,
 	-- иначе скрещивание отмывало бы брейнротов, спрятанных у друга на время перерождения.
 	local lineage = {}
+	-- Так же и с источником: платный брейнрот нельзя отмыть скрещиванием.
+	local source = Formulas.SOURCE_FREE
 	for _, index in ipairs(toRemove) do
 		local removed = table.remove(data.creatures, index)
 		Formulas.mergeLineage(lineage, Formulas.lineageOf(removed, player.UserId, data.rebirths))
+		if Formulas.isPaidRandom(removed) then
+			source = removed.source
+		end
 		if paid and removed.paid then
 			paid += removed.paid
 		else
@@ -295,8 +312,11 @@ local function fuse(player, rarityId)
 	local mutationId = Formulas.rollMutation(luck, rng, mods)
 	data.stats.fused += 1
 	Actions.fire(player, "fuse", 1)
+	if MonetizationService.paidLuck(player, data, os.time()) then
+		source = Formulas.SOURCE_LUCK
+	end
 
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, lineage, nextRarity.rank >= Rarities.get("god").rank)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, paid, lineage, nextRarity.rank >= Rarities.get("god").rank, source)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
 		id = creature.id,

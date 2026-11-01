@@ -17,7 +17,8 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 local RewardService = {}
 
 -- Возвращает сообщение вида «💰 $1.2K + 🍀 x2 удачи на 10 мин» (см. Strings).
-function RewardService.grant(player, data, reward)
+-- source: откуда брейнрот из награды, если не бесплатно (см. Formulas.SOURCE_FREE).
+function RewardService.grant(player, data, reward, source)
 	local parts = {}
 	local coins = reward.coins or 0
 	if reward.coinsMinutes and reward.coinsMinutes > 0 then
@@ -50,7 +51,7 @@ function RewardService.grant(player, data, reward)
 			table.insert(parts, S.m("reward.coins_base_full", { coins = Format.coins(coins) }))
 		elseif pool then
 			local creature = pool[math.random(1, #pool)]
-			FactoryService.give(player, creature.id, "normal")
+			FactoryService.give(player, creature.id, "normal", source)
 			table.insert(parts, S.m("reward.creature", { name = S.m(creature.nameKey) }))
 		end
 	end

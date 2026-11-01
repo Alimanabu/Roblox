@@ -135,6 +135,7 @@ local function rebirth(player)
 	AnalyticsService.coins(player, false, data.coins, "Rebirth")
 	AnalyticsService.event(player, "Rebirth", 1)
 	data.coins = Formulas.START_COINS
+	data.boughtCoins = 0
 	data.creatures = {}
 	data.upgrades = { speed = 0, luck = 0 }
 

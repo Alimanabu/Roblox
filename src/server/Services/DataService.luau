@@ -44,15 +44,16 @@ local function defaultData()
 	return {
 		version = 1,
 		coins = Formulas.START_COINS,
+		boughtCoins = 0, -- ещё не потраченные на капсулы монеты за Robux (см. FactoryService.craft)
 		totalEarned = 0,
 		level = 1,
 		xp = 0,
 		rebirths = 0,
-		creatures = {}, -- { { uid = "1", id = "bananito_ninjini", mut = "normal" } }
+		creatures = {}, -- { { uid = "1", id = "bananito_ninjini", mut = "normal", source = "free" } }
 		nextUid = 1,
 		upgrades = { speed = 0, luck = 0 },
 		floors = 0, -- построенные этажи базы (см. Formulas.Floors), не сбрасываются перерождением
-		boosts = { luckUntil = 0 },
+		boosts = { luckUntil = 0, paidLuckUntil = 0 }, -- paidLuckUntil: до этого времени буст купленный
 		index = {}, -- [creatureId] = true — открытые брейнроты (коллекция)
 		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0, mutants = 0, thievesSlapped = 0 },
 		daily = { streak = 0, lastClaimDay = 0 },
@@ -307,9 +308,23 @@ local function onPlayerAdded(player)
 
 	-- Сохранения до этажей: там было минимум 8 мест, поэтому сразу дарим 1 этаж.
 	local beforeFloors = type(data) == "table" and data.coins ~= nil and data.floors == nil
+	local beforeSources = type(data) == "table" and data.coins ~= nil and data.boughtCoins == nil
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
 	if beforeFloors then
 		data.floors = 1
+	end
+	-- Сохранения до пометки источника, один раз. В чеках только номера, без товара, поэтому
+	-- «были покупки монет» читаем как «есть хоть один чек»: это шире, но никогда не меньше.
+	-- Позже запись без пометки не трогаем: она значит «источник неизвестен», см. Formulas.isPaidRandom.
+	if beforeSources then
+		local hadPurchases = #data.receipts > 0
+		for _, entry in ipairs(data.creatures) do
+			entry.source = if hadPurchases then Formulas.SOURCE_COINS else Formulas.SOURCE_FREE
+		end
+		if hadPurchases then
+			data.boughtCoins = data.coins
+			data.boosts.paidLuckUntil = data.boosts.luckUntil
+		end
 	end
 	-- Старые сохранения: брейнроты без «происхождения» считаем своими.
 	for _, entry in ipairs(data.creatures) do

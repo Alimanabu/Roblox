@@ -33,6 +33,11 @@ function MonetizationService.luck(player, data, now, mods)
 	return Formulas.luck(data, MonetizationService.passes(player), now, mods, PolicyService.paidRandomRestricted(player))
 end
 
+-- Вошла ли в бросок купленная удача: от этого зависит пометка брейнрота (Formulas.isPaidRandom).
+function MonetizationService.paidLuck(player, data, now)
+	return Formulas.usesPaidLuck(data, MonetizationService.passes(player), now, PolicyService.paidRandomRestricted(player))
+end
+
 -- Сбой запроса не значит «не куплено»: нет ответа Roblox, значит nil, а не false.
 local function ownsPass(player, pass, attempts)
 	for attempt = 1, attempts do
@@ -117,6 +122,7 @@ local function grantProduct(player, data, product)
 	if product.kind == "luckBoost" then
 		local now = os.time()
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, now) + product.minutes * 60
+		data.boosts.paidLuckUntil = data.boosts.luckUntil
 		Remotes.Notify:FireClient(player, S.m("shop.luck_boost_on"), Color3.fromRGB(120, 255, 120))
 		return true
 	elseif product.kind == "spins" then
@@ -128,6 +134,7 @@ local function grantProduct(player, data, product)
 		local amount = math.max(product.minCoins, math.floor(income * 60 * product.incomeMinutes))
 		data.coins += amount
 		data.totalEarned += amount
+		data.boughtCoins += amount
 		Remotes.Notify:FireClient(player, "💰 +" .. Format.coins(amount), Color3.fromRGB(255, 220, 80))
 		return true
 	end

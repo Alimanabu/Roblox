@@ -1305,10 +1305,10 @@ local function offerRow(parent, order, entry, selected, onClick)
 	button.AutoButtonColor = onClick ~= nil
 end
 
-local function column(content, x, title)
+local function column(content, x, top, title)
 	local frame = create("Frame", {
-		Size = UDim2.new(0.5, -6, 0, 300),
-		Position = UDim2.new(x, x > 0 and 6 or 0, 0, 0),
+		Size = UDim2.new(0.5, -6, 0, 300 - top),
+		Position = UDim2.new(x, x > 0 and 6 or 0, 0, top),
 		BackgroundTransparency = 1,
 		Parent = content,
 	})
@@ -1378,7 +1378,13 @@ function Trade.build(content, state)
 	for _, uid in ipairs(trade.myOffer) do
 		selected[uid] = true
 	end
-	local mine = column(content, 0, S.t("trade.you_give", { count = #trade.myOffer }))
+	-- Сервер отказал: объясняем над списками, кнопки остаются на месте и видны без прокрутки.
+	local top = 0
+	if trade.notice then
+		top = 44
+		Theme.label({ Size = UDim2.new(1, 0, 0, 40), Text = S.text(trade.notice), TextColor3 = C.Bad, Parent = content })
+	end
+	local mine = column(content, 0, top, S.t("trade.you_give", { count = #trade.myOffer }))
 	local sorted = table.clone(state.creatures)
 	table.sort(sorted, function(a, b)
 		return Formulas.creatureBaseIncome(a) > Formulas.creatureBaseIncome(b)
@@ -1396,7 +1402,7 @@ function Trade.build(content, state)
 		end)
 	end
 
-	local theirs = column(content, 0.5, S.t("trade.they_give", { name = trade.partnerName }))
+	local theirs = column(content, 0.5, top, S.t("trade.they_give", { name = trade.partnerName }))
 	for order, entry in ipairs(trade.theirOffer) do
 		offerRow(theirs, order, entry, false, nil)
 	end

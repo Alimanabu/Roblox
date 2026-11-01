@@ -3,6 +3,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
 local Daily = require(Shared.Config.Daily)
+local Formulas = require(Shared.Util.Formulas)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
@@ -43,6 +44,7 @@ local function spin(player)
 		return
 	end
 	local today = Daily.today()
+	local source = nil
 	if data.wheel.lastFreeDay ~= today then
 		data.wheel.lastFreeDay = today
 	elseif data.wheel.extraSpins > 0 then
@@ -52,6 +54,7 @@ local function spin(player)
 			return
 		end
 		data.wheel.extraSpins -= 1
+		source = Formulas.SOURCE_SPIN
 	else
 		Remotes.Notify:FireClient(player, S.m("wheel.no_spins"), BAD)
 		return
@@ -62,7 +65,7 @@ local function spin(player)
 	local slot = Daily.Wheel[index]
 	Remotes.WheelResult:FireClient(player, index)
 	-- Награду выдаём сразу (сохранится), а сообщение — когда колесо остановится.
-	local text = RewardService.grant(player, data, slot.reward)
+	local text = RewardService.grant(player, data, slot.reward, source)
 	DataService.markDirty(player)
 	task.delay(SPIN_COOLDOWN, function()
 		if player.Parent then

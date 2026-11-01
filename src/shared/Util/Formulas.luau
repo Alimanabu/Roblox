@@ -144,6 +144,26 @@ function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	return luck
 end
 
+-- Откуда брейнрот (entry.source). Там, где Roblox запрещает платные случайные награды,
+-- всё кроме SOURCE_FREE нельзя ни отдать, ни получить в обмене (см. TradeService).
+Formulas.SOURCE_FREE = "free" -- капсула за заработанные монеты, награда, дикий брейнрот
+Formulas.SOURCE_COINS = "coins" -- капсула за купленные монеты, хотя бы частично
+Formulas.SOURCE_LUCK = "luck" -- бросок с LUCKY или купленным бустом
+Formulas.SOURCE_SPIN = "spin" -- купленное вращение колеса
+
+-- Нет пометки: запись собрана заново (кража) и источник неизвестен, считаем платным.
+function Formulas.isPaidRandom(entry)
+	return entry.source ~= Formulas.SOURCE_FREE
+end
+
+-- Вошла ли в бросок купленная удача. Буст, полученный бесплатно, сюда не считается.
+function Formulas.usesPaidLuck(data, passes, now, noPaidLuck)
+	if passes.LUCKY and not noPaidLuck then
+		return true
+	end
+	return data.boosts.paidLuckUntil ~= nil and now < data.boosts.paidLuckUntil
+end
+
 function Formulas.incomeMultiplier(data, passes, mods)
 	mods = mods or NO_MODS
 	local mult = (1 + Rebirths.INCOME_BONUS * data.rebirths) * mods.income
