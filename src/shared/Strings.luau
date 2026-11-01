@@ -65,6 +65,7 @@ local Source = {
 	["factory.sold"] = "Sold for {coins}",
 	["factory.sold_many"] = "Sold {count} for {coins}",
 	["factory.fuse_need"] = "You need {count} brainrots of the same rarity",
+	["factory.fuse_paid"] = "🔒 Need {count} brainrots not from Robux. Open capsules with earned coins",
 	["factory.need_auto"] = "You need the “{pass}” game pass",
 	["factory.stats"] = "🍀 Luck x{luck}  •  ⏱ Machine: {time} s  •  Spots: {used}/{slots}",
 	["factory.hint"] = "The more popular the trend, the rarer the drop. Luck boosts your rare odds!",

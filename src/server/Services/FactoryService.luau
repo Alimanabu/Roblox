@@ -273,15 +273,23 @@ local function fuse(player, rarityId)
 		return
 	end
 
-	local candidates = {}
+	-- Скрещивание даёт новую случайную награду: при запрете платных брейнротов в него не берём.
+	local restricted = PolicyService.paidRandomRestricted(player)
+	local candidates, skippedPaid = {}, 0
 	for index, entry in ipairs(data.creatures) do
 		local creature = Creatures.get(entry.id)
 		if creature and creature.rarity == rarityId then
-			table.insert(candidates, { index = index, income = Formulas.creatureBaseIncome(entry) })
+			if restricted and Formulas.isPaidRandom(entry) then
+				skippedPaid += 1
+			else
+				table.insert(candidates, { index = index, income = Formulas.creatureBaseIncome(entry) })
+			end
 		end
 	end
 	if #candidates < Formulas.FUSE_COUNT then
-		Remotes.Notify:FireClient(player, S.m("factory.fuse_need", { count = Formulas.FUSE_COUNT }), BAD)
+		local args = { count = Formulas.FUSE_COUNT }
+		local paidInTheWay = #candidates + skippedPaid >= Formulas.FUSE_COUNT
+		Remotes.Notify:FireClient(player, if paidInTheWay then PolicyService.message(player, "factory.fuse_paid", args) else S.m("factory.fuse_need", args), BAD)
 		return
 	end
 

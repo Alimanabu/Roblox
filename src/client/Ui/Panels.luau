@@ -386,7 +386,7 @@ local function floorCard(content, state, order)
 end
 
 function Base.signature(state)
-	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet), floorSignature(state) }
+	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet), floorSignature(state), tostring(randomRestricted()) }
 	for _, entry in ipairs(state.creatures) do
 		table.insert(parts, entry.uid .. tostring(entry.nickname))
 	end
@@ -434,11 +434,14 @@ function Base.build(content, state, panels)
 	oddsButton(content, panels, 9)
 
 	-- Группы по редкостям: скрестить / продать всех.
-	local counts = {}
+	local counts, fusable = {}, {}
 	for _, entry in ipairs(state.creatures) do
 		local creature = Creatures.get(entry.id)
 		if creature then
 			counts[creature.rarity] = (counts[creature.rarity] or 0) + 1
+			if not (randomRestricted() and Formulas.isPaidRandom(entry)) then
+				fusable[creature.rarity] = (fusable[creature.rarity] or 0) + 1
+			end
 		end
 	end
 	for _, rarity in ipairs(Rarities.List) do
@@ -457,7 +460,7 @@ function Base.build(content, state, panels)
 					Size = UDim2.new(0.3, -4, 1, 0),
 					Position = UDim2.fromScale(0.4, 0),
 					Text = "🧬 3 → " .. nextRarity.name,
-					Color = count >= Formulas.FUSE_COUNT and C.Purple or C.CardLocked,
+					Color = (fusable[rarity.id] or 0) >= Formulas.FUSE_COUNT and C.Purple or C.CardLocked,
 					Parent = row,
 				}, function()
 					Remotes.Fuse:FireServer(rarity.id)

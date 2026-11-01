@@ -38,6 +38,7 @@ factory.base_full,"Your base is full! Sell or fuse brainrots, or build a floor �
 factory.pity,🎯 Guaranteed drop!,,,🎯 Сработала гарантия!
 factory.sold,Sold for {coins},,,Продано за {coins}
 factory.sold_many,Sold {count} for {coins},,,Продано {count} шт. за {coins}
+factory.fuse_paid,🔒 Need {count} brainrots not from Robux. Open capsules with earned coins,,,🔒 Нужно {count} брейнрота не за Robux. Открой капсулы за заработанные монеты
 factory.fuse_need,You need {count} brainrots of the same rarity,,,Нужно {count} брейнрота одной редкости
 factory.need_auto,You need the “{pass}” game pass,,,Нужен геймпасс «{pass}»
 factory.stats,🍀 Luck x{luck}  •  ⏱ Machine: {time} s  •  Spots: {used}/{slots},,,🍀 Удача x{luck}  •  ⏱ Машина: {time} с  •  Места: {used}/{slots}

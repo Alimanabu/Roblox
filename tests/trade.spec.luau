@@ -653,6 +653,7 @@ local SHORT_TEXTS = {
 	{ "trade.cancelled", { reason = S.m("trade.err_random") } },
 	{ "wheel.spins_kept" },
 	{ "steal.random" },
+	{ "factory.fuse_paid", { count = Formulas.FUSE_COUNT } },
 	{ "steal.failed", { reason = S.m("steal.reason_random") } },
 }
 
@@ -764,6 +765,57 @@ scenario("обмен при сбое говорит «проверяем» и о
 	fromPlayer(Remotes.TradeSetOffer, blocked, { own.uid })
 	local state = lastTradeState(blocked)
 	check(state and state.notice and state.notice.k == "policy.checking", "обмен: нет «проверяем» у отдающего")
+end)
+
+local function fuseSources(player, sources)
+	local data = DataService.get(player)
+	table.clear(data.creatures)
+	for _, source in ipairs(sources) do
+		give(player, source)
+	end
+	fromPlayer(Remotes.Fuse, player, Creatures.get(BANANA).rarity)
+	return data
+end
+
+scenario("скрещивание при запрете не берёт платных: не хватает, отказ с объяснением", function()
+	local data = fuseSources(blocked, { FREE, FREE, COINS })
+	check(#data.creatures == 3, "скрещивание съело платного: осталось " .. #data.creatures)
+	check(lastNotify(blocked) == S.t("factory.fuse_paid", { count = Formulas.FUSE_COUNT }), "нет объяснения: " .. lastNotify(blocked))
+	data = fuseSources(blocked, { LUCK, SPIN, COINS })
+	check(#data.creatures == 3, "скрещивание из трёх платных прошло")
+
+	data = fuseSources(blocked, { FREE, FREE })
+	check(lastNotify(blocked) == S.t("factory.fuse_need", { count = Formulas.FUSE_COUNT }), "мало брейнротов вообще: " .. lastNotify(blocked))
+end)
+
+scenario("скрещивание при запрете берёт бесплатных, платный остаётся", function()
+	local data = DataService.get(blocked)
+	table.clear(data.creatures)
+	local paid = give(blocked, COINS)
+	-- Платный самый слабый: без проверки скрещивание взяло бы его первым.
+	paid.mut = "normal"
+	for _ = 1, 3 do
+		give(blocked, FREE)
+	end
+	fromPlayer(Remotes.Fuse, blocked, Creatures.get(BANANA).rarity)
+	check(#data.creatures == 2, "скрещивание не прошло: " .. #data.creatures)
+	check(owns(blocked, paid), "скрещивание съело платного")
+	local result = data.creatures[#data.creatures]
+	check(result.source == FREE, "результат из бесплатных не free: " .. tostring(result.source))
+end)
+
+scenario("окно базы: при запрете кнопка скрещивания погашена, если бесплатных мало", function()
+	local Theme = shared_require("client/Ui/Theme")
+	local label = "🧬 3 → " .. shared_require("Config/Rarities").next(Creatures.get(BANANA).rarity).name
+	for _ = 1, 3 do
+		give(viewer, COINS)
+	end
+	openPanel("hud.base")
+	check(World.find(gui, label).BackgroundColor3 ~= Theme.Colors.CardLocked, "без запрета кнопка погашена")
+	viewer:SetAttribute("PaidRandomItemsRestricted", true)
+	DataService.sendNow(viewer)
+	World.advance(0.3)
+	check(World.find(gui, label).BackgroundColor3 == Theme.Colors.CardLocked, "при запрете кнопка не погашена")
 end)
 
 print("— Старые сохранения —")
