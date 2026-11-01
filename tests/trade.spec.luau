@@ -743,6 +743,8 @@ scenario("настоящий запрет после сбоя остаётся �
 	World.advance(5)
 	policyDown[FLAKY] = nil
 	World.advance(61)
+	local upgrades = if World.locale == "ru-ru" then "улучшения" else "upgrades"
+	check(string.find(S.t("shop.bought_coins", { coins = "$1" }), upgrades, 1, true) ~= nil, "bought_coins: нет улучшений")
 	check(player:GetAttribute("PaidRandomItemsRestricted") == true, "повтор снял настоящий запрет")
 	check(player:GetAttribute("PolicyUnknown") == nil, "повтор не снял отметку")
 	local data = DataService.get(player)

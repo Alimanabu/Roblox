@@ -157,7 +157,7 @@ local Source = {
 	["shop.region"] = "Not available in your region",
 	["shop.checking"] = "⏳ Checking...",
 	["policy.checking"] = "⏳ We're still checking what's allowed. Try again in a minute",
-	["shop.bought_coins"] = "🔒 Earn {coins} more. Bought coins only work on floors and skins",
+	["shop.bought_coins"] = "🔒 Earn {coins} more. Bought coins only work on floors, skins, basic upgrades",
 	["shop.soon"] = "Soon",
 	["shop.boosts"] = "Boosts",
 
