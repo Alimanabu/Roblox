@@ -133,23 +133,29 @@ def check_dictionary():
     return 1 if problems else 0
 
 
-economy = run("economy.spec.luau")
-dictionary = check_dictionary()
+def main():
+    economy = run("economy.spec.luau")
+    dictionary = check_dictionary()
 
-services = []
-for name in ["DataService", "MonetizationService", "PolicyService"]:
-    services.append(module_def("Services/" + name, "src", "server", "Services", name + ".luau"))
-# PlotService строит мир и в тесте не запускается: проверяем только его подписку на покупки.
-plot = read("src", "server", "Services", "PlotService.luau")
-services.append(f"__plotServiceSource = [=====[{plot}]=====]\n")
-purchases = run("purchases.spec.luau", services)
+    services = []
+    for name in ["DataService", "MonetizationService", "PolicyService"]:
+        services.append(module_def("Services/" + name, "src", "server", "Services", name + ".luau"))
+    # PlotService строит мир и в тесте не запускается: проверяем только его подписку на покупки.
+    plot = read("src", "server", "Services", "PlotService.luau")
+    services.append(f"__plotServiceSource = [=====[{plot}]=====]
+")
+    purchases = run("purchases.spec.luau", services)
 
-strings = world("strings.spec.luau", "en-us")
-screens = world("screens.spec.luau", "en-us")
-screens_ru = world("screens.spec.luau", "ru-ru")
-steal = world("steal.spec.luau", "en-us")
-policy = world("policy.spec.luau", "en-us")
-rejoin = world("rejoin.spec.luau", "en-us")
-frames = world("frames.spec.luau", "en-us")
+    strings = world("strings.spec.luau", "en-us")
+    screens = world("screens.spec.luau", "en-us")
+    screens_ru = world("screens.spec.luau", "ru-ru")
+    steal = world("steal.spec.luau", "en-us")
+    policy = world("policy.spec.luau", "en-us")
+    rejoin = world("rejoin.spec.luau", "en-us")
+    frames = world("frames.spec.luau", "en-us")
 
-sys.exit(economy or purchases or dictionary or strings or screens or screens_ru or steal or policy or rejoin or frames)
+    return economy or purchases or dictionary or strings or screens or screens_ru or steal or policy or rejoin or frames
+
+
+if __name__ == "__main__":
+    sys.exit(main())
