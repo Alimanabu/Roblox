@@ -120,6 +120,8 @@ shop.purchased,✅ Purchased: {name},,,✅ Куплено: {name}
 shop.passes,Game Passes (forever),,,Геймпассы (навсегда)
 shop.owned,✅ Owned,,,✅ Куплено
 shop.bought_coins,🔒 Earn {coins} more. Bought coins only work on floors and skins,,,🔒 Заработай ещё {coins}. Купленные монеты можно тратить на этажи и скины
+policy.checking,⏳ We're still checking what's allowed. Try again in a minute,,,⏳ Ещё проверяем, что разрешено. Попробуй через минуту
+shop.checking,⏳ Checking...,,,⏳ Проверяем...
 shop.region,Not available in your region,,,Недоступно в твоём регионе
 shop.soon,Soon,,,Скоро
 shop.boosts,Boosts,,,Бусты

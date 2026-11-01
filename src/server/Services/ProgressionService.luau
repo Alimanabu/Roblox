@@ -75,7 +75,7 @@ local function buyUpgrade(player, upgradeId)
 	end
 	local earned = Formulas.randomCoins(data, PolicyService.paidRandomRestricted(player))
 	if upgrade.leadsToRandom and earned < cost then
-		Remotes.Notify:FireClient(player, S.m("shop.bought_coins", { coins = Format.coins(cost - earned) }), BAD)
+		Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.bought_coins", { coins = Format.coins(cost - earned) }), BAD)
 		return
 	end
 	data.coins -= cost
@@ -141,7 +141,7 @@ local function rebirth(player)
 	-- Перерождение даёт бонус удачи, поэтому при запрете оплачивается только заработанным.
 	local earned = Formulas.randomCoins(data, PolicyService.paidRandomRestricted(player))
 	if earned < cost then
-		Remotes.Notify:FireClient(player, S.m("shop.bought_coins", { coins = Format.coins(cost - earned) }), BAD)
+		Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.bought_coins", { coins = Format.coins(cost - earned) }), BAD)
 		return
 	end
 

@@ -56,7 +56,9 @@ local function paidRandomRefusal(entries, giver, receiver)
 	end
 	for _, entry in ipairs(entries) do
 		if Formulas.isPaidRandom(entry) then
-			return if giverRestricted then S.m("trade.random_you") else S.m("trade.random_them", { name = receiver.DisplayName })
+			return if giverRestricted
+				then PolicyService.message(giver, "trade.random_you")
+				else PolicyService.message(receiver, "trade.random_them", { name = receiver.DisplayName })
 		end
 	end
 	return nil
@@ -121,11 +123,11 @@ local function request(player, targetUserId)
 	end
 	-- В некоторых странах обмен платными предметами запрещён (правила Roblox).
 	if not PolicyService.tradingAllowed(player) then
-		Remotes.Notify:FireClient(player, S.m("trade.region_you"), BAD)
+		Remotes.Notify:FireClient(player, PolicyService.message(player, "trade.region_you"), BAD)
 		return
 	end
 	if not PolicyService.tradingAllowed(target) then
-		Remotes.Notify:FireClient(player, S.m("trade.region_them"), BAD)
+		Remotes.Notify:FireClient(player, PolicyService.message(target, "trade.region_them"), BAD)
 		return
 	end
 	local now = os.clock()

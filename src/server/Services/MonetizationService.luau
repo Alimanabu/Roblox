@@ -163,7 +163,7 @@ local function processReceipt(receiptInfo)
 		-- Кнопки скрывает клиент, но окно покупки читер откроет сам. Покупку не подтверждаем:
 		-- ответ PolicyService мог быть сбоем, тогда чек выдастся при следующем заходе.
 		if product.leadsToRandom and PolicyService.paidRandomRestricted(player) then
-			Remotes.Notify:FireClient(player, S.m("shop.region"), Color3.fromRGB(255, 110, 110))
+			Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.region"), Color3.fromRGB(255, 110, 110))
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
 		if not grantProduct(player, data, product) then
@@ -193,7 +193,7 @@ function MonetizationService.init()
 					ownedPasses[player] = ownedPasses[player] or {}
 					ownedPasses[player][pass.key] = true
 					if pass.leadsToRandom and PolicyService.paidRandomRestricted(player) then
-						Remotes.Notify:FireClient(player, S.m("shop.region"), Color3.fromRGB(255, 110, 110))
+						Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.region"), Color3.fromRGB(255, 110, 110))
 					else
 						Remotes.Notify:FireClient(player, S.m("shop.purchased", { name = S.m("pass." .. pass.key .. ".name") }), Color3.fromRGB(120, 255, 120))
 					end

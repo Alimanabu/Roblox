@@ -125,6 +125,11 @@ local function randomRestricted()
 	return player:GetAttribute("PaidRandomItemsRestricted") ~= false
 end
 
+-- Ответа Roblox пока нет: ограничения действуют, но это ещё не запрет региона.
+local function policyPending()
+	return player:GetAttribute("PaidRandomItemsRestricted") == nil or player:GetAttribute("PolicyUnknown") == true
+end
+
 -- Сколько монет можно потратить на то, что ведёт к случайной награде (см. Formulas.randomCoins).
 local function randomCoins(state)
 	return Formulas.randomCoins(state, randomRestricted())
@@ -143,7 +148,10 @@ local function boughtCoinsText(state, costs)
 			cheapest = cost
 		end
 	end
-	return cheapest and S.t("shop.bought_coins", { coins = Format.coins(cheapest - earned) }) or ""
+	if not cheapest then
+		return ""
+	end
+	return if policyPending() then S.t("policy.checking") else S.t("shop.bought_coins", { coins = Format.coins(cheapest - earned) })
 end
 
 local function boughtCoinsNotice(content, text)
@@ -757,6 +765,7 @@ function Shop.signature(state)
 	end
 	table.sort(parts)
 	table.insert(parts, tostring(player:GetAttribute("PaidRandomItemsRestricted")))
+	table.insert(parts, tostring(policyPending()))
 	table.insert(parts, string.format("%.2f", state.luck))
 	table.insert(parts, tostring(state.luckBoostLeft > 0))
 	table.insert(parts, state.level)
@@ -822,7 +831,7 @@ function Shop.build(content, state, panels)
 		})
 		local text, color
 		if blocked then
-			text, color = S.t("shop.region"), C.CardLocked
+			text, color = S.t(if policyPending() then "shop.checking" else "shop.region"), C.CardLocked
 		elseif owned then
 			text, color = S.t("shop.owned"), C.CardLocked
 		elseif item.id == 0 then
@@ -872,6 +881,7 @@ function OddsPanel.signature(state)
 		tostring(state.luckBoostLeft > 0),
 		tostring(state.passes.LUCKY),
 		tostring(randomRestricted()),
+		tostring(policyPending()),
 		state.mods.secret,
 		state.mods.mutation,
 		state.mods.mutation67,
@@ -935,7 +945,7 @@ function OddsPanel.build(content, state)
 	add(S.t("odds.intro", { luck = string.format("%.2f", state.luck) }), C.Coins)
 	add(S.t("odds.rule", { secret = Format.percent(Formulas.MAX_SECRET_CHANCE), mutation = Formulas.MAX_MUTATION_LUCK }), C.Muted)
 	if randomRestricted() then
-		add(S.t("odds.region"), C.Bad)
+		add(S.t(if policyPending() then "policy.checking" else "odds.region"), C.Bad)
 	else
 		local names = {}
 		for _, column in ipairs(columns) do
@@ -1036,6 +1046,7 @@ function Rewards.signature(state)
 		tostring(state.wheel.freeAvailable),
 		state.wheel.extraSpins,
 		tostring(randomRestricted()),
+		tostring(policyPending()),
 	}
 	for _, gift in ipairs(state.playtime.gifts) do
 		table.insert(parts, tostring(gift.claimed))

@@ -13,7 +13,7 @@ end
 
 World.studio = false
 
-local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE = 5001, 5002, 5003, 5004, 5005
+local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE, FLAKY = 5001, 5002, 5003, 5004, 5005, 5006
 World.restricted[BLOCKED] = true
 
 -- Игроки раньше модулей: словарь узнаёт язык у игрока при загрузке.
@@ -47,6 +47,17 @@ local marketplace = World.services.MarketplaceService
 local props = rawget(marketplace, "__state").props
 props.UserOwnsGamePassAsync = function()
 	return false
+end
+
+-- Сбой Roblox: на вопрос о правилах этому игроку ответа нет.
+local policyDown = {}
+local policyProps = rawget(World.services.PolicyService, "__state").props
+local policyAnswer = policyProps.GetPolicyInfoForPlayerAsync
+policyProps.GetPolicyInfoForPlayerAsync = function(service, player)
+	if policyDown[player.UserId] then
+		error("Roblox не отвечает")
+	end
+	return policyAnswer(service, player)
 end
 
 World.startServer()
@@ -133,6 +144,7 @@ local function reset()
 		MonetizationService.passes(player).LUCKY = nil
 		fromPlayer(Remotes.TradeCancel, player)
 		player:SetAttribute("PaidRandomItemsRestricted", player == blocked)
+		player:SetAttribute("PolicyUnknown", nil)
 	end
 	World.advance(TradeService.REQUEST_COOLDOWN + 1)
 end
@@ -666,6 +678,90 @@ scenario("купленное вращение при запрете: враще�
 	check(data.wheel.extraSpins == 3, "вращение потрачено")
 	check(lastNotify(blocked) == S.t("wheel.spins_kept"), "нет сообщения: " .. lastNotify(blocked))
 	data.wheel.extraSpins = 0
+end)
+
+scenario("сбой Roblox: сервер говорит «проверяем», а не «регион», и сам спрашивает снова", function()
+	policyDown[FLAKY] = true
+	local player = World.addPlayer(FLAKY, "Flaky")
+	World.advance(5)
+	check(player:GetAttribute("PaidRandomItemsRestricted") == true, "сбой: ограничения не включены")
+	check(player:GetAttribute("PolicyUnknown") == true, "сбой: не отмечено, что ответа нет")
+	check(player:GetAttribute("PaidItemTradingAllowed") == false, "сбой: обмен не закрыт")
+	local data = DataService.get(player)
+	data.boughtCoins = CAPSULE.cost
+	World.advance(10)
+	data.coins = CAPSULE.cost
+	fromPlayer(Remotes.Craft, player, CAPSULE.id)
+	check(#data.creatures == 0, "сбой: капсула открылась на купленные монеты")
+	check(lastNotify(player) == S.t("policy.checking"), "сбой: не то сообщение: " .. lastNotify(player))
+	fromPlayer(Remotes.TradeRequest, player, partner.UserId)
+	check(lastNotify(player) == S.t("policy.checking"), "сбой: обмен говорит про регион: " .. lastNotify(player))
+
+	World.advance(61)
+	check(player:GetAttribute("PolicyUnknown") == true, "ответа нет, а отметка снята")
+	policyDown[FLAKY] = nil
+	World.advance(61)
+	check(player:GetAttribute("PaidRandomItemsRestricted") == false, "повтор не снял запрет")
+	check(player:GetAttribute("PaidItemTradingAllowed") == true, "повтор не открыл обмен")
+	check(player:GetAttribute("PolicyUnknown") == nil, "повтор не снял отметку")
+	check(craft(player, CAPSULE.cost).source == COINS, "после ответа купленные монеты не работают")
+	World.removePlayer(player)
+	World.advance(1)
+end)
+
+scenario("настоящий запрет после сбоя остаётся запретом региона", function()
+	policyDown[FLAKY] = true
+	World.restricted[FLAKY] = true
+	local player = World.addPlayer(FLAKY, "Flaky")
+	World.advance(5)
+	policyDown[FLAKY] = nil
+	World.advance(61)
+	check(player:GetAttribute("PaidRandomItemsRestricted") == true, "повтор снял настоящий запрет")
+	check(player:GetAttribute("PolicyUnknown") == nil, "повтор не снял отметку")
+	local data = DataService.get(player)
+	table.clear(data.creatures)
+	data.boughtCoins = CAPSULE.cost
+	World.advance(10)
+	data.coins = CAPSULE.cost
+	fromPlayer(Remotes.Craft, player, CAPSULE.id)
+	check(lastNotify(player) == earnMore(data, CAPSULE.cost), "настоящий запрет без объяснения: " .. lastNotify(player))
+	World.restricted[FLAKY] = nil
+	World.removePlayer(player)
+	World.advance(1)
+end)
+
+scenario("пока ответа нет, окна говорят «проверяем», а не «регион»", function()
+	viewer:SetAttribute("PolicyUnknown", true)
+	restrictedWallet(viewer, CAPSULE.cost, CAPSULE.cost)
+	openPanel("hud.factory")
+	check(hasText(S.t("policy.checking")), "фабрика: нет «проверяем»")
+	openPanel("hud.shop")
+	check(World.find(gui, S.t("shop.checking")) ~= nil, "магазин: нет «проверяем»")
+	check(World.find(gui, S.t("shop.region")) == nil, "магазин: говорит про регион")
+	openPanel("hud.factory")
+	World.click(World.find(gui, S.t("odds.open")))
+	World.advance(0.3)
+	check(hasText(S.t("policy.checking")), "шансы: нет «проверяем»")
+	check(not hasText(S.t("odds.region")), "шансы: говорят про регион")
+
+	viewer:SetAttribute("PolicyUnknown", nil)
+	DataService.sendNow(viewer)
+	World.advance(0.3)
+	openPanel("hud.shop")
+	check(World.find(gui, S.t("shop.region")) ~= nil, "магазин: ответ есть, а регион не назван")
+end)
+
+scenario("обмен при сбое говорит «проверяем» и отдающему, и про партнёра", function()
+	local entry = give(viewer, COINS)
+	openTrade(viewer, blocked)
+	blocked:SetAttribute("PolicyUnknown", true)
+	fromPlayer(Remotes.TradeSetOffer, viewer, { entry.uid })
+	World.advance(0.3)
+	check(hasText(S.t("policy.checking")), "обмен: нет «проверяем» про партнёра")
+	local own = give(blocked, COINS)
+	fromPlayer(Remotes.TradeSetOffer, blocked, { own.uid })
+	local state = lastTradeState(blocked)
+	check(state and state.notice and state.notice.k == "policy.checking", "обмен: нет «проверяем» у отдающего")
 end)
 
 print("— Старые сохранения —")
