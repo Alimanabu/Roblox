@@ -142,8 +142,7 @@ def main():
         services.append(module_def("Services/" + name, "src", "server", "Services", name + ".luau"))
     # PlotService строит мир и в тесте не запускается: проверяем только его подписку на покупки.
     plot = read("src", "server", "Services", "PlotService.luau")
-    services.append(f"__plotServiceSource = [=====[{plot}]=====]
-")
+    services.append(f"__plotServiceSource = [=====[{plot}]=====]\n")
     purchases = run("purchases.spec.luau", services)
 
     strings = world("strings.spec.luau", "en-us")
