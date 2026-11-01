@@ -497,9 +497,10 @@ scenario("отказ называет, сколько именно не хват
 	check(lastNotify(viewer) == missing, "улучшение: не то число: " .. lastNotify(viewer))
 
 	World.advance(10)
-	data.coins = CAPSULE.cost + 200
+	data.coins = data.boughtCoins + CAPSULE.cost - 30
 	fromPlayer(Remotes.Craft, viewer, CAPSULE.id)
-	check(lastNotify(viewer) == missing, "капсула: не то число: " .. lastNotify(viewer))
+	local shortBy = S.t("shop.bought_coins", { coins = Format.coins(30) })
+	check(lastNotify(viewer) == shortBy, "капсула: не то число: " .. lastNotify(viewer))
 
 	data.level = Rebirths.levelRequired(data.rebirths)
 	local cost = Rebirths.cost(data.rebirths)
