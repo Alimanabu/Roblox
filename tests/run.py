@@ -95,6 +95,8 @@ def check_dictionary():
     for key, row in rows.items():
         if key in source and row["Source"] != source[key]:
             problems.append(f"{key}: в таблице другой английский текст")
+        if None in row:
+            problems.append(f"{key}: лишнее поле в таблице, текст с запятой нужен в кавычках")
         if not row["ru"].strip():
             problems.append(f"{key}: нет перевода")
         if CYRILLIC.search(row["Source"]):
