@@ -865,6 +865,29 @@ local function translationsFor(language)
 	return translations[language]
 end
 
+-- Метка уведомления вмещает 79 знаков. В этих строках {name} рядом с именами игроков, наградой
+-- или советом может не влезть: тогда сокращаем только его, на столько, сколько не хватило, на
+-- языке игрока. Остальные строки и карточка брейнрота показывают имя целиком.
+local MAX_MESSAGE = 79
+local MIN_NAME = 8
+local FIT_NAME = {
+	["achievement.unlocked"] = true,
+	["event.started"] = true,
+	["factory.announce"] = true,
+	["steal.alarm"] = true,
+	["steal.announce"] = true,
+	["steal.being_hit"] = true,
+	["steal.stunned_owner"] = true,
+	["trade.random_them"] = true,
+	["wheel.result"] = true,
+	["wild.announce"] = true,
+}
+
+local function clip(text, limit)
+	local cut = string.sub(text, 1, utf8.offset(text, limit) - 1)
+	return (string.gsub(cut, "%s+$", "")) .. "…"
+end
+
 local function render(language, value)
 	if type(value) ~= "table" then
 		return tostring(value)
@@ -885,10 +908,20 @@ local function render(language, value)
 	if not value.a then
 		return text
 	end
-	return (string.gsub(text, "{(%w+)}", function(name)
-		local arg = value.a[name]
-		return if arg == nil then nil else render(language, arg)
-	end))
+	local args = {}
+	for name, arg in pairs(value.a) do
+		args[name] = render(language, arg)
+	end
+	local filled = string.gsub(text, "{(%w+)}", args)
+	if FIT_NAME[value.k] and args.name then
+		local length = utf8.len(args.name)
+		local limit = math.max(length + MAX_MESSAGE - utf8.len(filled), MIN_NAME)
+		if limit < length then
+			args.name = clip(args.name, limit)
+			filled = string.gsub(text, "{(%w+)}", args)
+		end
+	end
+	return filled
 end
 
 function Strings.setLanguage(language)

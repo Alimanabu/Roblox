@@ -13,7 +13,7 @@ end
 
 World.studio = false
 
-local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE, FLAKY, OLD_MARKED = 5001, 5002, 5003, 5004, 5005, 5006, 5007
+local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE, FLAKY, OLD_MARKED, LONG_CRAFTER = 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008
 World.restricted[BLOCKED] = true
 
 -- Игроки раньше модулей: словарь узнаёт язык у игрока при загрузке.
@@ -696,8 +696,13 @@ end
 
 -- Имя игрока и прозвище бывают до 20 знаков, остальное берём самым длинным из настоящих значений.
 local LONG_NAME = string.rep("Щ", 20)
+-- Самое длинное имя брейнрота с мутацией: {name} бывает и им, а на русском длиннее другая мутация.
+local LONG_MUTATED = S.t("creature.mutated", {
+	mutation = longest("^mutation%.[%w_]+%.name$"),
+	name = longest("^creature%.[%w_]+%.name$"),
+})
 local LONG_PARAMS = {
-	name = LONG_NAME,
+	name = LONG_MUTATED,
 	player = LONG_NAME,
 	thief = LONG_NAME,
 	owner = LONG_NAME,
@@ -717,7 +722,8 @@ local LONG_PARAMS = {
 -- а разметка <font> в длине считается, но на экране её нет.
 local LENGTH_EXEMPT = { ["plot.creature_label"] = true }
 
-scenario("все строки с {name} не длиннее 79 знаков при имени в 20 знаков", function()
+scenario("все строки с {name} не длиннее 79 знаков при самом длинном имени с мутацией", function()
+	check(utf8.len(LONG_MUTATED) == 33, "имя с мутацией не самое длинное: " .. LONG_MUTATED)
 	local measured = 0
 	for _, entry in ipairs(__translationEntries) do
 		if string.find(entry.Source, "{name}", 1, true) then
@@ -731,7 +737,95 @@ scenario("все строки с {name} не длиннее 79 знаков пр
 			end
 		end
 	end
-	check(measured >= 50, "строк с именем слишком мало: " .. measured)
+	check(measured == 51, "строк с именем не 51: " .. measured)
+end)
+
+-- Значения словаря по шаблону ключа: сервер шлёт их сообщениями, клиент собирает сам.
+local function dictionaryKeys(pattern)
+	local keys = {}
+	for _, entry in ipairs(__translationEntries) do
+		if string.find(entry.Key, pattern) then
+			table.insert(keys, entry.Key)
+		end
+	end
+	return keys
+end
+
+scenario("любой брейнрот с любой мутацией влезает, мутация видна, имя без мутации целое", function()
+	local creatures = dictionaryKeys("^creature%.[%w_]+%.name$")
+	local mutations = dictionaryKeys("^mutation%.[%w_]+%.name$")
+	check(#creatures == #Creatures.List and #mutations == 5, "не все имена: " .. #creatures .. " и " .. #mutations)
+	local rarity = S.m("rarity.god.name")
+	local function messages(name)
+		return {
+			S.m("factory.announce", { player = LONG_NAME, name = name, rarity = rarity }),
+			S.m("steal.announce", { thief = LONG_NAME, name = name, owner = LONG_NAME }),
+			S.m("steal.alarm", { thief = LONG_NAME, name = name }),
+			S.m("steal.stunned_owner", { name = name }),
+			S.m("steal.being_hit", { player = LONG_NAME, name = name, hp = 9999 }),
+		}
+	end
+	local tooLong, lostMutation, cutBare = 0, 0, 0
+	for _, creatureKey in ipairs(creatures) do
+		for _, message in ipairs(messages(S.m(creatureKey))) do
+			local text = S.text(message)
+			tooLong += if utf8.len(text) > MAX_TEXT then 1 else 0
+			cutBare += if string.find(text, S.t(creatureKey), 1, true) == nil then 1 else 0
+		end
+		for _, mutationKey in ipairs(mutations) do
+			local name = S.m("creature.mutated", { mutation = S.m(mutationKey), name = S.m(creatureKey) })
+			for _, message in ipairs(messages(name)) do
+				local text = S.text(message)
+				tooLong += if utf8.len(text) > MAX_TEXT then 1 else 0
+				lostMutation += if string.find(text, S.t(mutationKey), 1, true) == nil then 1 else 0
+			end
+		end
+	end
+	check(tooLong == 0, "не влезло строк: " .. tooLong)
+	check(lostMutation == 0, "пропала мутация: " .. lostMutation)
+	check(cutBare == 0, "обрезано имя без мутации: " .. cutBare)
+end)
+
+scenario("имя сокращается только там и настолько, где не влезло", function()
+	local alarm = S.t("steal.alarm", { thief = LONG_NAME, name = LONG_MUTATED })
+	check(string.find(alarm, "…", 1, true) ~= nil, "нет многоточия: " .. alarm)
+	check(string.find(alarm, LONG_MUTATED, 1, true) == nil, "имя не сокращено: " .. alarm)
+	check(utf8.len(alarm) >= MAX_TEXT - 1, "сокращено лишнее: " .. alarm)
+	local short = S.t("steal.alarm", { thief = "Bob", name = LONG_MUTATED })
+	check(string.find(short, LONG_MUTATED, 1, true) ~= nil, "короткий вор, а имя сокращено: " .. short)
+	check(string.find(short, "…", 1, true) == nil, "лишнее многоточие: " .. short)
+
+	-- Карточка и подписи показывают имя целиком.
+	check(S.t("creature.mutated", { mutation = LONG_MUTATED, name = LONG_MUTATED }) == LONG_MUTATED .. " " .. LONG_MUTATED, "имя в карточке сокращено")
+	for _, key in ipairs({ "steal.stolen", "steal.carry", "steal.returned", "steal.carry_label" }) do
+		check(string.find(S.t(key, { name = LONG_MUTATED }), LONG_MUTATED, 1, true) ~= nil, key .. ": имя сокращено")
+	end
+	check(string.find(S.t("steal.lost", { thief = LONG_NAME, name = LONG_MUTATED }), LONG_MUTATED, 1, true) ~= nil, "steal.lost: имя сокращено")
+
+	-- Не влезает не из-за имени: оставляем начало имени, короткое не трогаем.
+	local huge = string.rep("x", 100)
+	check(string.find(S.t("wheel.result", { name = "Short", reward = huge }), "Short", 1, true) ~= nil, "короткое имя сокращено")
+	local kept = string.rep("Щ", 7) .. "…"
+	check(string.find(S.t("wheel.result", { name = string.rep("Щ", 12), reward = huge }), kept, 1, true) ~= nil, "имя исчезло")
+end)
+
+scenario("настоящее объявление о мутанте у игрока с длинным именем влезает", function()
+	local player = World.addPlayer(LONG_CRAFTER, LONG_NAME)
+	World.advance(5)
+	FactoryService.give(player, "dottore_sessantasette", "sixseven", FREE)
+	local shown = ""
+	for index = #World.sent, 1, -1 do
+		local sent = World.sent[index]
+		if sent.remote == "Notify" and sent.everyone then
+			shown = S.text(sent.args[1])
+			break
+		end
+	end
+	check(string.find(shown, LONG_NAME, 1, true) ~= nil, "нет объявления: " .. shown)
+	check(utf8.len(shown) <= MAX_TEXT, "длина " .. tostring(utf8.len(shown)) .. ": " .. shown)
+	check(string.find(shown, S.t("mutation.sixseven.name"), 1, true) ~= nil, "нет мутации: " .. shown)
+	World.removePlayer(player)
+	World.advance(1)
 end)
 
 scenario("тексты отказа не длиннее 79 знаков, говорят причину и что делать", function()
