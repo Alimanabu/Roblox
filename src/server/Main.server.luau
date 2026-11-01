@@ -1,4 +1,4 @@
--- Точка входа сервера Brainrot Factory.
+-- Точка входа сервера Brainrot Capsule Factory.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Formulas = require(Shared.Util.Formulas)
@@ -113,4 +113,4 @@ SocialService.init()
 WheelService.init()
 AnalyticsService.init()
 
-print("🧠 Brainrot Factory started! 🤌")
+print("🧠 Brainrot Capsule Factory started! 🤌")

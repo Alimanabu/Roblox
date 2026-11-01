@@ -113,6 +113,9 @@ for _, track in ipairs(Music.Playlist) do
 	tracks[track] = true
 end
 
+-- Панель фабрики называется как игра.
+check(S.Source["panel.factory"] == "🏭 Brainrot Capsule Factory", "старое название панели: " .. tostring(S.Source["panel.factory"]))
+
 if failures == 0 then
 	print("✅ Словарь: пройдено проверок " .. checks)
 else

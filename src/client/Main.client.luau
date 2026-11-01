@@ -1,4 +1,4 @@
--- Точка входа клиента Brainrot Factory.
+-- Точка входа клиента Brainrot Capsule Factory.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")

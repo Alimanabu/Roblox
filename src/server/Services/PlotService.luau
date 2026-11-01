@@ -109,7 +109,7 @@ local function buildWorld()
 		CanCollide = false,
 		Parent = workspace,
 	})
-	billboard(sign, UDim2.fromOffset(600, 150), Vector3.zero, "🧠 BRAINROT FACTORY 🤌", Color3.fromRGB(255, 230, 0))
+	billboard(sign, UDim2.fromOffset(600, 150), Vector3.zero, "🧠 BRAINROT CAPSULE FACTORY 🤌", Color3.fromRGB(255, 230, 0))
 
 	for i = 1, PLOT_COUNT do
 		local angle = (i - 1) / PLOT_COUNT * math.pi * 2

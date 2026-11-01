@@ -44,7 +44,7 @@ local Source = {
 	["hud.vip"] = "👑 VIP: x2 coins",
 
 	-- Заголовки окон
-	["panel.factory"] = "🏭 Brainrot Factory",
+	["panel.factory"] = "🏭 Brainrot Capsule Factory",
 	["panel.base"] = "🧠 My Base",
 	["panel.upgrades"] = "⬆️ Factory Upgrades",
 	["panel.index"] = "📖 Brainrot Index",

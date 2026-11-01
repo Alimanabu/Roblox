@@ -1,4 +1,4 @@
-# 🧠 Brainrot Factory: дизайн игры
+# 🧠 Brainrot Capsule Factory: дизайн игры
 
 Игра на английском, названия здесь русские, как в таблице перевода. Оригинал каждого текста
 лежит в `src/shared/Strings.luau`, соответствие в `src/localization/Translations.csv`.

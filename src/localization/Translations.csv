@@ -20,7 +20,7 @@ hud.admin,🛠 Test,,,🛠 Тест
 hud.luck,🍀 Luck x{luck},,,🍀 Удача x{luck}
 hud.boost,Boost x2: {time},,,Буст x2: {time}
 hud.vip,👑 VIP: x2 coins,,,👑 VIP: x2 монет
-panel.factory,🏭 Brainrot Factory,,,🏭 Фабрика брейнрота
+panel.factory,🏭 Brainrot Capsule Factory,,,🏭 Фабрика капсул с брейнротами
 panel.base,🧠 My Base,,,🧠 Моя база
 panel.upgrades,⬆️ Factory Upgrades,,,⬆️ Улучшения фабрики
 panel.index,📖 Brainrot Index,,,📖 Индекс брейнротов
