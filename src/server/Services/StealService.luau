@@ -216,7 +216,7 @@ local function endCarry(thief, success, reason)
 
 	if success then
 		do
-			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, skin = entry.skin, lineage = Formulas.mergeLineage(
+			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, source = entry.source, skin = entry.skin, lineage = Formulas.mergeLineage(
 				table.clone(Formulas.lineageOf(entry, owner.UserId, 0)),
 				{ [tostring(thief.UserId)] = thiefData.rebirths }
 			) }

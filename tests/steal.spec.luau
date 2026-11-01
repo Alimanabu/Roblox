@@ -22,6 +22,9 @@ local PlotService = shared_require("Services/PlotService")
 local WildService = shared_require("Services/WildService")
 local StealService = shared_require("Services/StealService")
 local MoveGuard = shared_require("Services/MoveGuardService")
+local TradeService = shared_require("Services/TradeService")
+local Remotes = shared_require("Remotes")
+local Formulas = shared_require("Util/Formulas")
 
 local slapper = thief.Backpack:FindFirstChild(S.t("steal.slapper"))
 local ownerPlot = PlotService.getPlot(owner)
@@ -128,17 +131,56 @@ scenario("честный вор добегает до базы", function()
 	check(not ownerHas(entry), "брейнрот остался у хозяина")
 end)
 
-scenario("кража не отмывает платного брейнрота: в обмене он остаётся платным", function()
+-- Крадёт брейнрота с этим источником и предлагает его хозяину, которому Roblox запретил платные
+-- случайные награды. Возвращает украденного: у кого он теперь, смотрит сценарий.
+local function stealThenTrade(source)
 	local entry, model = give()
-	entry.source = shared_require("Util/Formulas").SOURCE_COINS
+	entry.source = source
 	grab(entry, model)
 	local count = stolenCount()
 	walk(thief, homeOf(thiefPlot), StealService.CARRY_SPEED)
 	World.advance(0.5)
-	check(stolenCount() == count + 1, "кража платного брейнрота не засчитана")
-	local stolen = table.remove(DataService.get(thief).creatures)
+	check(stolenCount() == count + 1, "кража не засчитана")
+	local creatures = DataService.get(thief).creatures
+	local stolen = creatures[#creatures]
 	check(stolen.id == entry.id, "у вора не тот брейнрот")
-	check(shared_require("Util/Formulas").isPaidRandom(stolen), "кража стёрла платный источник")
+	check(stolen.source == source, "кража изменила источник: " .. tostring(stolen.source))
+
+	owner:SetAttribute("PaidRandomItemsRestricted", true)
+	Remotes.TradeRequest.OnServerEvent:Fire(thief, owner.UserId)
+	Remotes.TradeRespond.OnServerEvent:Fire(owner, thief.UserId, true)
+	Remotes.TradeSetOffer.OnServerEvent:Fire(thief, { stolen.uid })
+	Remotes.TradeReady.OnServerEvent:Fire(thief, true)
+	Remotes.TradeReady.OnServerEvent:Fire(owner, true)
+	World.advance(TradeService.CONFIRM_DELAY + 0.5)
+	owner:SetAttribute("PaidRandomItemsRestricted", false)
+	return stolen
+end
+
+local function indexOf(player, wanted)
+	for index, item in ipairs(DataService.get(player).creatures) do
+		if item.uid == wanted.uid then
+			return index
+		end
+	end
+	return nil
+end
+
+scenario("украденного бесплатного можно обменять с игроком из запрещённого региона", function()
+	local stolen = stealThenTrade(Formulas.SOURCE_FREE)
+	check(indexOf(thief, stolen) == nil, "обмен бесплатного краденого отказан")
+	local got = DataService.get(owner).creatures
+	local last = got[#got]
+	check(last.id == stolen.id and last.source == Formulas.SOURCE_FREE, "хозяин не получил бесплатного: " .. tostring(last.source))
+end)
+
+scenario("украденного платного нельзя обменять с игроком из запрещённого региона", function()
+	local stolen = stealThenTrade(Formulas.SOURCE_COINS)
+	local index = indexOf(thief, stolen)
+	check(index ~= nil, "платный краденый ушёл запрещённому")
+	if index then
+		table.remove(DataService.get(thief).creatures, index)
+	end
 end)
 
 scenario("честный вор с обрывом связи на 3 с", function()
