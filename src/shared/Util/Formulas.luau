@@ -129,8 +129,16 @@ Formulas.LUCK_BOOST_MULT = 2 -- буст удачи
 Formulas.MAX_SECRET_CHANCE = 0.01 -- выше удача секрет не поднимает
 Formulas.MAX_MUTATION_LUCK = 4 -- удача сильнее этой на мутации не влияет
 
--- noPaidLuck: Roblox запрещает игроку платные случайные награды, геймпасс на шансы не влияет.
--- Буст не отключаем: его дают и бесплатно (серия, подарки), а купить его там нельзя.
+-- Действует ли буст сейчас. noPaidLuck: купленная часть (остаток после смены региона) не действует,
+-- бесплатный хвост после неё сохраняется: буст дают и бесплатно (серия, подарки).
+function Formulas.boostActive(data, now, noPaidLuck)
+	if not data.boosts.luckUntil or now >= data.boosts.luckUntil then
+		return false
+	end
+	return not noPaidLuck or not data.boosts.paidLuckUntil or now >= data.boosts.paidLuckUntil
+end
+
+-- noPaidLuck: Roblox запрещает игроку платные случайные награды, платная удача на шансы не влияет.
 function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	mods = mods or NO_MODS
 	local luck = (1 + 0.08 * (data.upgrades.luck or 0)) * mods.luck
@@ -138,7 +146,7 @@ function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	if passes.LUCKY and not noPaidLuck then
 		luck *= Formulas.LUCKY_MULT
 	end
-	if data.boosts.luckUntil and now < data.boosts.luckUntil then
+	if Formulas.boostActive(data, now, noPaidLuck) then
 		luck *= Formulas.LUCK_BOOST_MULT
 	end
 	return luck
@@ -167,7 +175,10 @@ end
 
 -- Вошла ли в бросок купленная удача. Буст, полученный бесплатно, сюда не считается.
 function Formulas.usesPaidLuck(data, passes, now, noPaidLuck)
-	if passes.LUCKY and not noPaidLuck then
+	if noPaidLuck then
+		return false
+	end
+	if passes.LUCKY then
 		return true
 	end
 	return data.boosts.paidLuckUntil ~= nil and now < data.boosts.paidLuckUntil

@@ -224,6 +224,17 @@ local function paidSpin(player)
 	check(data.wheel.extraSpins == 0, "купленное вращение не прошло")
 end
 
+local function lastState(player)
+	DataService.sendNow(player)
+	for index = #World.sent, 1, -1 do
+		local sent = World.sent[index]
+		if sent.remote == "State" and sent.player == player then
+			return sent.args[1]
+		end
+	end
+	return nil
+end
+
 local function scenario(name, body)
 	scenarios += 1
 	local before = failures
@@ -590,6 +601,28 @@ scenario("база полна: монеты вместо брейнрота с �
 	check(#data.creatures == slots, "брейнрот выдан на полную базу")
 	check(data.boughtCoins > 0, "монеты вместо брейнрота не купленные")
 	restore()
+end)
+
+scenario("остаток купленного буста при запрете не меняет шансы, бесплатный хвост работает", function()
+	local data = DataService.get(blocked)
+	local now = os.time()
+	local base = MonetizationService.luck(blocked, data, now)
+	data.boosts.paidLuckUntil = now + 60
+	data.boosts.luckUntil = now + 120
+	check(MonetizationService.luck(blocked, data, now) == base, "купленный буст меняет шансы при запрете")
+	check(lastState(blocked).luckBoostLeft == 0, "экран показывает недействующий буст")
+	check(MonetizationService.luck(blocked, data, now + 61) == base * Formulas.LUCK_BOOST_MULT, "бесплатный хвост не работает")
+	check(MonetizationService.luck(blocked, data, now + 121) == base, "буст пережил свой срок")
+	check(craft(blocked).source == FREE, "недействующий буст пометил брейнрота")
+
+	data.boosts.paidLuckUntil = 0
+	data.boosts.luckUntil = os.time() + 60
+	check(lastState(blocked).luckBoostLeft > 0, "бесплатный буст не виден на экране")
+
+	local free = DataService.get(viewer)
+	free.boosts.paidLuckUntil = now + 60
+	free.boosts.luckUntil = now + 120
+	check(MonetizationService.luck(viewer, free, now) == MonetizationService.luck(viewer, free, now + 500) * Formulas.LUCK_BOOST_MULT, "без запрета купленный буст не работает")
 end)
 
 print("— Старые сохранения —")
