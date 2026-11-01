@@ -103,6 +103,16 @@ __translationEntries = nil
 check(S.forPlayer({ LocaleId = "en-us" }, "plot.free_base") == "Free base", "forPlayer: английский")
 check(S.forPlayer({ LocaleId = "ru-ru" }, "plot.free_base") == "Свободная база", "forPlayer: русский")
 
+-- Плейлист: 5-8 разных треков, неверный адрес музыка молча не сыграет.
+local Music = shared_require("Config/Music")
+check(#Music.Playlist >= 5 and #Music.Playlist <= 8, "в плейлисте треков: " .. #Music.Playlist)
+local tracks = {}
+for _, track in ipairs(Music.Playlist) do
+	check(string.match(track, "^rbxassetid://%d+$") ~= nil, "неверный адрес трека: " .. track)
+	check(not tracks[track], "трек дважды: " .. track)
+	tracks[track] = true
+end
+
 if failures == 0 then
 	print("✅ Словарь: пройдено проверок " .. checks)
 else
