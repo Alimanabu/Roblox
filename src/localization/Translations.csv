@@ -221,9 +221,9 @@ trade.err_left,a player left,,,игрок вышел
 trade.err_missing,a brainrot from the offer is gone,,,брейнрота из предложения больше нет
 trade.err_empty,the trade is empty,,,обмен пустой
 trade.err_past_life,you can't take back your own brainrot from a past life (before rebirth),,,своего брейнрота из прошлой жизни (до перерождения) вернуть нельзя
-trade.err_random,"a brainrot from Robux can't be traded, start again without it",,,"брейнрота за Robux обменять нельзя, начни заново без него"
+trade.err_random,"a Robux brainrot can't be traded, start again without it",,,"брейнрота за Robux обменять нельзя, начни заново без него"
 trade.random_you,"🔒 This brainrot came from Robux, so you can't trade it. Pick another brainrot",,,"🔒 Этот брейнрот получен за Robux, его нельзя обменять. Выбери другого брейнрота"
-trade.random_them,🔒 {name} can't take brainrots from Robux. Pick another brainrot,,,🔒 {name} не может получить брейнрота за Robux. Выбери другого брейнрота
+trade.random_them,🔒 {name} can't take brainrots from Robux. Pick another one,,,🔒 {name} не может получить брейнрота за Robux. Выбери другого
 trade.err_no_space,{name} doesn't have enough base spots,,,у {name} не хватает мест на базе
 trade.cancelled,❌ Trade cancelled: {reason},,,❌ Обмен отменён: {reason}
 trade.done,🤝 Trade complete!,,,🤝 Обмен завершён!
@@ -362,7 +362,7 @@ achievement.trade.desc,Complete a trade,,,Соверши обмен
 achievement.streak7.name,Loyal Fan,,,Верный фанат
 achievement.streak7.desc,Claim the day 7 reward,,,Забери награду 7-го дня
 achievement.season.desc,Get a brainrot from the “{season}” season,,,Получи брейнрота сезона «{season}»
-achievement.unlocked,🏆 Achievement “{name}”! {reward},,,🏆 Достижение «{name}»! {reward}
+achievement.unlocked,🏆 Unlocked “{name}”! {reward},,,🏆 Достижение «{name}»! {reward}
 admin.level,Level {level},,,Уровень {level}
 admin.given,Given: {name},,,Выдан {name}
 admin.given_mutant,Given Mutant 67: {name},,,Выдан мутант 67: {name}
@@ -502,7 +502,7 @@ event.minute67.name,🤌 MINUTE 67,,,🤌 МИНУТА 67
 event.minute67.desc,SIX SEVEN and Mutation 67 chance x6.7!,,,Шанс SIX SEVEN и мутации 67 x6.7!
 event.boss.name,👹 BRAINROT BOSS,,,👹 БОСС-БРЕЙНРОТ
 event.boss.desc,"Slap the boss on the plaza, whole server!",,,Шлёпайте босса на площади всем сервером!
-event.started,🎉 Event started: {name}: {desc},,,🎉 Начался ивент {name}: {desc}
+event.started,🎉 New event: {name}: {desc},,,🎉 Начался ивент {name}: {desc}
 event.ended,The event is over. Next one soon!,,,Ивент закончился. Следующий скоро!
 event.soon,⏰ In one minute: {name}!,,,⏰ Через минуту: {name}!
 event.next,Next event,,,Следующий ивент

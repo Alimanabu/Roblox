@@ -166,6 +166,7 @@ local function playerById(userId)
 	return World.services.Players:GetPlayerByUserId(userId)
 end
 
+-- Рассылку всем не считаем: ивент может начаться сразу после отказа и заслонить его.
 local function lastNotify(player)
 	for index = #World.sent, 1, -1 do
 		local sent = World.sent[index]
@@ -669,6 +670,7 @@ scenario("остаток купленного буста при запрете �
 end)
 
 -- Метка 40 пикселей с TextScaled: длиннее текст станет нечитаемым.
+local MAX_TEXT = 79
 local SHORT_TEXTS = {
 	{ "shop.bought_coins", { coins = "$999.99T" } },
 	{ "trade.random_you" },
@@ -681,15 +683,68 @@ local SHORT_TEXTS = {
 	{ "steal.failed", { reason = S.m("steal.reason_random") } },
 }
 
-scenario("тексты отказа короче 90 знаков, говорят причину и что делать", function()
+-- Самый длинный текст словаря среди ключей по шаблону.
+local function longest(pattern)
+	local best = ""
+	for _, entry in ipairs(__translationEntries) do
+		if string.find(entry.Key, pattern) and utf8.len(S.t(entry.Key)) > utf8.len(best) then
+			best = S.t(entry.Key)
+		end
+	end
+	return best
+end
+
+-- Имя игрока и прозвище бывают до 20 знаков, остальное берём самым длинным из настоящих значений.
+local LONG_NAME = string.rep("Щ", 20)
+local LONG_PARAMS = {
+	name = LONG_NAME,
+	player = LONG_NAME,
+	thief = LONG_NAME,
+	owner = LONG_NAME,
+	nickname = LONG_NAME,
+	rarity = longest("^rarity%.[%w_]+%.name$"),
+	mutation = longest("^mutation%.[%w_]+%.name$"),
+	desc = longest("^event%.[%w_]+%.desc$"),
+	title = longest("^rebirth%.%d+%.title$"),
+	floor = longest("^floor%.%d+%.name$"),
+	reward = "💰 $999.99T + " .. S.t("reward.luck", { minutes = 67 }) .. " + " .. S.t("reward.skin"),
+	time = Format.time(86399),
+	level = "999",
+	hp = "9999",
+}
+
+-- Подписи над брейнротом, а не метка уведомления: строки идут столбиком,
+-- а разметка <font> в длине считается, но на экране её нет.
+local LENGTH_EXEMPT = { ["plot.creature_label"] = true }
+
+scenario("все строки с {name} не длиннее 79 знаков при имени в 20 знаков", function()
+	local measured = 0
+	for _, entry in ipairs(__translationEntries) do
+		if string.find(entry.Source, "{name}", 1, true) then
+			if LENGTH_EXEMPT[entry.Key] then
+				check(string.find(entry.Source, "<font", 1, true) ~= nil, entry.Key .. ": исключена, но разметки нет")
+			else
+				local text = S.t(entry.Key, LONG_PARAMS)
+				measured += 1
+				check(utf8.len(text) <= MAX_TEXT, entry.Key .. ": длина " .. tostring(utf8.len(text)) .. ": " .. text)
+				check(string.find(text, "{", 1, true) == nil, "незаполненный параметр: " .. text)
+			end
+		end
+	end
+	check(measured >= 50, "строк с именем слишком мало: " .. measured)
+end)
+
+scenario("тексты отказа не длиннее 79 знаков, говорят причину и что делать", function()
 	for _, item in ipairs(SHORT_TEXTS) do
 		local text = S.t(item[1], item[2])
-		check(utf8.len(text) < 90, item[1] .. ": длина " .. tostring(utf8.len(text)) .. ": " .. text)
+		check(utf8.len(text) <= MAX_TEXT, item[1] .. ": длина " .. tostring(utf8.len(text)) .. ": " .. text)
 		check(string.find(text, "{", 1, true) == nil, "незаполненный параметр: " .. text)
 	end
 	local advice = if World.locale == "ru-ru" then "Выбери другого" else "Pick another"
 	check(string.find(S.t("trade.random_you"), advice, 1, true) ~= nil, "random_you: нет совета")
 	check(string.find(S.t("trade.random_them", { name = "X" }), advice, 1, true) ~= nil, "random_them: нет совета")
+	local upgrades = if World.locale == "ru-ru" then "улучшения" else "upgrades"
+	check(string.find(S.t("shop.bought_coins", { coins = "$1" }), upgrades, 1, true) ~= nil, "bought_coins: нет улучшений")
 	local simple = S.t("trade.err_random")
 	for _, word in ipairs({ "region", "регион", "luck", "удач" }) do
 		check(string.find(simple, word, 1, true) == nil, "err_random: слово " .. word)
@@ -743,8 +798,6 @@ scenario("настоящий запрет после сбоя остаётся �
 	World.advance(5)
 	policyDown[FLAKY] = nil
 	World.advance(61)
-	local upgrades = if World.locale == "ru-ru" then "улучшения" else "upgrades"
-	check(string.find(S.t("shop.bought_coins", { coins = "$1" }), upgrades, 1, true) ~= nil, "bought_coins: нет улучшений")
 	check(player:GetAttribute("PaidRandomItemsRestricted") == true, "повтор снял настоящий запрет")
 	check(player:GetAttribute("PolicyUnknown") == nil, "повтор не снял отметку")
 	local data = DataService.get(player)
