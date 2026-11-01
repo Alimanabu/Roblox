@@ -106,7 +106,7 @@ SKIN67 — секретный «Скин 67»
 | key в конфиге | Name | Description | Цена |
 |---|---|---|---|
 | `VIP` | VIP | x2 coins forever | 199 R$ |
-| `LUCKY` | Lucky | x1.5 luck forever | 249 R$ |
+| `LUCKY` | Lucky | x1.5 luck forever. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | 249 R$ |
 | `BIG_BASE` | Huge Base | Floor 1 right away + Floor 2 at half price | 149 R$ |
 | `AUTO_CRAFT` | Auto Factory | The machine crafts brainrots by itself | 299 R$ |
 | `FAST_MACHINE` | Turbo Machine | The machine runs 2x faster | 99 R$ |
@@ -117,10 +117,17 @@ SKIN67 — секретный «Скин 67»
 ### Разовые покупки (Developer Products)
 | key в конфиге | Name | Description | Цена |
 |---|---|---|---|
-| `LUCK_BOOST` | Luck Boost x2 | x2 luck for 15 minutes | 49 R$ |
+| `LUCK_BOOST` | Luck Boost x2 | x2 luck for 15 minutes. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | 49 R$ |
 | `COINS_SMALL` | Bag of Coins | 10 minutes of income (min. 5K) | 29 R$ |
 | `SPINS_3` | 3 Wheel Spins | Spin the lucky wheel 3 more times | 39 R$ |
 | `COINS_BIG` | Chest of Coins | 1 hour of income (min. 50K) | 129 R$ |
+
+Оговорка в описании `LUCKY` и `LUCK_BOOST` по-русски: «действует не во всех регионах; где платные
+случайные награды запрещены, покупка не активируется».
+
+`LUCK_BOOST`, `COINS_SMALL`, `SPINS_3` и `COINS_BIG` **не отмечай Listed**: только Unlisted-продукт
+нельзя купить мимо игры, а там, где Roblox запрещает случайные награды, чек не выдаётся и Robux
+автоматически не возвращаются (см. «Что происходит с Robux» ниже).
 
 Пример: создал геймпасс VIP, его ID `123456789` → в конфиге
 `{ key = "VIP", id = 123456789, ... }`. Пока `id = 0`, в магазине кнопка «Soon».
@@ -139,6 +146,51 @@ SKIN67 — секретный «Скин 67»
 Геймпасс сервер не может не продать: Roblox списывает Robux сам, поэтому там он просто не
 действует, а в магазине вместо него стоит «Not available in your region».
 
+### Что происходит с Robux при `NotProcessedYet` (проверено 01.11.2026)
+Источник: [MarketplaceService.ProcessReceipt](https://create.roblox.com/docs/reference/engine/classes/MarketplaceService#ProcessReceipt),
+разделы Guarantees, Unresolved Developer Product Purchases, Retries and Timeouts.
+[Developer Products](https://create.roblox.com/docs/production/monetization/developer-products)
+добавляет только комментарий в примере: «tries again next time the user joins the game»;
+[Paid random items](https://create.roblox.com/docs/production/monetization/paid-random-items) о
+возврате Robux не пишет.
+
+- **Повторы.** По времени их нет: «`ProcessReceipt` has no time-based retry mechanism». Предела
+  числа повторов документация не называет. Чек вызывается снова, только когда игрок делает новую
+  успешную покупку на том же сервере или заходит на любой сервер игры. Если игрока на сервере нет,
+  вызова нет.
+- **Robux.** При покупке деньги уходят в эскроу («The funds are placed in escrow»).
+  **Автоматического возврата нет:** «Unresolved developer product purchases are not removed or
+  refunded after the escrow period expires». Срок эскроу и судьба денег после него не указаны.
+- **Что это значит для нас.** Сбой сохранения или ответа Roblox чинится сам при следующем заходе.
+  А вот при настоящем запрете чек не закроется никогда: игрок заплатил, ничего не получил, сервер
+  отказывает при каждом заходе. Поэтому продукты со случайностью остаются Unlisted, а кнопки в
+  запрещённых регионах скрыты; до чека может дойти только читер или игрок, сменивший регион
+  между покупкой и выдачей.
+
+### Обмен там, где запрещены платные случайные награды
+Игрок с `ArePaidRandomItemsRestricted` не может ни отдать, ни получить в обмене брейнрота из
+платной случайности. Отказывает сервер: при выборе брейнрота (объяснение в окне обмена, en и ru) и
+ещё раз перед самим обменом. Бесплатными он меняется как обычно. Запрос без ответа Roblox считается
+запретом. Правило читает поле брейнрота `source`:
+
+| `source` | Откуда брейнрот | В обмене при запрете |
+|---|---|---|
+| `free` | капсула за заработанные монеты, награды, дикий брейнрот, бесплатное вращение | можно |
+| `coins` | капсула хотя бы частично за купленные монеты | нельзя |
+| `luck` | бросок капсулы или скрещивания с `LUCKY` (там, где он действует) или купленным бустом | нельзя |
+| `spin` | купленное вращение колеса | нельзя |
+| нет поля | источник неизвестен: так выходит после кражи, она собирает запись заново | нельзя |
+
+- Скрещивание наследует платный источник, поэтому отмыть брейнрота им нельзя. Обмен пометку переносит.
+- Купленные монеты считает `boughtCoins`: капсула тратит их первыми. Улучшения, этажи и скины счётчик
+  не уменьшают, он только не может быть больше монет на счету в момент капсулы, поэтому ошибка
+  возможна лишь в сторону «за купленные». Перерождение его обнуляет.
+- Бесплатный буст (награды, колесо) брейнрота не метит. Купленный держит `boosts.paidLuckUntil`.
+- **Старые сохранения** (нет `boughtCoins`) переносятся один раз при входе. Если в сохранении есть хоть
+  один чек, все брейнроты получают `coins`, текущие монеты считаются купленными, идущий буст
+  купленным. Иначе всё `free`. Чеки хранят только номера покупок, без товара, поэтому «были покупки
+  монет» читается как «были любые покупки». Игра ещё не опубликована, настоящих таких сохранений нет.
+
 ## 4.5. Анкета рейтинга и кому видна игра (Audience → Reach → View questionnaire)
 Для выхода на игроков 16+ достаточно первого вопроса анкеты, для аудитории младше 16 нужна
 вся анкета (см. ниже). Честные ответы для нашей игры:
@@ -151,7 +203,8 @@ SKIN67 — секретный «Скин 67»
 - Алкоголь, наркотики, романтика, ругательства, политика, религия — **No**.
 - **Paid Random Items: Yes**, respects ArePaidRandomItemsRestricted: **Yes** (там, где запрещено,
   сервер не выдаёт монеты, вращения и буст удачи, а `LUCKY` не действует — `PolicyService`).
-- **Paid Item Trading: Yes**, respects IsPaidItemTradingAllowed: **Yes** (там обмен отключён).
+- **Paid Item Trading: Yes**, respects IsPaidItemTradingAllowed: **Yes** (там обмен отключён, а при
+  запрете платных случайных наград такие брейнроты нельзя ни отдать, ни получить).
 - **Media Sharing: No. AI Interaction: No. Cross-Experience: No.**
 
 **Кому видна игра (правила Roblox 2026, проверено 31.10.2026).** Источники:
