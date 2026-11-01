@@ -169,7 +169,7 @@ end
 local function lastNotify(player)
 	for index = #World.sent, 1, -1 do
 		local sent = World.sent[index]
-		if sent.remote == "Notify" and sent.player == player then
+		if sent.remote == "Notify" and sent.player == player and not sent.everyone then
 			return S.text(sent.args[1])
 		end
 	end

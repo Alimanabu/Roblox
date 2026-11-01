@@ -569,18 +569,18 @@ local function wire(value)
 	return setmetatable(copy, getmetatable(value))
 end
 
-local function deliver(self, player, ...)
-	table.insert(World.sent, { remote = self.Name, player = player, args = wire({ ... }) })
+local function deliver(self, player, everyone, ...)
+	table.insert(World.sent, { remote = self.Name, player = player, everyone = everyone, args = wire({ ... }) })
 	if player == World.localPlayer then
 		signalOf(self, "OnClientEvent"):Fire(table.unpack(wire({ ... })))
 	end
 end
 function Inst:FireClient(player, ...)
-	deliver(self, player, ...)
+	deliver(self, player, false, ...)
 end
 function Inst:FireAllClients(...)
 	for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
-		deliver(self, player, ...)
+		deliver(self, player, true, ...)
 	end
 end
 function Inst:FireServer(...)

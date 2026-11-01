@@ -563,7 +563,7 @@ end)
 local function lastNotify(player)
 	for index = #World.sent, 1, -1 do
 		local sent = World.sent[index]
-		if sent.remote == "Notify" and sent.player == player then
+		if sent.remote == "Notify" and sent.player == player and not sent.everyone then
 			return S.text(sent.args[1])
 		end
 	end
@@ -590,7 +590,8 @@ local function refusedGrab(restricted, name)
 	check(thief:GetAttribute("CarryDeadline") == nil, name .. ": вор схватил платного")
 	check(ownerHas(entry), name .. ": платный ушёл от хозяина")
 	check(stolenCount() == count, name .. ": кража засчитана")
-	check(lastNotify(thief) == S.t("steal.random"), name .. ": нет объяснения: " .. lastNotify(thief))
+	local wanted = S.t(if unknown then "policy.checking" else "steal.random")
+	check(lastNotify(thief) == wanted, name .. ": не то объяснение: " .. lastNotify(thief))
 end
 
 scenario("запрещённый вор не может схватить платного брейнрота", function()
