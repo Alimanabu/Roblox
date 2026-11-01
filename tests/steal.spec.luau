@@ -560,6 +560,7 @@ scenario("обход: забор выталкивает, в это окно пр
 	check(MoveGuard.canAct(thief) == false, "окно забора дало свободный перенос")
 end)
 
+-- Рассылку всем не считаем: ивент может начаться сразу после отказа и заслонить его.
 local function lastNotify(player)
 	for index = #World.sent, 1, -1 do
 		local sent = World.sent[index]
@@ -579,14 +580,17 @@ local function emptyBases()
 end
 
 -- Запрещённый игрок в краже: у него атрибут, у второго участника всё разрешено.
-local function refusedGrab(restricted, name)
+-- unknown: Roblox не ответил, ограничения включены, но это ещё не запрет региона.
+local function refusedGrab(restricted, name, unknown)
 	emptyBases()
 	local entry, model = give()
 	entry.source = Formulas.SOURCE_COINS
 	restricted:SetAttribute("PaidRandomItemsRestricted", true)
+	restricted:SetAttribute("PolicyUnknown", unknown)
 	local count = stolenCount()
 	tryGrab(entry, model)
 	restricted:SetAttribute("PaidRandomItemsRestricted", false)
+	restricted:SetAttribute("PolicyUnknown", nil)
 	check(thief:GetAttribute("CarryDeadline") == nil, name .. ": вор схватил платного")
 	check(ownerHas(entry), name .. ": платный ушёл от хозяина")
 	check(stolenCount() == count, name .. ": кража засчитана")
@@ -600,6 +604,14 @@ end)
 
 scenario("у запрещённого хозяина платного брейнрота не украсть", function()
 	refusedGrab(owner, "хозяин")
+end)
+
+scenario("сбой Roblox у вора: «проверяем», а не «регион», брейнрот у хозяина", function()
+	refusedGrab(thief, "сбой у вора", true)
+end)
+
+scenario("сбой Roblox у хозяина: «проверяем», а не «регион», брейнрот у хозяина", function()
+	refusedGrab(owner, "сбой у хозяина", true)
 end)
 
 scenario("запрещённый вор крадёт бесплатного как раньше, запрещённого хозяина тоже обкрадывают", function()
@@ -620,21 +632,24 @@ scenario("запрещённый вор крадёт бесплатного ка
 end)
 
 -- Запрет приходит, пока вор бежит: брейнрот возвращается хозяину.
-local function refusedOnArrival(restricted, name)
+local function refusedOnArrival(restricted, name, unknown)
 	emptyBases()
 	local entry, model = give()
 	entry.source = Formulas.SOURCE_COINS
 	grab(entry, model)
 	restricted:SetAttribute("PaidRandomItemsRestricted", true)
+	restricted:SetAttribute("PolicyUnknown", unknown)
 	local count = stolenCount()
 	walk(thief, homeOf(thiefPlot), StealService.CARRY_SPEED)
 	World.advance(0.5)
 	restricted:SetAttribute("PaidRandomItemsRestricted", false)
+	restricted:SetAttribute("PolicyUnknown", nil)
 	check(stolenCount() == count, name .. ": кража засчитана при запрете")
 	check(thief:GetAttribute("CarryDeadline") == nil, name .. ": кража не закончилась")
 	check(ownerHas(entry), name .. ": платный не вернулся хозяину")
 	local text = lastNotify(thief)
-	check(text == S.t("steal.failed", { reason = S.m("steal.reason_random") }), name .. ": нет объяснения: " .. text)
+	local reason = S.m(if unknown then "policy.checking" else "steal.reason_random")
+	check(text == S.t("steal.failed", { reason = reason }), name .. ": не то объяснение: " .. text)
 end
 
 scenario("запрет вору пришёл в пути: платный возвращается хозяину", function()
@@ -643,6 +658,11 @@ end)
 
 scenario("запрет хозяину пришёл в пути: платный возвращается хозяину", function()
 	refusedOnArrival(owner, "хозяин в пути")
+end)
+
+scenario("сбой Roblox в пути: платный у хозяина, вору «проверяем»", function()
+	refusedOnArrival(thief, "сбой у вора в пути", true)
+	refusedOnArrival(owner, "сбой у хозяина в пути", true)
 end)
 
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)
