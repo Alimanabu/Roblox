@@ -13,7 +13,7 @@ end
 
 World.studio = false
 
-local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE, FLAKY = 5001, 5002, 5003, 5004, 5005, 5006
+local VIEWER, PARTNER, BLOCKED, OLD_BUYER, OLD_FREE, FLAKY, OLD_MARKED = 5001, 5002, 5003, 5004, 5005, 5006, 5007
 World.restricted[BLOCKED] = true
 
 -- Игроки раньше модулей: словарь узнаёт язык у игрока при загрузке.
@@ -892,6 +892,19 @@ scenario("старое сохранение без покупок: всё бес
 		check(entry.source == FREE, "старый бесплатный: " .. tostring(entry.source))
 	end
 	check(data.boughtCoins == 0, "купленные монеты без покупок: " .. tostring(data.boughtCoins))
+end)
+
+scenario("перенос не перезаписывает уже помеченного брейнрота", function()
+	local save = oldSave({}, 0)
+	save.creatures[1].source = LUCK
+	store:SetAsync("player_" .. OLD_MARKED, save)
+	local player = World.addPlayer(OLD_MARKED, "OldMarked")
+	World.advance(1)
+	local data = DataService.get(player)
+	check(data.creatures[1].source == LUCK, "пометка перезаписана: " .. tostring(data.creatures[1].source))
+	check(data.creatures[2].source == FREE, "без пометки не перенесён: " .. tostring(data.creatures[2].source))
+	World.removePlayer(player)
+	World.advance(1)
 end)
 
 scenario("перенос один раз: запись без пометки не становится бесплатной при перезаходе", function()

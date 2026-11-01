@@ -319,7 +319,7 @@ local function onPlayerAdded(player)
 	if beforeSources then
 		local hadPurchases = #data.receipts > 0
 		for _, entry in ipairs(data.creatures) do
-			entry.source = if hadPurchases then Formulas.SOURCE_COINS else Formulas.SOURCE_FREE
+			entry.source = entry.source or (if hadPurchases then Formulas.SOURCE_COINS else Formulas.SOURCE_FREE)
 		end
 		if hadPurchases then
 			data.boughtCoins = data.coins
