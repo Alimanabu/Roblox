@@ -225,6 +225,10 @@ local function sell(player, uid)
 			local value = Formulas.sellValue(entry)
 			table.remove(data.creatures, index)
 			data.coins += value
+			-- Выручка за платного остаётся купленными монетами, иначе продажа их отмывала бы.
+			if Formulas.isPaidRandom(entry) then
+				data.boughtCoins += value
+			end
 			AnalyticsService.coins(player, true, value, "Sell")
 			data.stats.sold += 1
 			Actions.fire(player, "sell", 1)
@@ -242,12 +246,16 @@ local function sellRarity(player, rarityId)
 	if not data or type(rarityId) ~= "string" or not Rarities.get(rarityId) then
 		return
 	end
-	local total, count = 0, 0
+	local total, bought, count = 0, 0, 0
 	for index = #data.creatures, 1, -1 do
 		local entry = data.creatures[index]
 		local creature = Creatures.get(entry.id)
 		if creature and creature.rarity == rarityId and entry.mut == "normal" then
-			total += Formulas.sellValue(entry)
+			local value = Formulas.sellValue(entry)
+			total += value
+			if Formulas.isPaidRandom(entry) then
+				bought += value
+			end
 			count += 1
 			table.remove(data.creatures, index)
 		end
@@ -256,6 +264,7 @@ local function sellRarity(player, rarityId)
 		return
 	end
 	data.coins += total
+	data.boughtCoins += bought
 	AnalyticsService.coins(player, true, total, "Sell")
 	data.stats.sold += count
 	Actions.fire(player, "sell", count)

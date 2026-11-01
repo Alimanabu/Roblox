@@ -818,6 +818,38 @@ scenario("окно базы: при запрете кнопка скрещива
 	check(World.find(gui, label).BackgroundColor3 == Theme.Colors.CardLocked, "при запрете кнопка не погашена")
 end)
 
+scenario("выручка за платного брейнрота считается купленной, за бесплатного нет", function()
+	local data = DataService.get(viewer)
+	local paid = give(viewer, COINS)
+	local free = give(viewer, FREE)
+	fromPlayer(Remotes.Sell, viewer, free.uid)
+	check(data.boughtCoins == 0, "бесплатный дал купленные: " .. tostring(data.boughtCoins))
+	local value = Formulas.sellValue(paid)
+	check(value > 0, "платный ничего не стоит")
+	fromPlayer(Remotes.Sell, viewer, paid.uid)
+	check(data.boughtCoins == value, "выручка за платного: " .. tostring(data.boughtCoins))
+end)
+
+scenario("продажа всей редкости: купленной считается только доля платных", function()
+	local data = DataService.get(viewer)
+	local paid = give(viewer, LUCK)
+	give(viewer, FREE)
+	give(viewer, nil)
+	local value = Formulas.sellValue(paid)
+	fromPlayer(Remotes.SellRarity, viewer, Creatures.get(BANANA).rarity)
+	check(#data.creatures == 0, "продано не всё")
+	check(data.boughtCoins == value * 2, "доля платных: " .. tostring(data.boughtCoins))
+end)
+
+scenario("при запрете выручка за платного не идёт на капсулу", function()
+	local data = restrictedWallet(blocked, 0, 0)
+	local paid = give(blocked, COINS)
+	paid.mut = "normal"
+	fromPlayer(Remotes.Sell, blocked, paid.uid)
+	check(data.boughtCoins == data.coins and data.coins > 0, "выручка не купленная: " .. tostring(data.boughtCoins))
+	check(Formulas.randomCoins(data, true) == 0, "выручка стала заработанной")
+end)
+
 print("— Старые сохранения —")
 
 local store = World.services.DataStoreService:GetDataStore("BrainrotFactory_v1")
