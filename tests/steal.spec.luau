@@ -77,8 +77,8 @@ local function slap()
 	World.advance(0.9)
 end
 
--- Подойти, выбить ❤️ и схватить брейнрота: всё честно.
-local function grab(entry, model)
+-- Подойти, выбить ❤️ и нажать F: всё честно.
+local function tryGrab(entry, model)
 	place(thief, model:GetAttribute("BaseCFrame").Position - Vector3.new(0, 0, 3))
 	for _ = 1, model:GetAttribute("MaxHp") do
 		slap()
@@ -86,6 +86,10 @@ local function grab(entry, model)
 	check(model:GetAttribute("StunnedUntil") ~= nil, "брейнрот не оглушён")
 	local prompt = model.PrimaryPart.StealPrompt
 	World.prompt(prompt, thief, prompt.HoldDuration)
+end
+
+local function grab(entry, model)
+	tryGrab(entry, model)
 	check(thief:GetAttribute("CarryDeadline") ~= nil, "вор не схватил брейнрота")
 end
 
@@ -554,6 +558,90 @@ scenario("обход: забор выталкивает, в это окно пр
 	moveTo(thief, homeOf(thiefPlot))
 	World.advance(0.1)
 	check(MoveGuard.canAct(thief) == false, "окно забора дало свободный перенос")
+end)
+
+local function lastNotify(player)
+	for index = #World.sent, 1, -1 do
+		local sent = World.sent[index]
+		if sent.remote == "Notify" and sent.player == player then
+			return S.text(sent.args[1])
+		end
+	end
+	return ""
+end
+
+local function emptyBases()
+	for _, player in ipairs({ owner, thief }) do
+		table.clear(DataService.get(player).creatures)
+		PlotService.render(player)
+	end
+	World.advance(0.5)
+end
+
+-- Запрещённый игрок в краже: у него атрибут, у второго участника всё разрешено.
+local function refusedGrab(restricted, name)
+	emptyBases()
+	local entry, model = give()
+	entry.source = Formulas.SOURCE_COINS
+	restricted:SetAttribute("PaidRandomItemsRestricted", true)
+	local count = stolenCount()
+	tryGrab(entry, model)
+	restricted:SetAttribute("PaidRandomItemsRestricted", false)
+	check(thief:GetAttribute("CarryDeadline") == nil, name .. ": вор схватил платного")
+	check(ownerHas(entry), name .. ": платный ушёл от хозяина")
+	check(stolenCount() == count, name .. ": кража засчитана")
+	check(lastNotify(thief) == S.t("steal.random"), name .. ": нет объяснения: " .. lastNotify(thief))
+end
+
+scenario("запрещённый вор не может схватить платного брейнрота", function()
+	refusedGrab(thief, "вор")
+end)
+
+scenario("у запрещённого хозяина платного брейнрота не украсть", function()
+	refusedGrab(owner, "хозяин")
+end)
+
+scenario("запрещённый вор крадёт бесплатного как раньше, запрещённого хозяина тоже обкрадывают", function()
+	for _, restricted in ipairs({ thief, owner }) do
+		emptyBases()
+		local entry, model = give()
+		entry.source = Formulas.SOURCE_FREE
+		restricted:SetAttribute("PaidRandomItemsRestricted", true)
+		grab(entry, model)
+		local count = stolenCount()
+		walk(thief, homeOf(thiefPlot), StealService.CARRY_SPEED)
+		World.advance(0.5)
+		restricted:SetAttribute("PaidRandomItemsRestricted", false)
+		check(stolenCount() == count + 1, restricted.Name .. ": бесплатная кража не засчитана")
+		check(not ownerHas(entry), restricted.Name .. ": бесплатный остался у хозяина")
+		World.advance(70)
+	end
+end)
+
+-- Запрет приходит, пока вор бежит: брейнрот возвращается хозяину.
+local function refusedOnArrival(restricted, name)
+	emptyBases()
+	local entry, model = give()
+	entry.source = Formulas.SOURCE_COINS
+	grab(entry, model)
+	restricted:SetAttribute("PaidRandomItemsRestricted", true)
+	local count = stolenCount()
+	walk(thief, homeOf(thiefPlot), StealService.CARRY_SPEED)
+	World.advance(0.5)
+	restricted:SetAttribute("PaidRandomItemsRestricted", false)
+	check(stolenCount() == count, name .. ": кража засчитана при запрете")
+	check(thief:GetAttribute("CarryDeadline") == nil, name .. ": кража не закончилась")
+	check(ownerHas(entry), name .. ": платный не вернулся хозяину")
+	local text = lastNotify(thief)
+	check(text == S.t("steal.failed", { reason = S.m("steal.reason_random") }), name .. ": нет объяснения: " .. text)
+end
+
+scenario("запрет вору пришёл в пути: платный возвращается хозяину", function()
+	refusedOnArrival(thief, "вор в пути")
+end)
+
+scenario("запрет хозяину пришёл в пути: платный возвращается хозяину", function()
+	refusedOnArrival(owner, "хозяин в пути")
 end)
 
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)

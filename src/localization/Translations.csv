@@ -409,6 +409,8 @@ status.open,🔓 Base is open!,,,🔓 База открыта!
 steal.carry_label,🦹 {name},,,🦹 {name}
 steal.reason_thief_left,the thief left,,,вор вышел
 steal.reason_past_life,you can't take back your own brainrot from a past life,,,своего брейнрота из прошлой жизни вернуть нельзя
+steal.random,"🔒 This brainrot came from Robux, so it can't be stolen. Pick another one",,,"🔒 Этот брейнрот получен за Robux, его нельзя украсть. Выбери другого"
+steal.reason_random,"it came from Robux, so it went back to its owner",,,"он получен за Robux, поэтому вернулся к хозяину"
 steal.reason_no_space,no space on your base,,,на твоей базе нет места
 steal.stolen,🦹 Stolen: {name}!,,,🦹 Украдено: {name}!
 steal.announce,🚨 {thief} stole {name} from {owner}!,,,🚨 {thief} украл {name} у {owner}!

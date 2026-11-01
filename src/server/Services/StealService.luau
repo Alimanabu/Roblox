@@ -29,6 +29,7 @@ local PlotService = require(script.Parent.PlotService)
 local Actions = require(script.Parent.Actions)
 local BossService = require(script.Parent.BossService)
 local MoveGuardService = require(script.Parent.MoveGuardService)
+local PolicyService = require(script.Parent.PolicyService)
 
 local StealService = {}
 
@@ -175,6 +176,20 @@ local function makeCarryVisual(thief, entry)
 	return model, highlight
 end
 
+-- Кража передаёт брейнрота, как обмен: там, где Roblox запрещает платные случайные награды,
+-- платного нельзя ни отдать, ни получить. Возвращает текст отказа или nil.
+local function paidRandomRefusal(entry, thief, owner, key)
+	if not Formulas.isPaidRandom(entry) then
+		return nil
+	end
+	for _, player in ipairs({ thief, owner }) do
+		if PolicyService.paidRandomRestricted(player) then
+			return PolicyService.message(player, key)
+		end
+	end
+	return nil
+end
+
 local function endCarry(thief, success, reason)
 	local carry = carries[thief]
 	if not carry then
@@ -212,6 +227,12 @@ local function endCarry(thief, success, reason)
 		success, reason = false, S.m("steal.reason_past_life")
 	elseif success and #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
 		success, reason = false, S.m("steal.reason_no_space")
+	elseif success then
+		-- Запрет мог прийти, пока вор бежал.
+		local refusal = paidRandomRefusal(entry, thief, owner, "steal.reason_random")
+		if refusal then
+			success, reason = false, refusal
+		end
 	end
 
 	if success then
@@ -330,6 +351,11 @@ local function startSteal(thief, prompt)
 	local entry
 	for index, candidate in ipairs(ownerData.creatures) do
 		if candidate.uid == uid then
+			local refusal = paidRandomRefusal(candidate, thief, owner, "steal.random")
+			if refusal then
+				Remotes.Notify:FireClient(thief, refusal, BAD)
+				return
+			end
 			entry = table.remove(ownerData.creatures, index)
 			break
 		end

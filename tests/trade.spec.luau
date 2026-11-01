@@ -652,6 +652,8 @@ local SHORT_TEXTS = {
 	{ "trade.random_them", { name = string.rep("Щ", 20) } },
 	{ "trade.cancelled", { reason = S.m("trade.err_random") } },
 	{ "wheel.spins_kept" },
+	{ "steal.random" },
+	{ "steal.failed", { reason = S.m("steal.reason_random") } },
 }
 
 scenario("тексты отказа короче 90 знаков, говорят причину и что делать", function()
