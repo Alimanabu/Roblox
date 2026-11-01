@@ -487,6 +487,28 @@ scenario("заработанных не хватает одной монеты: 
 	check(#data.creatures == 0, "капсула открылась без заработанных")
 end)
 
+scenario("отказ называет, сколько именно не хватает, а не полную цену", function()
+	local price = Upgrades.cost("luck", 0)
+	local data = restrictedWallet(viewer, price + 200, 300)
+	local missing = S.t("shop.bought_coins", { coins = Format.coins(100) })
+	openPanel("hud.upgrades")
+	check(hasText(missing), "окно: не то число")
+	fromPlayer(Remotes.BuyUpgrade, viewer, "luck")
+	check(lastNotify(viewer) == missing, "улучшение: не то число: " .. lastNotify(viewer))
+
+	World.advance(10)
+	data.coins = CAPSULE.cost + 200
+	fromPlayer(Remotes.Craft, viewer, CAPSULE.id)
+	check(lastNotify(viewer) == missing, "капсула: не то число: " .. lastNotify(viewer))
+
+	data.level = Rebirths.levelRequired(data.rebirths)
+	local cost = Rebirths.cost(data.rebirths)
+	World.advance(0.3)
+	data.coins = cost + 200
+	fromPlayer(Remotes.Rebirth, viewer)
+	check(lastNotify(viewer) == missing, "перерождение: не то число: " .. lastNotify(viewer))
+end)
+
 scenario("заработанных хватает: капсула бесплатная, купленные остаются", function()
 	local data = restrictedWallet(blocked, CAPSULE.cost + 300, 300)
 	World.advance(10)
