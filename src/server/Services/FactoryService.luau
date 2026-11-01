@@ -14,6 +14,7 @@ local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local PolicyService = require(script.Parent.PolicyService)
 local ProgressionService = require(script.Parent.ProgressionService)
 local Actions = require(script.Parent.Actions)
 local AnalyticsService = require(script.Parent.AnalyticsService)
@@ -162,14 +163,20 @@ local function craft(player, capsuleId, silent)
 	if data.coins < capsule.cost then
 		return fail(S.m("common.not_enough_coins", { cost = Format.coins(capsule.cost) }))
 	end
+	local restricted = PolicyService.paidRandomRestricted(player)
+	if Formulas.randomCoins(data, restricted) < capsule.cost then
+		return fail(S.m("shop.bought_coins"))
+	end
 
 	lastCraft[player] = now
 	fullWarned[player] = nil
-	-- Купленные монеты капсула тратит первыми. Прочие траты их не уменьшают, пока монет хватает,
-	-- поэтому ошибка возможна только в сторону «за купленные».
-	local bought = math.min(data.boughtCoins, data.coins)
+	-- Купленные монеты капсула тратит первыми. При запрете она оплачена заработанными (см. выше),
+	-- а купленные остаются на счету.
+	local bought = if restricted then 0 else math.min(data.boughtCoins, data.coins)
 	data.coins -= capsule.cost
-	data.boughtCoins = math.max(bought - capsule.cost, 0)
+	if not restricted then
+		data.boughtCoins = math.max(bought - capsule.cost, 0)
+	end
 	AnalyticsService.coins(player, false, capsule.cost, "Capsule")
 	data.stats.crafted += 1
 

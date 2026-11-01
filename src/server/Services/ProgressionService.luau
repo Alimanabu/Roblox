@@ -14,6 +14,7 @@ local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
 local MonetizationService = require(script.Parent.MonetizationService)
+local PolicyService = require(script.Parent.PolicyService)
 local Actions = require(script.Parent.Actions)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
@@ -72,7 +73,12 @@ local function buyUpgrade(player, upgradeId)
 		Remotes.Notify:FireClient(player, S.m("common.not_enough_coins", { cost = Format.coins(cost) }), BAD)
 		return
 	end
+	if upgrade.leadsToRandom and Formulas.randomCoins(data, PolicyService.paidRandomRestricted(player)) < cost then
+		Remotes.Notify:FireClient(player, S.m("shop.bought_coins"), BAD)
+		return
+	end
 	data.coins -= cost
+	data.boughtCoins = math.min(data.boughtCoins, data.coins)
 	AnalyticsService.coins(player, false, cost, "Upgrade")
 	data.upgrades[upgrade.id] = current + 1
 	Remotes.Notify:FireClient(player, S.m("progress.upgrade_level", { name = S.m(upgrade.nameKey), level = current + 1 }), GOOD)
@@ -98,6 +104,7 @@ function ProgressionService.buyFloor(player)
 		return
 	end
 	data.coins -= cost
+	data.boughtCoins = math.min(data.boughtCoins, data.coins)
 	data.floors = floors + 1
 	AnalyticsService.coins(player, false, cost, "Floor")
 	local floor = Formulas.Floors[data.floors]
@@ -128,6 +135,11 @@ local function rebirth(player)
 	end
 	if data.coins < cost then
 		Remotes.Notify:FireClient(player, S.m("progress.rebirth_coins", { cost = Format.coins(cost) }), BAD)
+		return
+	end
+	-- Перерождение даёт бонус удачи, поэтому при запрете оплачивается только заработанным.
+	if Formulas.randomCoins(data, PolicyService.paidRandomRestricted(player)) < cost then
+		Remotes.Notify:FireClient(player, S.m("shop.bought_coins"), BAD)
 		return
 	end
 

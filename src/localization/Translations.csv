@@ -119,6 +119,7 @@ shop.spins_added,🎡 +{count} wheel spins!,,,🎡 +{count} вращения к�
 shop.purchased,✅ Purchased: {name},,,✅ Куплено: {name}
 shop.passes,Game Passes (forever),,,Геймпассы (навсегда)
 shop.owned,✅ Owned,,,✅ Куплено
+shop.bought_coins,"🔒 In your region coins bought with Robux can't go to capsules, luck upgrades or rebirth. Only earned coins count.",,,"🔒 В твоём регионе монеты, купленные за Robux, нельзя тратить на капсулы, улучшение удачи и перерождение. Считаются только заработанные."
 shop.region,Not available in your region,,,Недоступно в твоём регионе
 shop.soon,Soon,,,Скоро
 shop.boosts,Boosts,,,Бусты

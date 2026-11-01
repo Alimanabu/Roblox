@@ -125,6 +125,28 @@ local function randomRestricted()
 	return player:GetAttribute("PaidRandomItemsRestricted") ~= false
 end
 
+-- Сколько монет можно потратить на то, что ведёт к случайной награде (см. Formulas.randomCoins).
+local function randomCoins(state)
+	return Formulas.randomCoins(state, randomRestricted())
+end
+
+local function boughtCoinsLocked(state)
+	return randomRestricted() and state.boughtCoins > 0
+end
+
+-- Объяснение в окне: часть монет при запрете нельзя тратить на случайные награды.
+local function boughtCoinsNotice(content, state)
+	if boughtCoinsLocked(state) then
+		Theme.label({
+			Size = UDim2.new(1, -10, 0, 40),
+			Text = S.t("shop.bought_coins"),
+			TextColor3 = C.Bad,
+			LayoutOrder = -1,
+			Parent = content,
+		})
+	end
+end
+
 -- Кнопка окна шансов. Подпись со словом обязательна: один значок Roblox не принимает.
 local function oddsButton(content, panels, order)
 	Theme.button({
@@ -151,12 +173,13 @@ function Factory.signature(state)
 		state.mods.secret,
 		tostring(state.autoCraft),
 		tostring(state.passes.AUTO_CRAFT),
+		tostring(boughtCoinsLocked(state)),
 	}
 	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
 		table.insert(
 			parts,
-			(state.coins >= capsule.cost and "1" or "0")
+			(randomCoins(state) >= capsule.cost and "1" or "0")
 				.. (state.pity[capsule.id] or 0)
 				.. tostring(Formulas.capsuleInSeason(capsule, serverNow))
 		)
@@ -166,6 +189,7 @@ end
 
 function Factory.build(content, state, panels)
 	list(content, 10)
+	boughtCoinsNotice(content, state)
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
@@ -252,7 +276,7 @@ function Factory.build(content, state, panels)
 				LayoutOrder = 4,
 				Parent = box,
 			})
-			local canAfford = state.coins >= capsule.cost
+			local canAfford = randomCoins(state) >= capsule.cost
 			Theme.button({
 				Size = UDim2.new(1, 0, 0, 40),
 				Text = S.t("factory.craft", { cost = Format.coins(capsule.cost) }),
@@ -516,17 +540,22 @@ end
 ---------------------------------------------------------------------------
 local UpgradesPanel = { title = S.t("panel.upgrades") }
 
+local function upgradeCoins(state, upgrade)
+	return if upgrade.leadsToRandom then randomCoins(state) else state.coins
+end
+
 function UpgradesPanel.signature(state)
-	local parts = { floorSignature(state) }
+	local parts = { floorSignature(state), tostring(boughtCoinsLocked(state)) }
 	for _, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
-		table.insert(parts, level .. ":" .. (state.coins >= Upgrades.cost(upgrade.id, level) and 1 or 0))
+		table.insert(parts, level .. ":" .. (upgradeCoins(state, upgrade) >= Upgrades.cost(upgrade.id, level) and 1 or 0))
 	end
 	return table.concat(parts, "|")
 end
 
 function UpgradesPanel.build(content, state)
 	list(content, 10)
+	boughtCoinsNotice(content, state)
 	floorCard(content, state, 0)
 	for order, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
@@ -551,7 +580,7 @@ function UpgradesPanel.build(content, state)
 			Size = UDim2.new(0.35, -8, 1, 0),
 			Position = UDim2.new(0.65, 8, 0, 0),
 			Text = maxed and S.t("upgrades.max") or Format.coins(cost),
-			Color = maxed and C.CardLocked or (state.coins >= cost and C.Good or C.Bad),
+			Color = maxed and C.CardLocked or (upgradeCoins(state, upgrade) >= cost and C.Good or C.Bad),
 			Parent = row,
 		}, function()
 			Remotes.BuyUpgrade:FireServer(upgrade.id)
@@ -567,16 +596,17 @@ local Rebirth = { title = S.t("hud.rebirth") }
 
 function Rebirth.signature(state)
 	local cost = Rebirths.cost(state.rebirths)
-	return table.concat({ state.rebirths, state.level, state.coins >= cost and 1 or 0 }, "|")
+	return table.concat({ state.rebirths, state.level, randomCoins(state) >= cost and 1 or 0, tostring(boughtCoinsLocked(state)) }, "|")
 end
 
 function Rebirth.build(content, state)
 	list(content, 10)
+	boughtCoinsNotice(content, state)
 	local cost = Rebirths.cost(state.rebirths)
 	local levelRequired = Rebirths.levelRequired(state.rebirths)
 	local nextTitle = Rebirths.titleFor(state.rebirths + 1)
 	local levelOk = state.level >= levelRequired
-	local coinsOk = state.coins >= cost
+	local coinsOk = randomCoins(state) >= cost
 
 	local lines = {
 		S.t("rebirth.count", { count = colored(tostring(state.rebirths), C.Gold) }),

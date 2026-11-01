@@ -154,6 +154,7 @@ local Source = {
 	["shop.passes"] = "Game Passes (forever)",
 	["shop.owned"] = "✅ Owned",
 	["shop.region"] = "Not available in your region",
+	["shop.bought_coins"] = "🔒 In your region coins bought with Robux can't go to capsules, luck upgrades or rebirth. Only earned coins count.",
 	["shop.soon"] = "Soon",
 	["shop.boosts"] = "Boosts",
 

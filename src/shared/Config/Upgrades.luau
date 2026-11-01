@@ -16,6 +16,7 @@ Upgrades.List = {
 		maxLevel = 20,
 		baseCost = 500,
 		costMult = 2.6,
+		leadsToRandom = true, -- меняет шансы капсул (см. Formulas.randomCoins)
 	},
 	{
 		id = "trap",

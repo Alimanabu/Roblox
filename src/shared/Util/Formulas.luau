@@ -151,9 +151,18 @@ Formulas.SOURCE_COINS = "coins" -- капсула за купленные мон
 Formulas.SOURCE_LUCK = "luck" -- бросок с LUCKY или купленным бустом
 Formulas.SOURCE_SPIN = "spin" -- купленное вращение колеса
 
--- Нет пометки: запись собрана заново (кража) и источник неизвестен, считаем платным.
+-- Нет пометки: источник неизвестен, считаем платным.
 function Formulas.isPaidRandom(entry)
 	return entry.source ~= Formulas.SOURCE_FREE
+end
+
+-- Сколько монет можно потратить на то, что ведёт к случайной награде. Там, где Roblox запрещает
+-- платные случайные награды, монеты за Robux на это не идут. Подходит и данным, и снимку клиента.
+function Formulas.randomCoins(data, restricted)
+	if restricted then
+		return math.max(data.coins - data.boughtCoins, 0)
+	end
+	return data.coins
 end
 
 -- Вошла ли в бросок купленная удача. Буст, полученный бесплатно, сюда не считается.

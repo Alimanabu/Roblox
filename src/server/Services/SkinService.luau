@@ -40,6 +40,7 @@ local function buy(player, skinId)
 		return
 	end
 	data.coins -= skin.price
+	data.boughtCoins = math.min(data.boughtCoins, data.coins)
 	AnalyticsService.coins(player, false, skin.price, "Skin")
 	data.skins[skin.id] = true
 	Remotes.Notify:FireClient(player, S.m("skin.bought", { name = S.m(skin.nameKey) }), GOOD)

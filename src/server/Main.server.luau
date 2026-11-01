@@ -44,6 +44,7 @@ DataService.setSnapshotBuilder(function(player, data)
 	local mods = EventService.mods()
 	return {
 		coins = data.coins,
+		boughtCoins = data.boughtCoins,
 		totalEarned = data.totalEarned,
 		income = Formulas.totalIncome(data, passes, mods),
 		incomeMultiplier = Formulas.incomeMultiplier(data, passes, mods),

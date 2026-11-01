@@ -28,6 +28,9 @@ local Capsules = shared_require("Config/Capsules")
 local Creatures = shared_require("Config/Creatures")
 local Daily = shared_require("Config/Daily")
 local Rebirths = shared_require("Config/Rebirths")
+local Upgrades = shared_require("Config/Upgrades")
+local Skins = shared_require("Config/Skins")
+local Format = shared_require("Util/Format")
 
 -- В конфиге id = 0 (покупки ещё не созданы), поэтому номера подставляем только в памяти теста.
 for index, pass in ipairs(Monetization.GamePasses) do
@@ -54,6 +57,7 @@ local DataService = shared_require("Services/DataService")
 local FactoryService = shared_require("Services/FactoryService")
 local MonetizationService = shared_require("Services/MonetizationService")
 local RewardService = shared_require("Services/RewardService")
+local ProgressionService = shared_require("Services/ProgressionService")
 local TradeService = shared_require("Services/TradeService")
 local Remotes = shared_require("Remotes")
 local gui = viewer.PlayerGui
@@ -170,9 +174,60 @@ local function lastTradeState(player)
 	return nil
 end
 
+local function closePanel()
+	local close = World.find(gui, "✕")
+	if close then
+		World.click(close)
+		World.advance(0.1)
+	end
+end
+
+local function openPanel(key)
+	closePanel()
+	local button = World.find(gui, S.t(key))
+	assert(button, "нет кнопки " .. key)
+	World.click(button)
+	World.advance(0.3)
+end
+
+-- Деньги игрока при запрете: на счету total, из них купленных bought.
+local function restrictedWallet(player, total, bought)
+	player:SetAttribute("PaidRandomItemsRestricted", true)
+	local data = DataService.get(player)
+	data.coins = total
+	data.boughtCoins = bought
+	DataService.sendNow(player)
+	World.advance(0.3)
+	return data
+end
+
+-- Все сектора колеса на время теста дают эту награду. Возвращает, чем вернуть как было.
+local function spinRewards(reward)
+	local saved = {}
+	for index, slot in ipairs(Daily.Wheel) do
+		saved[index] = slot.reward
+		slot.reward = reward
+	end
+	return function()
+		for index, slot in ipairs(Daily.Wheel) do
+			slot.reward = saved[index]
+		end
+	end
+end
+
+local function paidSpin(player)
+	local data = DataService.get(player)
+	data.wheel.lastFreeDay = Daily.today()
+	data.wheel.extraSpins = 1
+	World.advance(5)
+	fromPlayer(Remotes.SpinWheel, player)
+	check(data.wheel.extraSpins == 0, "купленное вращение не прошло")
+end
+
 local function scenario(name, body)
 	scenarios += 1
 	local before = failures
+	closePanel()
 	reset()
 	local ok, err = pcall(body)
 	if not ok then
@@ -379,10 +434,166 @@ end)
 
 scenario("тексты отказа на языке игрока", function()
 	local russian = World.locale == "ru-ru"
-	for _, key in ipairs({ "trade.random_you", "trade.random_them", "trade.err_random" }) do
+	for _, key in ipairs({ "trade.random_you", "trade.random_them", "trade.err_random", "shop.bought_coins" }) do
 		local hasRussian = string.find(S.t(key, { name = "X" }), "[\208\209]") ~= nil
 		check(hasRussian == russian, key .. ": не тот язык: " .. S.t(key, { name = "X" }))
 	end
+end)
+
+print("— Купленные монеты при запрете —")
+
+scenario("капсула на купленные монеты при запрете: отказ сервера и объяснение в окне", function()
+	local data = restrictedWallet(viewer, CAPSULE.cost, CAPSULE.cost)
+	openPanel("hud.factory")
+	check(hasText(S.t("shop.bought_coins")), "окно фабрики: нет объяснения")
+	World.advance(10)
+	data.coins = CAPSULE.cost
+	World.click(World.find(gui, S.t("factory.craft", { cost = Format.coins(CAPSULE.cost) })))
+	World.advance(0.3)
+	check(#data.creatures == 0, "капсула открылась на купленные монеты")
+	check(data.coins == CAPSULE.cost and data.boughtCoins == CAPSULE.cost, "монеты списаны при отказе")
+	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+end)
+
+scenario("заработанных не хватает одной монеты: отказ", function()
+	local data = restrictedWallet(blocked, CAPSULE.cost + 299, 300)
+	World.advance(10)
+	data.coins = CAPSULE.cost + 299
+	fromPlayer(Remotes.Craft, blocked, CAPSULE.id)
+	check(#data.creatures == 0, "капсула открылась без заработанных")
+end)
+
+scenario("заработанных хватает: капсула бесплатная, купленные остаются", function()
+	local data = restrictedWallet(blocked, CAPSULE.cost + 300, 300)
+	World.advance(10)
+	data.coins = CAPSULE.cost + 300
+	fromPlayer(Remotes.Craft, blocked, CAPSULE.id)
+	check(#data.creatures == 1 and data.creatures[1].source == FREE, "капсула на заработанные: не free")
+	check(data.coins == 300, "списано не столько: " .. tostring(data.coins))
+	check(data.boughtCoins == 300, "капсула съела купленные: " .. tostring(data.boughtCoins))
+end)
+
+scenario("без запрета купленные тратятся как раньше, объяснения в окне нет", function()
+	local data = DataService.get(viewer)
+	data.coins = CAPSULE.cost
+	data.boughtCoins = CAPSULE.cost
+	DataService.sendNow(viewer)
+	World.advance(0.3)
+	openPanel("hud.factory")
+	check(not hasText(S.t("shop.bought_coins")), "окно: объяснение без запрета")
+	check(craft(viewer).source == COINS, "разрешённому отказано в купленных монетах")
+end)
+
+scenario("авто-фабрика при запрете не тратит купленные монеты", function()
+	MonetizationService.passes(blocked).AUTO_CRAFT = true
+	local data = restrictedWallet(blocked, CAPSULE.cost * 3, CAPSULE.cost * 3)
+	fromPlayer(Remotes.SetAutoCraft, blocked, CAPSULE.id)
+	World.advance(20)
+	fromPlayer(Remotes.SetAutoCraft, blocked, nil)
+	MonetizationService.passes(blocked).AUTO_CRAFT = nil
+	check(#data.creatures == 0, "авто-фабрика открыла капсулу на купленные монеты")
+end)
+
+scenario("улучшение удачи при запрете только на заработанные, с объяснением в окне", function()
+	local cost = Upgrades.cost("luck", 0)
+	local data = restrictedWallet(viewer, cost, cost)
+	openPanel("hud.upgrades")
+	check(hasText(S.t("shop.bought_coins")), "окно улучшений: нет объяснения")
+	fromPlayer(Remotes.BuyUpgrade, viewer, "luck")
+	check(data.upgrades.luck == 0, "удача куплена за купленные монеты")
+	check(data.coins == cost, "монеты списаны при отказе")
+	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+
+	data = restrictedWallet(viewer, cost + 7, 7)
+	fromPlayer(Remotes.BuyUpgrade, viewer, "luck")
+	check(data.upgrades.luck == 1, "удача не куплена за заработанные")
+	check(data.boughtCoins == 7, "купленные потрачены: " .. tostring(data.boughtCoins))
+	data.upgrades.luck = 0
+end)
+
+scenario("при запрете прямые покупки идут за купленные и прижимают счётчик", function()
+	local speed = Upgrades.cost("speed", 0)
+	local data = restrictedWallet(blocked, speed, speed)
+	fromPlayer(Remotes.BuyUpgrade, blocked, "speed")
+	check(data.upgrades.speed == 1, "скорость не куплена")
+	check(data.boughtCoins == 0, "счётчик выше монет после улучшения: " .. tostring(data.boughtCoins))
+	data.upgrades.speed = 0
+
+	local floors = data.floors
+	local cost = Formulas.floorCost(floors, MonetizationService.passes(blocked))
+	data = restrictedWallet(blocked, cost, cost)
+	ProgressionService.buyFloor(blocked)
+	check(data.floors == floors + 1, "этаж не построен")
+	check(data.boughtCoins == 0, "счётчик выше монет после этажа: " .. tostring(data.boughtCoins))
+	data.floors = floors
+
+	local skin
+	for _, candidate in ipairs(Skins.List) do
+		if candidate.price and not data.skins[candidate.id] then
+			skin = candidate
+			break
+		end
+	end
+	data = restrictedWallet(blocked, skin.price, skin.price)
+	fromPlayer(Remotes.BuySkin, blocked, skin.id)
+	check(data.skins[skin.id] == true, "скин не куплен")
+	check(data.boughtCoins == 0, "счётчик выше монет после скина: " .. tostring(data.boughtCoins))
+end)
+
+scenario("перерождение при запрете: окно объясняет, сервер отказывает", function()
+	local data = DataService.get(viewer)
+	data.level = Rebirths.levelRequired(data.rebirths)
+	local cost = Rebirths.cost(data.rebirths)
+	restrictedWallet(viewer, cost, cost)
+	openPanel("hud.rebirth")
+	check(hasText(S.t("shop.bought_coins")), "окно перерождения: нет объяснения")
+	-- До запроса монеты могли вырасти: новый уровень приносит награды.
+	local before = data.coins
+	fromPlayer(Remotes.Rebirth, viewer)
+	check(data.rebirths == 0, "перерождение за купленные монеты")
+	check(data.coins == before, "монеты сгорели при отказе: " .. tostring(data.coins))
+	check(lastNotify(viewer) == S.t("shop.bought_coins"), "нет сообщения сервера: " .. lastNotify(viewer))
+end)
+
+scenario("монеты с купленного вращения считаются купленными, с бесплатного нет", function()
+	local restore = spinRewards({ coins = 400 })
+	local data = DataService.get(viewer)
+	paidSpin(viewer)
+	check(data.boughtCoins == 400, "монеты с купленного вращения: " .. tostring(data.boughtCoins))
+	data.boughtCoins = 0
+	data.wheel.lastFreeDay = 0
+	World.advance(5)
+	fromPlayer(Remotes.SpinWheel, viewer)
+	check(data.wheel.lastFreeDay == Daily.today(), "бесплатное вращение не прошло")
+	check(data.boughtCoins == 0, "монеты с бесплатного вращения: " .. tostring(data.boughtCoins))
+	restore()
+end)
+
+scenario("буст с купленного вращения купленный и метит брейнрота", function()
+	local restore = spinRewards({ luckMinutes = 10 })
+	local data = DataService.get(viewer)
+	paidSpin(viewer)
+	check(data.boosts.paidLuckUntil == data.boosts.luckUntil, "буст с вращения не купленный")
+	check(craft(viewer).source == LUCK, "буст с вращения не метит брейнрота")
+	data.boosts.luckUntil, data.boosts.paidLuckUntil = 0, 0
+	data.wheel.lastFreeDay = 0
+	World.advance(5)
+	fromPlayer(Remotes.SpinWheel, viewer)
+	check(data.boosts.luckUntil > 0 and data.boosts.paidLuckUntil == 0, "бесплатный буст с вращения стал купленным")
+	restore()
+end)
+
+scenario("база полна: монеты вместо брейнрота с купленного вращения тоже купленные", function()
+	local restore = spinRewards({ creatureRarity = "sigma" })
+	local data = DataService.get(viewer)
+	local slots = Formulas.slots(data, MonetizationService.passes(viewer))
+	for _ = 1, slots do
+		give(viewer, FREE)
+	end
+	paidSpin(viewer)
+	check(#data.creatures == slots, "брейнрот выдан на полную базу")
+	check(data.boughtCoins > 0, "монеты вместо брейнрота не купленные")
+	restore()
 end)
 
 print("— Старые сохранения —")

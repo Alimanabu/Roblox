@@ -17,7 +17,8 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 local RewardService = {}
 
 -- Возвращает сообщение вида «💰 $1.2K + 🍀 x2 удачи на 10 мин» (см. Strings).
--- source: откуда брейнрот из награды, если не бесплатно (см. Formulas.SOURCE_FREE).
+-- source задан, если награда получена за Robux (см. Formulas.SOURCE_SPIN): тогда и брейнрот,
+-- и монеты, и буст считаются купленными.
 function RewardService.grant(player, data, reward, source)
 	local parts = {}
 	local coins = reward.coins or 0
@@ -29,10 +30,16 @@ function RewardService.grant(player, data, reward, source)
 		AnalyticsService.coins(player, true, coins, "Reward")
 		data.coins += coins
 		data.totalEarned += coins
+		if source then
+			data.boughtCoins += coins
+		end
 		table.insert(parts, "💰 " .. Format.coins(coins))
 	end
 	if reward.luckMinutes and reward.luckMinutes > 0 then
 		data.boosts.luckUntil = math.max(data.boosts.luckUntil or 0, os.time()) + reward.luckMinutes * 60
+		if source then
+			data.boosts.paidLuckUntil = data.boosts.luckUntil
+		end
 		table.insert(parts, S.m("reward.luck", { minutes = reward.luckMinutes }))
 	end
 	if reward.skin and not data.skins[reward.skin] then
@@ -48,6 +55,9 @@ function RewardService.grant(player, data, reward, source)
 			local coins = math.max(creature.income * 600, Daily.coinsFor(Formulas.totalIncome(data, passes), 10))
 			data.coins += coins
 			data.totalEarned += coins
+			if source then
+				data.boughtCoins += coins
+			end
 			table.insert(parts, S.m("reward.coins_base_full", { coins = Format.coins(coins) }))
 		elseif pool then
 			local creature = pool[math.random(1, #pool)]
