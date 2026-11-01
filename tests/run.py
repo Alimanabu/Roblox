@@ -148,6 +148,7 @@ def main():
     purchases = run("purchases.spec.luau", services)
 
     strings = world("strings.spec.luau", "en-us")
+    music = world("music.spec.luau", "en-us")
     screens = world("screens.spec.luau", "en-us")
     screens_ru = world("screens.spec.luau", "ru-ru")
     steal = world("steal.spec.luau", "en-us")
@@ -157,7 +158,7 @@ def main():
     rejoin = world("rejoin.spec.luau", "en-us")
     frames = world("frames.spec.luau", "en-us")
 
-    return (economy or purchases or dictionary or strings or screens or screens_ru or steal or policy or trade or trade_ru
+    return (economy or purchases or dictionary or strings or music or screens or screens_ru or steal or policy or trade or trade_ru
             or rejoin or frames)
 
 

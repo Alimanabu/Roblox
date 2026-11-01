@@ -5,6 +5,7 @@
 
 return {
 	Volume = 0.25,
+	LoadTimeout = 15, -- секунд ждём загрузку трека, потом пропускаем его
 	Playlist = {
 		"rbxassetid://1836913959", -- World of Robots
 		"rbxassetid://1835725225", -- Disco Sapiens
