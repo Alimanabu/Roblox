@@ -7,82 +7,123 @@
 
 ## 1. Название
 
-**🧠 Brainrot Factory 🤌 [SIX SEVEN]**
+Рабочее название в коде: **Brainrot Factory**. Для страницы игры оно занято, выбрать нужно до публикации.
 
-Запасные варианты: «Brainrot Factory 67», «Steal & Craft Brainrot».
-Русское название для перевода: «Брейнрот Фабрика 🤌» (Localization → Game Information).
+**Сверка 01.11.2026.** Поиск сайта Roblox по «Brainrot Factory», первые 178 игр выдачи. Эту фразу в
+названии содержат 5 игр, в том числе одна у автора с именем «Brainrot Factory.»:
+
+| Игра | Лайков | Онлайн при проверке |
+|---|---|---|
+| `[🏭] Build a Brainrot Factory!` | 56 714 | 6 |
+| `Santa’s Brainrot Factory ❄️` | 44 778 | 38 |
+| `My Brainrot Factory` | 3 540 | 5 |
+| `[🏭UPD] Brainrot Factory!` | 31 | 5 |
+| `[🏭] Brainrot Factory Tycoon` | 12 | 9 |
+
+Рядом ещё `Brainrot Egg Factory` (82 313 лайков). Новая игра с той же фразой теряется в этой выдаче,
+поэтому нужно своё название. Проверены варианты (поиск сайта, 2 страницы): ни одной игры с такой
+фразой.
+
+| Вариант | На русском | Почему |
+|---|---|---|
+| **Brainrot Capsule Factory** (рекомендую) | Фабрика капсул с брейнротами | Оба слова поиска остаются, «капсула» отличает нас от других фабрик |
+| Brainrot Meme Factory | Фабрика мем-брейнротов | Ближе всего к сути, но отличие только в одном слове |
+| Six Seven Factory | Фабрика Six Seven | Самое запоминающееся, но без слова brainrot игру реже найдут по поиску |
+
+Прежние запасные варианты не годятся: «Brainrot Factory 67» содержит ту же фразу, а «Steal & Craft
+Brainrot» путается со `Steal a Brainrot` (15,5 млн лайков).
+
+Название задаётся в Creator Dashboard и меняется в любой момент, описание ниже его не называет.
+Русское название: Localization → Game Information. Панель фабрики в игре называется
+«🏭 Brainrot Factory»: при другом названии игры поправь `panel.factory` в словаре и таблице перевода.
 В квадратных скобках в начале названия принято писать про обновления, например
-`[🎃 HALLOWEEN] Brainrot Factory 🤌`, когда идёт сезон.
+`[🎄 NEW YEAR] Brainrot Capsule Factory`, когда идёт сезон.
 
 ## 2. Описание игры (вставить в Creator Dashboard → Basic Info → Description)
 
+Предел Roblox 1000 знаков, первая строка до 160 знаков видна в превью на телефоне. Сейчас: en 918,
+первая строка 108; ru 886, первая строка 109. Хештеги и список управления Roblox
+[не советует](https://create.roblox.com/docs/production/publishing/descriptions). Каждая строка
+сверена с кодом: доход без игрока в `Formulas.OFFLINE_RATE` и `OFFLINE_MAX_SECONDS`, часовые события
+в `Events.luau`, коды в `Codes.luau`. Обещаний Robux и наград за лайки здесь нет и быть не должно.
+
 ### English (основное, поле Description)
 ```
-🧠 Craft brainrots in your own meme factory! 🤌
+🧠 Open meme capsules, collect brainrots from Normie to SIX SEVEN and build the richest base on the server! 🤌
 
-🏭 Drop meme capsules into the machine and get brainrots: from Normie to the legendary SIX SEVEN!
-💰 Brainrots earn coins every second, even while you're away.
-🦹 Steal brainrots from other bases! Defend yours with a lock and the Slapper.
+🏭 Drop capsules into the machine: 8 rarities and 5 mutations to chase.
+💰 Brainrots earn coins every second. While you're away they earn at half rate for up to 3 hours.
+🦹 Steal brainrots from other bases! Defend yours with a lock, traps and the Slapper.
+🤝 Trade brainrots with other players.
 ⚔️ Aura battles: whose aura is stronger?
-🦎 Catch wild brainrots on the map!
-👹 A boss on the plaza every hour. 🤌 MINUTE 67 with a disco every hour!
+🦎 Catch wild brainrots on the map.
+👹 A boss comes to the plaza every hour. 🤌 MINUTE 67 with a disco every hour!
 🐾 Pick your favorite brainrot as a pet and give it a name.
-🎃 Seasonal brainrots you can't get later!
+🎃 Seasonal capsules with limited-time brainrots.
+📊 Capsule and wheel odds are shown in the game.
 
 🎟️ CODES (enter them in 🎁 Rewards):
 SIXSEVEN — x2 luck for 30 minutes
 BRAINROT — 10 minutes of income
-RIZZ — free Rizz brainrot
+RIZZ — a free brainrot of Rizz rarity
 SIGMA — coins + luck
 RELEASE — coins + luck
 SKIN67 — secret Skin 67
-
-👍 Like and favorite the game: a new code every 1000 likes!
 ```
 
 ### Русский перевод (Localization → Game Information → Russian)
 ```
-🧠 Создавай брейнротов на своей фабрике мемов! 🤌
+🧠 Открывай мем-капсулы, собирай брейнротов от Нормиса до SIX SEVEN и построй самую богатую базу на сервере! 🤌
 
-🏭 Кидай мем-капсулы в машину и получай брейнротов: от Нормиса до легендарного SIX SEVEN!
-💰 Брейнроты приносят монеты каждую секунду — даже пока тебя нет.
-🦹 Кради брейнротов с чужих баз! Защищай свою замком и Шлёпалкой.
+🏭 Кидай капсулы в машину: 8 редкостей и 5 мутаций.
+💰 Брейнроты приносят монеты каждую секунду. Пока тебя нет, они зарабатывают вполовину меньше, до 3 часов.
+🦹 Кради брейнротов с чужих баз! Защищай свою замком, ловушками и Шлёпалкой.
+🤝 Меняйся брейнротами с другими игроками.
 ⚔️ Аура-баттлы: чья аура сильнее?
-🦎 Лови диких брейнротов на карте!
-👹 Каждый час — босс на площади. 🤌 Каждый час — МИНУТА 67 с дискотекой!
+🦎 Лови диких брейнротов на карте.
+👹 Каждый час на площадь приходит босс. 🤌 Каждый час МИНУТА 67 с дискотекой!
 🐾 Бери любимого брейнрота в питомцы и давай ему имя.
-🎃 Сезонные брейнроты, которых потом не достать!
+🎃 Сезонные капсулы с брейнротами на ограниченное время.
+📊 Шансы капсул и колеса показаны в игре.
 
 🎟️ КОДЫ (вводи в 🎁 Награды):
 SIXSEVEN — x2 удачи на 30 минут
 BRAINROT — 10 минут дохода
-RIZZ — бесплатный брейнрот «Ризз»
+RIZZ — бесплатный брейнрот редкости Ризз
 SIGMA — монеты + удача
 RELEASE — монеты + удача
 SKIN67 — секретный «Скин 67»
-
-👍 Ставь лайк и добавляй в избранное — за каждые 1000 лайков новый код!
 ```
 
-Совет: добавляй новые коды на 1K / 5K / 10K лайков и пиши их в описании и в группе.
-Код добавляется одной строкой в `src/shared/Config/Codes.luau`.
+Новые коды выкладывай к обновлениям и сезонам, в описании и в группе. Не привязывай их к числу
+лайков. Код добавляется одной строкой в `src/shared/Config/Codes.luau`.
 
-## 3. Иконка (512×512) и обложки (1920×1080)
+## 3. Иконка, обложки и картинки покупок: техзадание
 
-Нужна яркая картинка, понятная за полсекунды на маленьком экране телефона.
+Требования: [обложки](https://create.roblox.com/docs/production/publishing/thumbnails) 16:9,
+1920×1080, файл до 3 МБ, важное не внизу кадра (там счётчик игроков);
+[иконка](https://create.roblox.com/docs/production/publishing/experience-icons) квадрат 512×512,
+читается при уменьшении до 150×150; [покупки](https://create.roblox.com/docs/production/monetization/passes)
+не больше 512×512, .jpg, .png или .bmp, всё важное внутри круга.
 
-**Иконка:** крупно один брейнрот (например, Сей Сетте — жёлтый, с руками «6-7»,
-нимбом и очками) на ярком фиолетово-розовом фоне с лучами. Сверху крупно «67» или «🤌».
-Минимум текста. Лицо брейнрота — с широкими глазами, удивлённое или довольное.
+Всех картинок 13. Только наши брейнроты и аватары игроков. Нельзя: чужие персонажи и бренды, герои
+Italian Brainrot и Skibidi Toilet, значок Robux, логотип Roblox, обещания и то, чего нет в игре.
 
-**Обложка 1 (главная):** база с рядами светящихся брейнротов, в центре огромный
-легендарный брейнрот со столбом света, вокруг персонажи Roblox в шоке.
-Текст: «BRAINROT FACTORY 🤌».
-
-**Обложка 2:** вор бежит с брейнротом над головой, за ним хозяин со Шлёпалкой.
-Текст: «STEAL THE BRAINROT!».
-
-**Обложка 3:** диско-шар над площадью, все танцуют. Текст: «MINUTE 67 🤌».
+| Картинка | Размер | Что изображено |
+|---|---|---|
+| Иконка | 512×512 | Крупно Сей Сетте (жёлтый, руки «6-7», нимб, очки), широкие удивлённые глаза, фиолетово-розовый фон с лучами, сверху крупно «67». Других надписей нет |
+| Обложка 1, главная | 1920×1080 | База с рядами светящихся брейнротов, в центре огромный легендарный брейнрот со столбом света, вокруг удивлённые аватары. Текст вверху: название игры |
+| Обложка 2 | 1920×1080 | Вор бежит с брейнротом над головой, за ним хозяин со Шлёпалкой. Текст вверху: «STEAL THE BRAINROT!» |
+| Обложка 3 | 1920×1080 | Диско-шар над площадью, аватары и брейнроты танцуют. Текст вверху: «MINUTE 67 🤌» |
+| `VIP` | 512×512, круг | Брейнрот в золотой короне на горке монет, крупно «x2» |
+| `LUCKY` | 512×512, круг | Брейнрот с четырёхлистным клевером, зелёное сияние, крупно «x1.5» |
+| `BIG_BASE` | 512×512, круг | База с двумя этажами и брейнротами на каждом |
+| `AUTO_CRAFT` | 512×512, круг | Машина фабрики с шестерёнкой, из неё сама выезжает капсула |
+| `FAST_MACHINE` | 512×512, круг | Машина фабрики с красными полосами скорости и молнией |
+| `LUCK_BOOST` | 512×512, круг | Флакон с клевером и таймером, крупно «x2» |
+| `COINS_SMALL` | 512×512, круг | Небольшой мешок монет игры |
+| `SPINS_3` | 512×512, круг | Колесо удачи, крупно «3» |
+| `COINS_BIG` | 512×512, круг | Открытый сундук, полный монет игры |
 
 Как сделать:
 - Проще всего: зайти в игру в Studio, расставить сцену (через 🛠 Тест выдать брейнротов,
@@ -102,28 +143,29 @@ SKIN67 — секретный «Скин 67»
 
 ### Геймпассы (покупаются навсегда)
 Название и описание в Creator Dashboard пиши по-английски: их показывает окно покупки Roblox.
+Русский столбец нужен для Localization. Имена совпадают со словарём игры, цены с `Monetization.luau`.
 
-| key в конфиге | Name | Description | Цена |
-|---|---|---|---|
-| `VIP` | VIP | x2 coins forever | 199 R$ |
-| `LUCKY` | Lucky | x1.5 luck forever. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | 249 R$ |
-| `BIG_BASE` | Huge Base | Floor 1 right away + Floor 2 at half price | 149 R$ |
-| `AUTO_CRAFT` | Auto Factory | The machine crafts brainrots by itself | 299 R$ |
-| `FAST_MACHINE` | Turbo Machine | The machine runs 2x faster | 99 R$ |
+| key в конфиге | Name | Description | Название | Описание | Цена |
+|---|---|---|---|---|---|
+| `VIP` | VIP | Your brainrots earn x2 coins forever. | VIP | Брейнроты навсегда приносят в 2 раза больше монет. | 199 R$ |
+| `LUCKY` | Lucky | x1.5 luck forever: better odds of rare brainrots and mutations. Odds are shown in the game. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | Счастливчик | x1.5 удачи навсегда: выше шанс редких брейнротов и мутаций. Шансы показаны в игре. Действует не во всех регионах: где платные случайные награды запрещены, покупка не активируется. | 249 R$ |
+| `BIG_BASE` | Huge Base | Floor 1 right away, and Floor 2 at half price. More spots for your brainrots. | Огромная база | 1 этаж сразу и 2 этаж за полцены. Больше мест для брейнротов. | 149 R$ |
+| `AUTO_CRAFT` | Auto Factory | The machine crafts brainrots by itself from the capsule you pick while you're in the game. Capsules still cost coins. | Авто-фабрика | Машина сама создаёт брейнротов из выбранной капсулы, пока ты в игре. Капсулы по-прежнему стоят монет. | 299 R$ |
+| `FAST_MACHINE` | Turbo Machine | The machine runs 2x faster, down to its minimum craft time. | Турбо-машина | Машина работает в 2 раза быстрее, до предела её скорости. | 99 R$ |
 
 Если при входе игрока Roblox не ответил на проверку, сервер ждёт до 9 с на геймпасс
 (паузы 1,5 / 3 / 4,5 с), потом проверяет геймпасс в фоне раз в 60 с. Перезаход не нужен.
 
 ### Разовые покупки (Developer Products)
-| key в конфиге | Name | Description | Цена |
-|---|---|---|---|
-| `LUCK_BOOST` | Luck Boost x2 | x2 luck for 15 minutes. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | 49 R$ |
-| `COINS_SMALL` | Bag of Coins | 10 minutes of income (min. 5K) | 29 R$ |
-| `SPINS_3` | 3 Wheel Spins | Spin the lucky wheel 3 more times | 39 R$ |
-| `COINS_BIG` | Chest of Coins | 1 hour of income (min. 50K) | 129 R$ |
+Оговорка «не во всех регионах» стоит у `LUCKY` и у всех разовых покупок: буст, монеты и вращения ведут
+к случайным наградам.
 
-Оговорка в описании `LUCKY` и `LUCK_BOOST` по-русски: «действует не во всех регионах; где платные
-случайные награды запрещены, покупка не активируется».
+| key в конфиге | Name | Description | Название | Описание | Цена |
+|---|---|---|---|---|---|
+| `LUCK_BOOST` | Luck Boost x2 | x2 luck for 15 minutes: better odds of rare brainrots and mutations. Buying again adds 15 minutes. Odds are shown in the game. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | Буст удачи x2 | x2 удачи на 15 минут: выше шанс редких брейнротов и мутаций. Новая покупка добавляет 15 минут. Шансы показаны в игре. Действует не во всех регионах: где платные случайные награды запрещены, покупка не активируется. | 49 R$ |
+| `COINS_SMALL` | Bag of Coins | Coins worth 10 minutes of your income, at least 5,000. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | Мешок монет | Монеты на 10 минут твоего дохода, минимум 5 000. Действует не во всех регионах: где платные случайные награды запрещены, покупка не активируется. | 29 R$ |
+| `SPINS_3` | 3 Wheel Spins | 3 extra spins of the lucky wheel. Unused spins stay with you. Odds are shown in the game. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | 3 вращения колеса | 3 дополнительных вращения колеса удачи. Неиспользованные остаются у тебя. Шансы показаны в игре. Действует не во всех регионах: где платные случайные награды запрещены, покупка не активируется. | 39 R$ |
+| `COINS_BIG` | Chest of Coins | Coins worth 1 hour of your income, at least 50,000. Not available in all regions: where paid random rewards are restricted, the purchase does not activate. | Сундук монет | Монеты на 1 час твоего дохода, минимум 50 000. Действует не во всех регионах: где платные случайные награды запрещены, покупка не активируется. | 129 R$ |
 
 `LUCK_BOOST`, `COINS_SMALL`, `SPINS_3` и `COINS_BIG` **не отмечай Listed**: только Unlisted-продукт
 нельзя купить мимо игры, а там, где Roblox запрещает случайные награды, чек не выдаётся и Robux
@@ -275,9 +317,25 @@ ID бейджа вписать в `src/shared/Config/Achievements.luau`, доб�
 
 ## 7. Музыка и звуки
 
-Creator Store → **Audio** → ищи бесплатную музыку (у Roblox есть лицензированные треки).
-Подойдёт весёлое, энергичное: «fun», «upbeat», «funky», «arcade».
-ID треков → `src/shared/Config/Music.luau` (`"rbxassetid://ID"`).
+Плейлист в `src/shared/Config/Music.luau` заполнен, 7 инструментальных треков, всего около 20 минут.
+Каталог Creator Store проверен 01.11.2026: у всех тип Music, автор подтверждённый `APMOfficial`,
+цена Free, ассет опубликован и открыт для всех. По описаниям Roblox
+[Creator Store](https://create.roblox.com/docs/audio/assets) это бесплатная музыка партнёров, а
+лицензия Roblox с APM Music разрешает её в играх на Roblox без отчислений и только на Roblox
+([Licensed Music](https://en.help.roblox.com/hc/articles/360000927163), текст времён запуска в 2018 году).
+
+| ID | Трек | Автор | Альбом | Длина |
+|---|---|---|---|---|
+| 1836913959 | World of Robots | Bob Bradley | UPBEAT FUN | 3:19 |
+| 1835725225 | Disco Sapiens | Eddy David Abidi | COOL FUNK PARTY | 2:35 |
+| 1836914156 | Life in a Glitch | Bob Bradley | UPBEAT FUN | 1:56 |
+| 9040344598 | Call Me (b) | Score Production Music | Electro Swing Cuts | 2:31 |
+| 1841069706 | Daring Disco | Thomas Lewis King | UPBEAT FUNKY BEDS | 5:30 |
+| 1837768323 | Final Boss (a) | Skip Armstrong | CHIPTUNE | 2:11 |
+| 1836913665 | Best of Life | Bob Bradley | UPBEAT FUN | 2:20 |
+
+Перед публикацией послушай их в Studio. Другой трек: Creator Store → Audio, автор `APMOfficial`, ID
+в тот же файл, в списке 5–8 разных треков (это проверяет `tests/run.py`).
 Звуки (крафт, кража, шлепок, уровень) можно заменить в `src/shared/Config/Sounds.luau`.
 
 ## 8. Свой UserId для панели «🛠 Test»
@@ -303,4 +361,4 @@ ID треков → `src/shared/Config/Music.luau` (`"rbxassetid://ID"`).
   экономику монет, удержание (D1/D7).
 - Сезоны уже настроены: Хэллоуин с 15 октября, Новый год с 20 декабря. Перед сезоном
   поменяй название игры (`[🎃 HALLOWEEN] ...`) и обложку.
-- Новый код на каждые 1000 лайков — дети любят коды и сами разносят игру.
+- Новые коды выкладывай к обновлениям и сезонам, не за лайки.
