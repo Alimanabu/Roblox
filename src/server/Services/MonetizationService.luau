@@ -45,7 +45,7 @@ local function ownsPass(player, pass, attempts)
 		if ok then
 			return result
 		end
-		warn("[MonetizationService] Не удалось проверить геймпасс", pass.key, "у", player.Name, "попытка", attempt, result)
+		warn("[MonetizationService] Failed to check game pass", pass.key, "for", player.Name, "attempt", attempt, result)
 		if attempt < attempts then
 			task.wait(attempt * 1.5)
 		end

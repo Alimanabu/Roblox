@@ -25,7 +25,7 @@ local storeOk, storeErr = pcall(function()
 	store = DataStoreService:GetDataStore(STORE_NAME)
 end)
 if not storeOk then
-	warn("[DataService] DataStore недоступен, прогресс не будет сохраняться:", storeErr)
+	warn("[DataService] DataStore unavailable, progress will not be saved:", storeErr)
 end
 
 local profiles = {} -- [player] = data
@@ -205,10 +205,10 @@ function DataService.save(player, release)
 		end)
 	end)
 	if not ok then
-		warn("[DataService] Не удалось сохранить", player.Name, err)
+		warn("[DataService] Failed to save", player.Name, err)
 		return false
 	elseif stolenSession then
-		warn("[DataService] Сессию", player.Name, "занял другой сервер, сохранение пропущено")
+		warn("[DataService] Session of", player.Name, "is held by another server, save skipped")
 		return false
 	elseif skipped then
 		return false
@@ -239,7 +239,7 @@ local function loadWithLock(player)
 			return true, loaded
 		end
 		if not ok then
-			warn("[DataService] Ошибка загрузки", player.Name, err)
+			warn("[DataService] Load error", player.Name, err)
 			if RunService:IsStudio() then
 				return false, nil
 			end
@@ -281,7 +281,7 @@ local function onPlayerAdded(player)
 			data = result
 		elseif RunService:IsStudio() then
 			-- В Studio без доступа к API просто играем без сохранений.
-			warn("[DataService] DataStore в Studio недоступен (включи API Services). Играем без сохранений.")
+			warn("[DataService] DataStore is unavailable in Studio (enable API Services). Playing without saves.")
 			store = nil
 		else
 			-- Не даём играть с пустым профилем, иначе затрём настоящий прогресс.
@@ -345,7 +345,7 @@ local function onPlayerRemoving(player)
 		pendingRelease[player.UserId] = true
 		local ok, err = pcall(DataService.save, player, true)
 		if not ok then
-			warn("[DataService] Ошибка финального сохранения", player.Name, err)
+			warn("[DataService] Final save error", player.Name, err)
 		end
 		pendingRelease[player.UserId] = nil
 	end

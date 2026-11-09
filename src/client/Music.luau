@@ -19,7 +19,7 @@ local playNext
 local function skipFailed(track)
 	if not warned[track] then
 		warned[track] = true
-		warn("[Music] Трек не загрузился, пропускаем: " .. track)
+		warn("[Music] Track failed to load, skipping: " .. track)
 	end
 	failedInRow += 1
 	-- Не загрузился весь плейлист: тишина, по кругу не ходим.

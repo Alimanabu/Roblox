@@ -37,7 +37,7 @@ local function load(player)
 		if ok and type(info) == "table" then
 			break
 		end
-		warn("[PolicyService] Нет ответа Roblox о правилах для", player.Name, "попытка", attempt, info)
+		warn("[PolicyService] No answer from Roblox about policies for", player.Name, "attempt", attempt, info)
 		if attempt < LOAD_ATTEMPTS then
 			task.wait(attempt)
 		end

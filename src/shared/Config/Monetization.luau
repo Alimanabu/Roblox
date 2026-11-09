@@ -1,15 +1,15 @@
--- Платные штуки за Robux.
--- id — настоящие ID из Creator Dashboard (вписаны 08.11.2026, universe 10769617034).
--- id = 0 значит «не создано»: покупка выключена (кнопка «Скоро»).
+-- Paid items for Robux.
+-- id: real IDs from the Creator Dashboard (entered 08.11.2026, universe 10769617034).
+-- id = 0 means "not created": the purchase is off (the button says "Soon").
 
 local Monetization = {}
 
 Monetization.GamePasses = {
-	{ key = "VIP", id = 2075008286, name = "VIP", desc = "x2 монет навсегда", price = 199 },
-	{ key = "LUCKY", id = 2075842305, name = "Счастливчик", desc = "x1.5 удачи навсегда", price = 249, leadsToRandom = true },
-	{ key = "BIG_BASE", id = 2075452305, name = "Огромная база", desc = "1 этаж сразу + 2 этаж за полцены", price = 149 },
-	{ key = "AUTO_CRAFT", id = 2075854237, name = "Авто-фабрика", desc = "Машина сама создаёт брейнротов", price = 299 },
-	{ key = "FAST_MACHINE", id = 2074690294, name = "Турбо-машина", desc = "Машина работает в 2 раза быстрее", price = 99 },
+	{ key = "VIP", id = 2075008286, name = "VIP", desc = "x2 coins forever", price = 199 },
+	{ key = "LUCKY", id = 2075842305, name = "Lucky", desc = "x1.5 luck forever", price = 249, leadsToRandom = true },
+	{ key = "BIG_BASE", id = 2075452305, name = "Huge Base", desc = "Floor 1 right away + Floor 2 at half price", price = 149 },
+	{ key = "AUTO_CRAFT", id = 2075854237, name = "Auto Factory", desc = "The machine crafts brainrots by itself", price = 299 },
+	{ key = "FAST_MACHINE", id = 2074690294, name = "Turbo Machine", desc = "The machine runs 2x faster", price = 99 },
 }
 
 -- Разовые покупки. kind говорит серверу, что выдать.
@@ -18,10 +18,10 @@ Monetization.GamePasses = {
 -- случайные награды; отказывает сервер (см. MonetizationService). У геймпасса LUCKY выше
 -- та же метка: его продажу сервер остановить не может, поэтому там он просто не действует.
 Monetization.Products = {
-	{ key = "LUCK_BOOST", id = 3729748331, name = "Буст удачи x2", desc = "x2 удачи на 15 минут", price = 49, kind = "luckBoost", minutes = 15, leadsToRandom = true },
-	{ key = "COINS_SMALL", id = 3729748403, name = "Мешок монет", desc = "10 минут дохода (мин. 5K)", price = 29, kind = "coins", incomeMinutes = 10, minCoins = 5000, leadsToRandom = true },
-	{ key = "SPINS_3", id = 3729748471, name = "3 вращения колеса", desc = "Крути колесо удачи ещё 3 раза", price = 39, kind = "spins", amount = 3, leadsToRandom = true },
-	{ key = "COINS_BIG", id = 3729748557, name = "Сундук монет", desc = "1 час дохода (мин. 50K)", price = 129, kind = "coins", incomeMinutes = 60, minCoins = 50000, leadsToRandom = true },
+	{ key = "LUCK_BOOST", id = 3729748331, name = "Luck Boost x2", desc = "x2 luck for 15 minutes", price = 49, kind = "luckBoost", minutes = 15, leadsToRandom = true },
+	{ key = "COINS_SMALL", id = 3729748403, name = "Bag of Coins", desc = "10 minutes of income (min. 5K)", price = 29, kind = "coins", incomeMinutes = 10, minCoins = 5000, leadsToRandom = true },
+	{ key = "SPINS_3", id = 3729748471, name = "3 Wheel Spins", desc = "Spin the lucky wheel 3 more times", price = 39, kind = "spins", amount = 3, leadsToRandom = true },
+	{ key = "COINS_BIG", id = 3729748557, name = "Chest of Coins", desc = "1 hour of income (min. 50K)", price = 129, kind = "coins", incomeMinutes = 60, minCoins = 50000, leadsToRandom = true },
 }
 
 Monetization.GamePassByKey = {}

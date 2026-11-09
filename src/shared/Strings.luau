@@ -856,7 +856,7 @@ local function translationsFor(language)
 		end
 	end)
 	if not ok then
-		warn("[Strings] Таблица перевода недоступна:", err)
+		warn("[Strings] Translation table unavailable:", err)
 	end
 	-- Пустой результат не запоминаем: таблица могла ещё не дойти до клиента.
 	if next(map) then
@@ -902,7 +902,7 @@ local function render(language, value)
 	local map = translationsFor(language)
 	local text = map and map[value.k] or Source[value.k]
 	if not text then
-		warn("[Strings] Нет текста:", value.k)
+		warn("[Strings] Missing text:", value.k)
 		return tostring(value.k)
 	end
 	if not value.a then

@@ -8,7 +8,7 @@ local Seasons = {}
 Seasons.List = {
 	{
 		id = "halloween",
-		name = "🎃 Хэллоуин",
+		name = "🎃 Halloween",
 		icon = "🎃",
 		startsAt = 1792022400, -- 15 октября 2026, 00:00 UTC
 		endsAt = 1793923200, -- 6 ноября 2026, 00:00 UTC
@@ -16,7 +16,7 @@ Seasons.List = {
 	},
 	{
 		id = "newyear",
-		name = "🎄 Новый год",
+		name = "🎄 New Year",
 		icon = "🎄",
 		startsAt = 1797724800, -- 20 декабря 2026, 00:00 UTC
 		endsAt = 1799625600, -- 11 января 2027, 00:00 UTC
@@ -24,7 +24,7 @@ Seasons.List = {
 	},
 	{
 		id = "valentine",
-		name = "💘 День святого Валентина",
+		name = "💘 Valentine's Day",
 		icon = "💘",
 		startsAt = 1801958400, -- 7 февраля 2027, 00:00 UTC
 		endsAt = 1802736000, -- 16 февраля 2027, 00:00 UTC
@@ -32,7 +32,7 @@ Seasons.List = {
 	},
 	{
 		id = "summer",
-		name = "☀️ Лето",
+		name = "☀️ Summer",
 		icon = "☀️",
 		startsAt = 1813449600, -- 20 июня 2027, 00:00 UTC
 		endsAt = 1815264000, -- 11 июля 2027, 00:00 UTC
