@@ -35,7 +35,7 @@ Daily.QuestPool = {
 	{ id = "index1", kind = "newIndex", target = 1, minutes = 10 },
 }
 
--- Gifts for time in game (counted from join, reset on rejoin).
+-- Gifts for time in game (minutes summed over all sessions of the UTC day, saved with the profile).
 Daily.Gifts = {
 	{ minutes = 5, reward = { coinsMinutes = 2 } },
 	{ minutes = 15, reward = { luckMinutes = 5 } },

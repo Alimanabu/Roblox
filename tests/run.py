@@ -164,12 +164,13 @@ def main():
     trade_kk = world("trade.spec.luau", "kk-kz")
     rejoin = world("rejoin.spec.luau", "en-us")
     frames = world("frames.spec.luau", "en-us")
+    loading = world("loading.spec.luau", "en-us")
     retention = world("retention.spec.luau", "en-us")
     retention_ru = world("retention.spec.luau", "ru-ru")
     retention_kk = world("retention.spec.luau", "kk-kz")
 
     return (economy or purchases or dictionary or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
-            or rejoin or frames or retention or retention_ru or retention_kk)
+            or rejoin or frames or loading or retention or retention_ru or retention_kk)
 
 
 if __name__ == "__main__":

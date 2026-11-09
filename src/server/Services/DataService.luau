@@ -75,20 +75,31 @@ local function defaultData()
 	}
 end
 
--- Adds missing fields (in case we add new ones in future versions).
+-- Adds missing fields (in case we add new ones in future versions) and replaces fields whose type
+-- differs from the template (a damaged or hand-edited save) with a copy of the template value.
 local function reconcile(data, template)
 	for key, value in pairs(template) do
-		if data[key] == nil then
+		if type(data[key]) ~= type(value) then
 			if type(value) == "table" then
 				data[key] = table.clone(value)
 			else
 				data[key] = value
 			end
-		elseif type(value) == "table" and type(data[key]) == "table" and next(value) ~= nil then
+		elseif type(value) == "table" and next(value) ~= nil then
 			reconcile(data[key], value)
 		end
 	end
 	return data
+end
+
+-- Numbers that are used in arithmetic right away: NaN and infinity are not valid values.
+local MAX_PLAYTIME = 86400
+local function sanitize(data)
+	local seconds = data.playtime.seconds
+	if seconds ~= seconds then
+		seconds = 0
+	end
+	data.playtime.seconds = math.clamp(seconds, 0, MAX_PLAYTIME)
 end
 
 local function keyFor(player)
@@ -322,6 +333,7 @@ local function onPlayerAdded(player)
 	local beforeFloors = type(data) == "table" and data.coins ~= nil and data.floors == nil
 	local beforeSources = type(data) == "table" and data.coins ~= nil and data.boughtCoins == nil
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
+	sanitize(data)
 	if beforeFloors then
 		data.floors = 1
 	end
@@ -377,7 +389,12 @@ function DataService.init()
 		while true do
 			task.wait(0.2)
 			for player in pairs(dirty) do
-				DataService.sendNow(player)
+				-- One broken profile must not stop the state for everyone else.
+				local ok, err = pcall(DataService.sendNow, player)
+				if not ok then
+					dirty[player] = nil
+					warn("[DataService] State send error", player.Name, err)
+				end
 			end
 		end
 	end)
