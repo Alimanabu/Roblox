@@ -268,10 +268,12 @@ function Hud.goal(state, now)
 end
 
 -- Called on every state change and once a second: the timers in the goal run without new state.
+-- A broken state hides the line instead of stopping the loop that also runs the steal status and events.
 function Hud:refreshGoal(state)
-	if state then
-		self.goalButton.Text = Hud.goal(state)
-		self.goalButton.Visible = true
+	local ok, text = pcall(Hud.goal, state)
+	self.goalButton.Visible = ok and type(text) == "string"
+	if self.goalButton.Visible then
+		self.goalButton.Text = text
 	end
 end
 

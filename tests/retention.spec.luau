@@ -605,6 +605,20 @@ scenario("цель: после дня 6 зовёт за мега-наградо�
 	check(longest <= 60, "цель длиннее 60 знаков: " .. longest)
 end)
 
+scenario("цель: битое или пустое состояние прячет строку и не роняет цикл клиента", function()
+	local fake = { goalButton = { Text = "old", Visible = true } }
+	local cases = { [2] = {}, [3] = { rewards = {} }, [4] = { rewards = { quests = 5 }, playtime = {} } } -- [1] = nil
+	for index = 1, 4 do
+		local broken = cases[index]
+		local ok = pcall(Hud.refreshGoal, fake, broken)
+		check(ok, "битое состояние уронило refreshGoal")
+		check(fake.goalButton.Visible == false, "при битом состоянии строка цели видна")
+	end
+	fake.goalButton.Visible = true
+	Hud.refreshGoal(fake, ClientState.current)
+	check(fake.goalButton.Visible == true and fake.goalButton.Text == Hud.goal(ClientState.current), "после исправного состояния строка не вернулась")
+end)
+
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)
 
 if failures == 0 then
