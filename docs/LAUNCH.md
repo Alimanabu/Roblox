@@ -381,8 +381,9 @@ ID бейджа вписать в `src/shared/Config/Achievements.luau`, доб�
 - **Game Settings → Security → Enable Studio Access to API Services** — включить.
 - **Places → Max Players = 8** (на карте 8 баз).
 - **Genre:** Simulator / Tycoon. **Devices:** компьютер, телефон, планшет, консоль.
-- **Localization:** исходный язык **English**. Русский уже в игре (таблица `Translations.csv`),
-  для него автоперевод не нужен. Описание и название на русском впиши вручную.
+- **Localization:** исходный язык **English**. Русский (`ru`) и казахский (`kk`) уже в игре (таблица `Translations.csv`),
+  для них автоперевод не нужен (казахского в автопереводе Roblox нет). Название и описание страницы на ru и kk впиши вручную
+  (Open Cloud ключ этого не умеет: нужен кабинет).
   Automatic Translation для других языков можно включить: основа теперь английская.
 - **Questionnaire / Maturity:** честно заполнить анкету возрастного рейтинга
   (в игре мультяшное «шлёпанье» без крови и урона).

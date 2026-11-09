@@ -14,7 +14,8 @@ end
 local player = World.addPlayer(1001, "Tester")
 local friend = World.addPlayer(1002, "Friend")
 local S = shared_require("Strings")
-local isRussian = World.locale == "ru-ru"
+local language = string.sub(World.locale, 1, 2)
+local isTranslated = language ~= "en"
 
 World.startServer()
 World.startClient()
@@ -132,7 +133,7 @@ for text in pairs(shown) do
 	check(string.find(text, "{[%w_]+}") == nil, "незаполненный параметр: " .. text)
 	check(string.find(text, "table: 0x", 1, true) == nil, "таблица вместо текста: " .. text)
 	check(string.find(text, "nil", 1, true) == nil, "nil в тексте: " .. text)
-	if not isRussian then
+	if not isTranslated then
 		check(string.find(text, "[\208\209]") == nil, "русский текст у английского игрока: " .. text)
 	end
 end
@@ -155,15 +156,15 @@ for key, text in pairs(S.Source) do
 end
 print(string.format("  дошло до экрана: %d из %d текстов без параметров", reached, plainTotal))
 
-if isRussian then
+if isTranslated then
 	-- Каждый текст из словаря с переводом: на экране не должен остаться английский оригинал.
 	local translated = {}
 	for _, entry in ipairs(__translationEntries) do
-		translated[entry.Source] = entry.Values.ru
+		translated[entry.Source] = entry.Values[language]
 	end
 	for text in pairs(shown) do
 		local ru = translated[text]
-		check(ru == nil or ru == text, "английский текст у русского игрока: " .. text)
+		check(ru == nil or ru == text, "английский текст у игрока (" .. language .. "): " .. text)
 	end
 end
 

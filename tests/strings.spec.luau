@@ -79,6 +79,11 @@ local added = Instance.new("TextLabel")
 S.apply(added, "Text", S.m("plot.free_base"))
 check(added.Text == "Свободная база", "новая табличка не перевелась: " .. tostring(added.Text))
 
+-- Казахский игрок: колонка kk той же таблицы.
+S.setLanguage("kk")
+check(S.t("factory.sold", { coins = "$5" }) == "$5 үшін сатылды", "казахский перевод: " .. S.t("factory.sold", { coins = "$5" }))
+check(S.forPlayer({ LocaleId = "kk-kz" }, "plot.free_base") == "Бос база", "forPlayer: казахский")
+
 -- Язык без перевода и сбой таблицы: остаётся английский.
 S.setLanguage("de")
 check(S.t("factory.sold", { coins = "$5" }) == "Sold for $5", "нет перевода: должен быть английский")

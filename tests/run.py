@@ -15,6 +15,8 @@ WORLD_MODULES = ["Remotes", "Config/Admins", "Config/Music", "Config/Social", "C
 
 
 CYRILLIC = re.compile("[А-Яа-яЁё]")
+# Языки перевода (09.11): английский — исходный текст, ru и kk — колонки таблицы. У каждого ключа есть все.
+LANGS = ("ru", "kk")
 PARAM = re.compile(r"\{(\w+)\}")
 LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
 # Кириллицы в src нет нигде, кроме колонки ru таблицы перевода (09.11: язык продукта английский).
@@ -68,7 +70,8 @@ def translation_rows():
 
 
 def translation_entries():
-    rows = ["{ Key = %s, Source = %s, Values = { ru = %s } }" % (lua(r["Key"]), lua(r["Source"]), lua(r["ru"]))
+    rows = ["{ Key = %s, Source = %s, Values = { %s } }"
+            % (lua(r["Key"]), lua(r["Source"]), ", ".join("%s = %s" % (lang, lua(r[lang])) for lang in LANGS))
             for r in translation_rows()]
     return "__translationEntries = {\n" + ",\n".join(rows) + "\n}\n"
 
@@ -96,12 +99,15 @@ def check_dictionary():
             problems.append(f"{key}: в таблице другой английский текст")
         if None in row:
             problems.append(f"{key}: лишнее поле в таблице, текст с запятой нужен в кавычках")
-        if not row["ru"].strip():
-            problems.append(f"{key}: нет перевода")
+        for lang in LANGS:
+            if not (row.get(lang) or "").strip():
+                problems.append(f"{key}: нет перевода {lang}")
+            elif set(PARAM.findall(row["Source"])) != set(PARAM.findall(row[lang])):
+                problems.append(f"{key}: параметры перевода {lang} не совпадают")
+            elif row["Source"].count(chr(10)) != row[lang].count(chr(10)):
+                problems.append(f"{key}: число переносов строки в {lang} не совпадает")
         if CYRILLIC.search(row["Source"]):
             problems.append(f"{key}: русский текст в английском оригинале")
-        if set(PARAM.findall(row["Source"])) != set(PARAM.findall(row["ru"])):
-            problems.append(f"{key}: параметры перевода не совпадают")
         pair = (row["Source"], row["Context"])
         if pair in seen:
             problems.append(f"{key}: Roblox не примет два одинаковых текста без Context")
@@ -150,14 +156,16 @@ def main():
     music = world("music.spec.luau", "en-us")
     screens = world("screens.spec.luau", "en-us")
     screens_ru = world("screens.spec.luau", "ru-ru")
+    screens_kk = world("screens.spec.luau", "kk-kz")
     steal = world("steal.spec.luau", "en-us")
     policy = world("policy.spec.luau", "en-us")
     trade = world("trade.spec.luau", "en-us")
     trade_ru = world("trade.spec.luau", "ru-ru")
+    trade_kk = world("trade.spec.luau", "kk-kz")
     rejoin = world("rejoin.spec.luau", "en-us")
     frames = world("frames.spec.luau", "en-us")
 
-    return (economy or purchases or dictionary or strings or music or screens or screens_ru or steal or policy or trade or trade_ru
+    return (economy or purchases or dictionary or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
             or rejoin or frames)
 
 

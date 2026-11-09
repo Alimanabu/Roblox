@@ -458,10 +458,10 @@ scenario("запрет пришёл во время отсчёта: обмен �
 end)
 
 scenario("тексты отказа на языке игрока", function()
-	local russian = World.locale == "ru-ru"
+	local translated = World.locale ~= "en-us"
 	for _, key in ipairs({ "trade.random_you", "trade.random_them", "trade.err_random", "shop.bought_coins", "wheel.spins_kept" }) do
 		local hasRussian = string.find(S.t(key, { name = "X" }), "[\208\209]") ~= nil
-		check(hasRussian == russian, key .. ": не тот язык: " .. S.t(key, { name = "X" }))
+		check(hasRussian == translated, key .. ": не тот язык: " .. S.t(key, { name = "X" }))
 	end
 end)
 
@@ -834,10 +834,10 @@ scenario("тексты отказа не длиннее 79 знаков, гов�
 		check(utf8.len(text) <= MAX_TEXT, item[1] .. ": длина " .. tostring(utf8.len(text)) .. ": " .. text)
 		check(string.find(text, "{", 1, true) == nil, "незаполненный параметр: " .. text)
 	end
-	local advice = if World.locale == "ru-ru" then "Выбери другого" else "Pick another"
+	local advice = ({ ["ru-ru"] = "Выбери другого", ["kk-kz"] = "Басқасын таңда" })[World.locale] or "Pick another"
 	check(string.find(S.t("trade.random_you"), advice, 1, true) ~= nil, "random_you: нет совета")
 	check(string.find(S.t("trade.random_them", { name = "X" }), advice, 1, true) ~= nil, "random_them: нет совета")
-	local upgrades = if World.locale == "ru-ru" then "улучшения" else "upgrades"
+	local upgrades = ({ ["ru-ru"] = "улучшения", ["kk-kz"] = "жақсарту" })[World.locale] or "upgrades"
 	check(string.find(S.t("shop.bought_coins", { coins = "$1" }), upgrades, 1, true) ~= nil, "bought_coins: нет улучшений")
 	local simple = S.t("trade.err_random")
 	for _, word in ipairs({ "region", "регион", "luck", "удач" }) do
