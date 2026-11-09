@@ -1,10 +1,10 @@
--- Обмен брейнротами между игроками.
+-- Trading brainrots between players.
 --
--- 1. Игрок A приглашает B, B принимает.
--- 2. Каждый кладёт в обмен до MAX_OFFER брейнротов.
--- 3. Оба жмут «Готов» -> CONFIRM_DELAY секунд отсчёта.
---    Любое изменение предложения снимает «Готов» у обоих (защита от подмены).
--- 4. Сервер перепроверяет всё и меняет брейнротов за один шаг, затем сохраняет обоих.
+-- 1. Player A invites B, B accepts.
+-- 2. Each puts up to MAX_OFFER brainrots into the trade.
+-- 3. Both press "Ready" -> CONFIRM_DELAY seconds of countdown.
+-- Any change to an offer clears "Ready" for both (protection against a swap).
+-- 4. The server re-checks everything and swaps the brainrots in one step, then saves both.
 
 local Players = game:GetService("Players")
 
@@ -30,7 +30,7 @@ local GOOD = Color3.fromRGB(120, 255, 120)
 local BAD = Color3.fromRGB(255, 110, 110)
 local INFO = Color3.fromRGB(120, 200, 255)
 
-local trades = {} -- [player] = trade (одна и та же таблица у обоих участников)
+local trades = {} -- [player] = trade (the same table for both participants)
 local invites = {} -- [target] = { [fromUserId] = os.clock() }
 local lastRequest = {} -- [player] = os.clock()
 
@@ -47,8 +47,8 @@ local function findEntry(data, uid)
 	return nil
 end
 
--- Там, где Roblox запрещает платные случайные награды, их результат нельзя ни отдать, ни получить.
--- Возвращает сообщение для отдающего или nil.
+-- Where Roblox forbids paid random rewards, their result can be neither given nor received.
+-- Returns a message for the giver or nil.
 local function paidRandomRefusal(entries, giver, receiver)
 	local giverRestricted = PolicyService.paidRandomRestricted(giver)
 	if not giverRestricted and not PolicyService.paidRandomRestricted(receiver) then
@@ -64,7 +64,7 @@ local function paidRandomRefusal(entries, giver, receiver)
 	return nil
 end
 
--- Что видит игрок в окне обмена.
+-- What the player sees in the trade window.
 local function stateFor(trade, player)
 	local partner = partnerOf(trade, player)
 	local partnerData = DataService.get(partner)
@@ -121,7 +121,7 @@ local function request(player, targetUserId)
 	if not target or target == player then
 		return
 	end
-	-- В некоторых странах обмен платными предметами запрещён (правила Roblox).
+	-- In some countries trading paid items is forbidden (Roblox rules).
 	if not PolicyService.tradingAllowed(player) then
 		Remotes.Notify:FireClient(player, PolicyService.message(player, "trade.region_you"), BAD)
 		return
@@ -176,7 +176,7 @@ local function respond(player, fromUserId, accept)
 		ready = {},
 		confirmAt = nil,
 		token = 0,
-		notices = {}, -- [player] = почему сервер отказал, показывается в окне обмена
+		notices = {}, -- [player] = why the server refused, shown in the trade window
 	}
 	trades[from] = trade
 	trades[player] = trade
@@ -199,7 +199,7 @@ local function setOffer(player, uids)
 		table.insert(clean, uid)
 		table.insert(entries, entry)
 	end
-	-- Предложение остаётся прежним: готовность не снимаем, только объясняем отказ.
+	-- The offer stays as it was: readiness is not cleared, we only explain the refusal.
 	local refusal = paidRandomRefusal(entries, player, partnerOf(trade, player))
 	trade.notices[player] = refusal
 	if refusal then
@@ -211,7 +211,7 @@ local function setOffer(player, uids)
 	sendState(trade)
 end
 
--- Проверяет и проводит обмен. Возвращает текст ошибки или nil.
+-- Checks and performs the trade. Returns an error text or nil.
 local function execute(trade)
 	local a, b = trade.a, trade.b
 	local dataA, dataB = DataService.get(a), DataService.get(b)
@@ -237,7 +237,7 @@ local function execute(trade)
 	if #giveA == 0 and #giveB == 0 then
 		return S.m("trade.err_empty")
 	end
-	-- Нельзя «спрятать» брейнротов у друга на время перерождения и забрать обратно.
+	-- You cannot "hide" brainrots at a friend's during a rebirth and take them back.
 	local function returnsAfterRebirth(entries, receiver, receiverData)
 		for _, entry in ipairs(entries) do
 			if Formulas.isFromPastLife(entry, receiver.UserId, receiverData.rebirths) then
@@ -249,7 +249,7 @@ local function execute(trade)
 	if returnsAfterRebirth(giveA, b, dataB) or returnsAfterRebirth(giveB, a, dataA) then
 		return S.m("trade.err_past_life")
 	end
-	-- Ответ Roblox о запрете мог прийти уже после того, как брейнрота положили в обмен.
+	-- The Roblox answer about the ban could have arrived after the brainrot was put into the trade.
 	if paidRandomRefusal(giveA, a, b) or paidRandomRefusal(giveB, b, a) then
 		return S.m("trade.err_random")
 	end
@@ -264,7 +264,7 @@ local function execute(trade)
 		return S.m("trade.err_no_space", { name = b.DisplayName })
 	end
 
-	-- Всё проверено — меняем за один шаг (без yield'ов).
+	-- Everything is checked: swap in one step (no yields).
 	local function remove(data, entries)
 		for _, entry in ipairs(entries) do
 			local _, index = findEntry(data, entry.uid)
@@ -341,7 +341,7 @@ function TradeService.isTrading(player)
 end
 
 function TradeService.init()
-	-- Сервер выключается: обмен не должен завершиться между сохранениями игроков.
+	-- The server is shutting down: a trade must not finish between the players' saves.
 	DataService.onClose(function()
 		for _, trade in pairs(trades) do
 			if not trade.closed then

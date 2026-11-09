@@ -12,11 +12,11 @@ Monetization.GamePasses = {
 	{ key = "FAST_MACHINE", id = 2074690294, name = "Turbo Machine", desc = "The machine runs 2x faster", price = 99 },
 }
 
--- Разовые покупки. kind говорит серверу, что выдать.
--- leadsToRandom = true — покупка ведёт к случайной награде или меняет её шансы (монеты →
--- капсулы, вращения колеса, удача). Таких не продаём там, где Roblox запрещает платные
--- случайные награды; отказывает сервер (см. MonetizationService). У геймпасса LUCKY выше
--- та же метка: его продажу сервер остановить не может, поэтому там он просто не действует.
+-- One-time purchases. kind tells the server what to grant.
+-- leadsToRandom = true: the purchase leads to a random reward or changes its odds (coins ->
+-- capsules, wheel spins, luck). We do not sell these where Roblox forbids paid
+-- random rewards; the server refuses (see MonetizationService). The LUCKY game pass above has
+-- the same flag: the server cannot stop its sale, so there it simply has no effect.
 Monetization.Products = {
 	{ key = "LUCK_BOOST", id = 3729748331, name = "Luck Boost x2", desc = "x2 luck for 15 minutes", price = 49, kind = "luckBoost", minutes = 15, leadsToRandom = true },
 	{ key = "COINS_SMALL", id = 3729748403, name = "Bag of Coins", desc = "10 minutes of income (min. 5K)", price = 29, kind = "coins", incomeMinutes = 10, minCoins = 5000, leadsToRandom = true },

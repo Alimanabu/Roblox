@@ -1,4 +1,4 @@
--- Проигрывание звуков на клиенте.
+-- Playing sounds on the client.
 
 local SoundService = game:GetService("SoundService")
 
@@ -32,7 +32,7 @@ end
 
 Sfx.enabled = true
 
--- pitch — необязательная поправка высоты (например, выше для редких брейнротов).
+-- pitch is an optional pitch adjustment (for example, higher for rare brainrots).
 function Sfx.play(name, pitch)
 	if not Sfx.enabled then
 		return
@@ -52,7 +52,7 @@ function Sfx.play(name, pitch)
 			copy.Ended:Once(function()
 				copy:Destroy()
 			end)
-			-- Если звук не загрузился, Ended не придёт — убираем копию сами.
+			-- If a sound fails to load, Ended never comes, so we remove the copy ourselves.
 			task.delay(6, function()
 				if copy.Parent then
 					copy:Destroy()

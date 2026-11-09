@@ -1,5 +1,5 @@
--- Имена брейнротов. Любой текст от игроков ОБЯЗАТЕЛЬНО фильтруется через
--- TextService (правило Roblox) — иначе игру могут заблокировать.
+-- Brainrot names. Any text from players MUST be filtered through
+-- TextService (a Roblox rule), otherwise the game can be banned.
 
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")

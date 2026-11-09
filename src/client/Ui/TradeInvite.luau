@@ -1,5 +1,5 @@
--- Всплывающее приглашение (обмен, аура-баттл): «Принять» / «Отклонить».
--- respondRemote получает (fromUserId, accept).
+-- Popup invitation (trade, aura battle): "Accept" / "Decline".
+-- respondRemote receives (fromUserId, accept).
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

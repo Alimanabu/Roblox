@@ -1,4 +1,4 @@
--- Плашка справа: какой ивент идёт сейчас или какой будет следующим.
+-- Plate on the right: which event is running now or which one is next.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -40,7 +40,7 @@ function EventBanner:update()
 	local now = workspace:GetServerTimeNow()
 	local active = Events.active(now)
 	if #active > 0 then
-		-- Если идут два ивента сразу, показываем последний (Минута 67 важнее).
+		-- If two events run at once, we show the last one (Minute 67 matters more).
 		local current = active[#active]
 		local pulse = (math.sin(os.clock() * 6) + 1) / 2
 		self.title.Text = current.event.name

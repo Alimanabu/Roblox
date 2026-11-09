@@ -1,15 +1,15 @@
--- Перерождения: сбрасывают монеты, брейнротов и улучшения,
--- но навсегда дают множитель дохода, удачу и крутой титул.
--- Уровень игрока и Индекс брейнротов сохраняются.
+-- Rebirths: reset coins, brainrots and upgrades,
+-- but permanently give an income multiplier, luck and a cool title.
+-- Player level and the brainrot Index are kept.
 
 local S = require(script.Parent.Parent.Strings)
 
 local Rebirths = {}
 
-Rebirths.INCOME_BONUS = 0.5 -- +50% дохода за каждое перерождение
-Rebirths.LUCK_BONUS = 0.1 -- +10% удачи за каждое перерождение
+Rebirths.INCOME_BONUS = 0.5 -- +50% income per rebirth
+Rebirths.LUCK_BONUS = 0.1 -- +10% luck per rebirth
 
-Rebirths.TITLE_COUNT = 10 -- rebirth.1.title … rebirth.10.title в Strings
+Rebirths.TITLE_COUNT = 10 -- rebirth.1.title ... rebirth.10.title in Strings
 
 function Rebirths.cost(rebirths)
 	return math.floor(50000000 * 12 ^ rebirths)
@@ -19,7 +19,7 @@ function Rebirths.levelRequired(rebirths)
 	return 20 + rebirths * 5
 end
 
--- Сообщение (см. Strings): титул покажет клиент на языке игрока.
+-- Message (see Strings): the client shows the title in the player's language.
 function Rebirths.titleFor(rebirths)
 	if rebirths <= 0 then
 		return nil

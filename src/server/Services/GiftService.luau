@@ -1,4 +1,4 @@
--- Подарки за время в игре: чем дольше играешь за один заход, тем круче подарки.
+-- Gifts for time in game: the longer you play in one session, the better the gifts.
 
 local Players = game:GetService("Players")
 
@@ -15,7 +15,7 @@ local GiftService = {}
 local GOLD = Color3.fromRGB(255, 220, 80)
 local BAD = Color3.fromRGB(255, 110, 110)
 
-local sessionStart = {} -- [player] = workspace:GetServerTimeNow() при заходе
+local sessionStart = {} -- [player] = workspace:GetServerTimeNow() at join
 local claimed = {} -- [player] = { [index] = true }
 
 local function elapsedMinutes(player)

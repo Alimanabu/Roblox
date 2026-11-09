@@ -1,27 +1,27 @@
--- Проверка скорости: позицию персонажа присылает клиент, поэтому читер может «телепортироваться».
--- Сервер следит, сколько игрок прошёл и за какое время. У каждого есть запас пути по горизонтали:
--- он растёт со скоростью бега и тратится на каждый студ. Подъём считается отдельно, иначе прыжки
--- съедали бы путь. Запас ушёл в минус — игрок не мог дойти сюда сам, и пока запас не вернётся
--- (столько, сколько занял бы путь пешком), кража, шлепок и поимка отклоняются.
+-- Speed check: the client sends the character position, so a cheater can "teleport".
+-- The server tracks how far the player went and in what time. Each has a horizontal path budget:
+-- it grows at running speed and is spent on every stud. Climbing is counted separately, otherwise jumps
+-- would eat the path. If the budget goes negative, the player could not have walked here, and until the budget recovers
+-- (as much as the walk would take), stealing, slapping and catching are rejected.
 
 local Players = game:GetService("Players")
 
 local MoveGuardService = {}
 
 MoveGuardService.SAMPLE_EVERY = 0.2
-MoveGuardService.SPEED_MARGIN = 1.35 -- запас к скорости: прыжки, склоны, неровная отправка позиции
-MoveGuardService.LAG_SECONDS = 3 -- запас пути = 3 с бега (48 студов при 16, 36 при 12): столько обрыва связи прощаем
-MoveGuardService.MIN_LAG_SPEED = 12 -- оглушённый вор стоит на месте, но запас у него не сгорает
-MoveGuardService.CLIMB_RATE = 15 -- студов вверх в секунду: прыжки подряд дают 12 (7,2 за 0,6 с), пандус 6,8
-MoveGuardService.MAX_CLIMB = 10 -- меньше высоты 2 этажа (14): за один раз туда не попасть
-MoveGuardService.DROP_BELOW = -30 -- ниже этого запаса кража срывается: это уже не сбой связи
-MoveGuardService.TELEPORT_GRACE = 1 -- секунд после переноса сервером: клиент ещё шлёт старую позицию,
--- в это время путь считаем от ближайшей из точек «откуда» и «куда»: другие места не бесплатны
-MoveGuardService.KNOCKBACK_SECONDS = 1.5 -- сколько длится отлёт от удара
+MoveGuardService.SPEED_MARGIN = 1.35 -- margin on speed: jumps, slopes, uneven position sending
+MoveGuardService.LAG_SECONDS = 3 -- path budget = 3 s of running (48 studs at 16, 36 at 12): this much connection loss is forgiven
+MoveGuardService.MIN_LAG_SPEED = 12 -- a stunned thief stands still, but his budget does not burn
+MoveGuardService.CLIMB_RATE = 15 -- studs up per second: consecutive jumps give 12 (7.2 in 0.6 s), a ramp 6.8
+MoveGuardService.MAX_CLIMB = 10 -- less than the height of floor 2 (14): cannot get there in one go
+MoveGuardService.DROP_BELOW = -30 -- below this budget the steal fails: this is no longer a connection glitch
+MoveGuardService.TELEPORT_GRACE = 1 -- seconds after a server-side move: the client still sends the old position,
+-- during this time the path is counted from the nearest of the "from" and "to" points: other places are not free
+MoveGuardService.KNOCKBACK_SECONDS = 1.5 -- how long the knockback from a hit lasts
 
--- Запас живёт дольше персонажа: сброс и смерть не должны возвращать его.
+-- The budget outlives the character: reset and death must not bring it back.
 local tracks = {} -- [player] = { root, position, time, budget, climb, graceUntil, serverFrom, serverTo, free, freeUntil }
-local spawnPoint = Vector3.zero -- сюда Roblox ставит нового персонажа
+local spawnPoint = Vector3.zero -- Roblox puts a new character here
 
 local function rootOf(player)
 	local character = player.Character
@@ -33,7 +33,7 @@ local function horizontal(from, to)
 	return math.sqrt(dx * dx + dz * dz)
 end
 
--- Падение не считаем: вниз можно лететь быстрее бега.
+-- We do not count falling: you can fall faster than running.
 local function climb(from, to)
 	return math.max(0, to.Y - from.Y)
 end
@@ -46,7 +46,7 @@ function MoveGuardService.setSpawnPoint(position)
 	spawnPoint = position
 end
 
--- Сколько стоит дойти до position: сразу после переноса сервером — от ближайшей известной точки.
+-- How much it costs to reach position: right after a server move, from the nearest known point.
 local function pathTo(track, position, now)
 	local moved, up = horizontal(track.position, position), climb(track.position, position)
 	if now < track.graceUntil then
@@ -70,7 +70,7 @@ local function observe(player)
 		tracks[player] = track
 	end
 	if track.root ~= root then
-		-- Новый персонаж начинает путь с точки спавна, дальше его ведёт сервер.
+		-- A new character starts its path from the spawn point, after that the server leads it.
 		track.root, track.position, track.graceUntil = root, spawnPoint, 0
 	end
 
@@ -91,24 +91,24 @@ local function observe(player)
 	return track
 end
 
--- false: игрок оказался там, куда не мог дойти. Проверять перед каждым действием на сервере.
+-- false: the player ended up where they could not have walked. Check before every action on the server.
 function MoveGuardService.canAct(player)
 	local track = observe(player)
 	return track == nil or (track.budget >= 0 and track.climb >= 0)
 end
 
--- true: запас ушёл далеко в минус, это не сбой связи. Несущий брейнрота его роняет.
+-- true: the budget went far negative, this is not a connection glitch. The carrier drops the brainrot.
 function MoveGuardService.exceeded(player)
 	local track = observe(player)
 	return track ~= nil and (track.budget < MoveGuardService.DROP_BELOW or track.climb < MoveGuardService.DROP_BELOW)
 end
 
--- Мог ли игрок со скоростью speed пройти от from до to, начав в момент since (os.clock()).
+-- Could a player with speed speed walk from from to to, starting at time since (os.clock()).
 function MoveGuardService.couldWalk(from, since, to, speed)
 	return horizontal(from, to) <= speed * MoveGuardService.SPEED_MARGIN * (os.clock() - since)
 end
 
--- Сервер сам переносит персонажа в target (телепорт домой, забор замка). Вызывать до переноса.
+-- The server itself moves the character to target (teleport home, lock pickup). Call before the move.
 function MoveGuardService.teleported(player, target)
 	local track = observe(player)
 	if track then
@@ -117,7 +117,7 @@ function MoveGuardService.teleported(player, target)
 	end
 end
 
--- Сервер толкнул игрока ударом: этот путь бесплатный, но не больше, чем мог дать удар.
+-- The server pushed the player with a hit: this path is free, but no more than the hit could give.
 function MoveGuardService.knockback(player, speed)
 	local track = observe(player)
 	if track then

@@ -17,8 +17,7 @@ WORLD_MODULES = ["Remotes", "Config/Admins", "Config/Music", "Config/Social", "C
 CYRILLIC = re.compile("[А-Яа-яЁё]")
 PARAM = re.compile(r"\{(\w+)\}")
 LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
-# Эти файлы нельзя менять: их тексты игрок не видит, он читает словарь.
-RUSSIAN_ALLOWED = {"Monetization.luau", "Seasons.luau", "Admins.luau"}
+# Кириллицы в src нет нигде, кроме колонки ru таблицы перевода (09.11: язык продукта английский).
 # Ключи, которые код собирает сам: "creature." .. id и т.п.
 DYNAMIC_KEYS = ("creature.", "rarity.", "mutation.", "capsule.", "achievement.", "quest.", "wheel.", "event.", "level.",
                 "rebirth.", "skin.", "tutorial.", "upgrade.", "floor.", "pass.", "product.", "season.", "battle.rank.")
@@ -119,7 +118,7 @@ def check_dictionary():
                 cut = masked.find("--")
                 code = line if cut < 0 else line[:cut]
                 used.update(re.findall(r'"([a-z]\w*(?:\.\w+)+)"', code))
-                if name not in RUSSIAN_ALLOWED and "warn(" not in code and CYRILLIC.search(code):
+                if CYRILLIC.search(line):
                     problems.append(f"{name}:{number}: текст мимо словаря")
     for key in used:
         if key not in source and not key.startswith(NOT_KEYS):

@@ -1,49 +1,49 @@
--- Сетевые события. Сервер их создаёт, клиент ждёт.
+-- Network events. The server creates them, the client waits.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local EVENTS = {
-	-- клиент -> сервер
+	-- client -> server
 	"Craft", -- (capsuleId)
 	"Sell", -- (uid)
-	"SellRarity", -- (rarityId) продать всех этой редкости
-	"Fuse", -- (rarityId) скрестить 3 брейнрота одной редкости
+	"SellRarity", -- (rarityId) sell all of this rarity
+	"Fuse", -- (rarityId) fuse 3 brainrots of one rarity
 	"BuyUpgrade", -- (upgradeId)
-	"BuyFloor", -- () построить следующий этаж базы
+	"BuyFloor", -- () build the next base floor
 	"Rebirth", -- ()
 	"SetAutoCraft", -- (capsuleId | nil)
-	"ClaimDaily", -- () забрать ежедневную награду
-	"ClaimQuest", -- (index) забрать награду за задание
-	"Admin", -- (command, arg) тестовые команды (только админы / Studio)
-	"RedeemCode", -- (text) ввести промокод
-	"ClaimGift", -- (index) подарок за время в игре
-	"TradeRequest", -- (targetUserId) пригласить к обмену
-	"TradeRespond", -- (fromUserId, accept) ответить на приглашение
-	"TradeSetOffer", -- ({ uid, ... }) что я кладу в обмен
-	"TradeReady", -- (bool) «Готов»
-	"TradeCancel", -- () выйти из обмена
+	"ClaimDaily", -- () claim the daily reward
+	"ClaimQuest", -- (index) claim the quest reward
+	"Admin", -- (command, arg) test commands (admins / Studio only)
+	"RedeemCode", -- (text) enter a promo code
+	"ClaimGift", -- (index) gift for time in game
+	"TradeRequest", -- (targetUserId) invite to trade
+	"TradeRespond", -- (fromUserId, accept) respond to an invitation
+	"TradeSetOffer", -- ({ uid, ... }) what I put into the trade
+	"TradeReady", -- (bool) "Ready"
+	"TradeCancel", -- () leave the trade
 	"BuySkin", -- (skinId)
 	"ApplySkin", -- (uid, skinId | nil)
-	"SetSetting", -- (key, bool) настройки игрока
-	"SpinWheel", -- () крутить колесо удачи
-	"BattleChallenge", -- (targetUserId | "bot") вызвать на аура-баттл
+	"SetSetting", -- (key, bool) player settings
+	"SpinWheel", -- () spin the lucky wheel
+	"BattleChallenge", -- (targetUserId | "bot") challenge to an aura battle
 	"BattleRespond", -- (fromUserId, accept)
-	"SetPet", -- (uid | nil) выбрать питомца
-	"RenameCreature", -- (uid, text) дать брейнроту имя
+	"SetPet", -- (uid | nil) choose a pet
+	"RenameCreature", -- (uid, text) give a brainrot a name
 
-	-- сервер -> клиент
+	-- server -> client
 	"State", -- (snapshot)
 	"CraftResult", -- (result)
 	"Notify", -- (text, color)
-	"Knockback", -- (velocity) тебя шлёпнули
-	"Sfx", -- (soundName) проиграть звук
-	"TradeState", -- (state | nil) состояние обмена
-	"TradeInvite", -- (fromUserId, fromName) тебя зовут обменяться
-	"WheelResult", -- (index) что выпало на колесе
-	"BattleInvite", -- (fromUserId, fromName) тебя вызвали на баттл
-	"BattleResult", -- (result) раунды и итог баттла
-	"LegendaryDrop", -- ({ userId, name, creatureId, mut }) кто-то выбил легендарку — шоу для всех
+	"Knockback", -- (velocity) you got slapped
+	"Sfx", -- (soundName) play a sound
+	"TradeState", -- (state | nil) trade state
+	"TradeInvite", -- (fromUserId, fromName) you are invited to trade
+	"WheelResult", -- (index) what dropped on the wheel
+	"BattleInvite", -- (fromUserId, fromName) you were challenged to a battle
+	"BattleResult", -- (result) rounds and battle outcome
+	"LegendaryDrop", -- ({ userId, name, creatureId, mut }) someone got a legendary drop: a show for everyone
 }
 
 local Remotes = {}

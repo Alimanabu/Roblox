@@ -1,5 +1,5 @@
--- Надписи в мире (таблички, подсказки, инструменты) сервер создаёт на английском и кладёт
--- рядом сообщение (Strings.apply). Здесь клиент показывает их на языке игрока.
+-- World labels (signs, hints, tools) are created by the server in English, with a message
+-- placed next to them (Strings.apply). Here the client shows them in the player's language.
 
 local CollectionService = game:GetService("CollectionService")
 local HttpService = game:GetService("HttpService")

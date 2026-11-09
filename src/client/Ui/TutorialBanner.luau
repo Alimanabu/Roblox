@@ -1,4 +1,4 @@
--- Подсказка обучения внизу экрана + мигание нужной кнопки меню и кнопки замка.
+-- Tutorial hint at the bottom of the screen + blinking of the needed menu button and lock button.
 
 local Players = game:GetService("Players")
 
@@ -85,7 +85,7 @@ function TutorialBanner:setLockHighlight(enabled)
 	end
 end
 
--- Вызывается каждый кадр: мигание кнопки меню.
+-- Called every frame: blinking of the menu button.
 function TutorialBanner:animate(t)
 	local menuId = self.tutorial and self.tutorial.menu
 	for id, button in pairs(self.hud.buttons) do

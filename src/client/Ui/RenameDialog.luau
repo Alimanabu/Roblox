@@ -1,4 +1,4 @@
--- Окно «Как назовёшь брейнрота?».
+-- The "What will you name the brainrot?" window.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

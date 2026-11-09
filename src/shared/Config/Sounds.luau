@@ -1,7 +1,7 @@
--- Звуки игры. Сейчас стоят встроенные звуки Roblox (rbxasset://).
--- Чтобы поставить звуки покруче: найди звук в Creator Store и впиши
--- "rbxassetid://<ID>" вместо текущего значения.
--- repeat — сколько раз проиграть подряд (для сирены), gap — пауза между повторами.
+-- Game sounds. Roblox built-in sounds (rbxasset://) are used for now.
+-- To use cooler sounds: find a sound in the Creator Store and enter
+-- "rbxassetid://<ID>" in place of the current value.
+-- repeat is how many times to play in a row (for the siren), gap is the pause between repeats.
 
 return {
 	craft = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.5 },

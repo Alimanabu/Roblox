@@ -1,5 +1,5 @@
--- Дикие брейнроты: бродят по карте, кто первым поймал (зажал E) — того и брейнрот.
--- Редкие (Аура и выше) объявляются на весь сервер — все бегут ловить.
+-- Wild brainrots: roam the map, whoever catches it first (holds E) gets the brainrot.
+-- Rare ones (Aura and above) are announced to the whole server: everyone runs to catch it.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -25,9 +25,9 @@ WildService.MAX_ALIVE = 4
 WildService.SPAWN_EVERY = 75
 WildService.LIFETIME = 180
 WildService.SPEED = 7
-WildService.SIZE = 3.5 -- рост дикого брейнрота в студах
+WildService.SIZE = 3.5 -- height of a wild brainrot in studs
 
--- Шансы редкостей у диких (чем реже — тем ценнее находка).
+-- Rarity odds for wild ones (the rarer, the more valuable the find).
 WildService.Weights = { normie = 40, lowkey = 30, rizz = 18, sigma = 8, aura = 3.5, skibidi = 0.5 }
 
 local GOOD = Color3.fromRGB(120, 255, 120)
@@ -55,7 +55,7 @@ local function pickRarity()
 	return "normie"
 end
 
--- Случайная точка на карте: не на базах и не в центре площади.
+-- A random point on the map: not on the bases and not in the center of the plaza.
 local function randomSpot()
 	for _ = 1, 30 do
 		local angle = rng:NextNumber() * math.pi * 2
@@ -164,7 +164,7 @@ function WildService.init()
 		end
 	end)
 
-	-- Появление.
+	-- Spawn.
 	task.spawn(function()
 		task.wait(20)
 		while true do
@@ -179,7 +179,7 @@ function WildService.init()
 		end
 	end)
 
-	-- Бродят по карте и через какое-то время убегают.
+	-- They roam the map and run away after some time.
 	task.spawn(function()
 		local step = 0.05
 		while true do
@@ -195,7 +195,7 @@ function WildService.init()
 					else
 						local nextPos = wild.position + offset.Unit * math.min(offset.Magnitude, WildService.SPEED * step)
 						if PlotService.isOnAnyPlot(nextPos, 4) then
-							-- Через базы не ходим — выбираем другую цель.
+							-- We do not walk through the bases: choose another target.
 							wild.target = randomSpot()
 							continue
 						end

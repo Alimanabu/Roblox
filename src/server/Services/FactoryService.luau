@@ -1,4 +1,4 @@
--- Фабрика брейнрота: создание из капсул, продажа, скрещивание, авто-фабрика.
+-- Brainrot factory: crafting from capsules, selling, fusing, auto factory.
 
 local Players = game:GetService("Players")
 
@@ -28,7 +28,7 @@ local GOOD = Color3.fromRGB(120, 255, 120)
 local rng = Random.new()
 local lastCraft = {} -- [player] = os.clock()
 local autoCraft = {} -- [player] = capsuleId
-local fullWarned = {} -- [player] = true, чтобы не спамить «база заполнена»
+local fullWarned = {} -- [player] = true, so we do not spam "base is full"
 
 FactoryService.CreaturesChanged = Instance.new("BindableEvent")
 
@@ -45,15 +45,15 @@ local function creatureLabel(creatureId, mutationId)
 	return S.m("creature.mutated", { mutation = S.m(mutation.nameKey), name = S.m(creature.nameKey) })
 end
 
--- paid — сколько монет за него заплачено (капсула или сумма скрещённых);
--- продать дороже 60% от этого нельзя, иначе «создал-продал» печатает деньги.
-local SHOWCASE_COOLDOWN = 15 -- не чаще раза в 15 с на игрока
+-- paid is how many coins were paid for it (a capsule or the sum of the fused ones);
+-- selling for more than 60% of it is not allowed, otherwise "craft-sell" prints money.
+local SHOWCASE_COOLDOWN = 15 -- at most once per 15 s per player
 local lastShowcase = {} -- [player] = os.clock()
 
--- showcase = true — это действительно редкая находка (см. craft): запускаем шоу.
--- source: откуда брейнрот (см. Formulas.SOURCE_FREE).
+-- showcase = true means this is a truly rare find (see craft): start the show.
+-- source: where the brainrot came from (see Formulas.SOURCE_FREE).
 local function addCreature(player, data, creatureId, mutationId, paid, lineage, showcase, source)
-	-- lineage: кто владел брейнротом и в каком «поколении» (см. Formulas.lineageOf).
+	-- lineage: who owned the brainrot and in which "generation" (see Formulas.lineageOf).
 	local entry = {
 		uid = tostring(data.nextUid),
 		id = creatureId,
@@ -83,9 +83,9 @@ local function addCreature(player, data, creatureId, mutationId, paid, lineage, 
 		Actions.fire(player, "newIndex", 1)
 	end
 
-	-- Световое шоу на весь сервер: SIX SEVEN, мутация 67/Космический или «редкая находка»
-	-- (самая редкая редкость своей капсулы — например Бог из Мега-тренда, но не Бог
-	-- из Мирового тренда, где он выпадает почти всегда).
+	-- Light show for the whole server: SIX SEVEN, mutation 67/Cosmic or a "rare find"
+	-- (the rarest rarity of its capsule, for example God from the Mega Trend, but not God
+	-- from the World Trend, where it drops almost always).
 	local special = rarity.id == "sixseven" or mutation.rank >= 5 or showcase == true
 	local now = os.clock()
 	if special and (not lastShowcase[player] or now - lastShowcase[player] > SHOWCASE_COOLDOWN) then
@@ -110,7 +110,7 @@ local function addCreature(player, data, creatureId, mutationId, paid, lineage, 
 	return entry, isNew
 end
 
--- Выдать брейнрота напрямую (награды, тест-команды). Возвращает запись.
+-- Give a brainrot directly (rewards, test commands). Returns the entry.
 function FactoryService.give(player, creatureId, mutationId, source)
 	local data = DataService.get(player)
 	if not data or not Creatures.get(creatureId) then
@@ -120,7 +120,7 @@ function FactoryService.give(player, creatureId, mutationId, source)
 	return (addCreature(player, data, creatureId, mutationId or "normal", nil, nil, rank >= Rarities.get("god").rank, source or Formulas.SOURCE_FREE))
 end
 
--- Возвращает true, если получилось создать.
+-- Returns true if it was created.
 local function craft(player, capsuleId, silent)
 	local data = DataService.get(player)
 	local capsule = type(capsuleId) == "string" and Capsules.get(capsuleId)
@@ -148,7 +148,7 @@ local function craft(player, capsuleId, silent)
 		return fail(S.m("factory.season_over"))
 	end
 	local now = os.clock()
-	-- Небольшой запас на пинг.
+	-- A small margin for ping.
 	local mods = EventService.mods()
 	if lastCraft[player] and now - lastCraft[player] < Formulas.craftTime(data, passes, mods) * 0.9 then
 		return false
@@ -171,8 +171,8 @@ local function craft(player, capsuleId, silent)
 
 	lastCraft[player] = now
 	fullWarned[player] = nil
-	-- Купленные монеты капсула тратит первыми. При запрете она оплачена заработанными (см. выше),
-	-- а купленные остаются на счету.
+	-- The capsule spends bought coins first. When restricted it is paid with earned ones (see above),
+	-- and the bought ones stay on the balance.
 	local bought = if restricted then 0 else math.min(data.boughtCoins, data.coins)
 	data.coins -= capsule.cost
 	if not restricted then
@@ -184,7 +184,7 @@ local function craft(player, capsuleId, silent)
 	local luck = MonetizationService.luck(player, data, os.time(), mods)
 	local rarityId = Formulas.rollRarity(capsule, luck, rng, mods)
 
-	-- Гарантия: долго не везло — самая редкая редкость капсулы выпадает точно.
+	-- Guarantee: after a long unlucky streak the capsule's rarest rarity drops for sure.
 	local pityRarity = Formulas.pityRarity(capsule)
 	local forced
 	rarityId, data.pity[capsule.id], forced = Formulas.applyPity(capsule, rarityId, data.pity[capsule.id] or 0)
@@ -225,7 +225,7 @@ local function sell(player, uid)
 			local value = Formulas.sellValue(entry)
 			table.remove(data.creatures, index)
 			data.coins += value
-			-- Выручка за платного остаётся купленными монетами, иначе продажа их отмывала бы.
+			-- The proceeds for a paid one stay as bought coins, otherwise selling would launder them.
 			if Formulas.isPaidRandom(entry) then
 				data.boughtCoins += value
 			end
@@ -240,7 +240,7 @@ local function sell(player, uid)
 	end
 end
 
--- Продаёт всех брейнротов указанной редкости без мутаций (мутантов бережём).
+-- Sells all brainrots of the given rarity without mutations (mutants are kept).
 local function sellRarity(player, rarityId)
 	local data = DataService.get(player)
 	if not data or type(rarityId) ~= "string" or not Rarities.get(rarityId) then
@@ -273,8 +273,8 @@ local function sellRarity(player, rarityId)
 	DataService.markDirty(player)
 end
 
--- Скрещивание: 3 брейнрота одной редкости -> 1 случайный брейнрот следующей редкости.
--- Забираем самых слабых, чтобы не съесть мутантов.
+-- Fusing: 3 brainrots of one rarity -> 1 random brainrot of the next rarity.
+-- We take the weakest ones so as not to consume mutants.
 local function fuse(player, rarityId)
 	local data = DataService.get(player)
 	local nextRarity = type(rarityId) == "string" and Rarities.next(rarityId)
@@ -282,7 +282,7 @@ local function fuse(player, rarityId)
 		return
 	end
 
-	-- Скрещивание даёт новую случайную награду: при запрете платных брейнротов в него не берём.
+	-- Fusing gives a new random reward: when paid brainrots are restricted we do not take them.
 	local restricted = PolicyService.paidRandomRestricted(player)
 	local candidates, skippedPaid = {}, 0
 	for index, entry in ipairs(data.creatures) do
@@ -313,10 +313,10 @@ local function fuse(player, rarityId)
 		return a > b
 	end)
 	local paid = 0
-	-- Если среди скрещённых был чужой брейнрот, результат «наследует» его происхождение,
-	-- иначе скрещивание отмывало бы брейнротов, спрятанных у друга на время перерождения.
+	-- If a fused brainrot belonged to someone else, the result "inherits" its origin,
+	-- otherwise fusing would launder brainrots hidden at a friend's place during a rebirth.
 	local lineage = {}
-	-- Так же и с источником: платный брейнрот нельзя отмыть скрещиванием.
+	-- Same with the source: a paid brainrot cannot be laundered by fusing.
 	local source = Formulas.SOURCE_FREE
 	for _, index in ipairs(toRemove) do
 		local removed = table.remove(data.creatures, index)
@@ -327,7 +327,7 @@ local function fuse(player, rarityId)
 		if paid and removed.paid then
 			paid += removed.paid
 		else
-			paid = nil -- хотя бы один без цены (украден до этого правила) — без ограничения
+			paid = nil -- at least one has no price (stolen before this rule): no limit
 		end
 	end
 
@@ -384,7 +384,7 @@ function FactoryService.init()
 		fullWarned[player] = nil
 	end)
 
-	-- Авто-фабрика.
+	-- Auto factory.
 	task.spawn(function()
 		while true do
 			task.wait(0.1)

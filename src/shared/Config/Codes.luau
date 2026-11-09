@@ -1,7 +1,7 @@
--- Промокоды. Регистр не важен: «sixseven» = «SIXSEVEN».
--- Каждый код игрок может ввести один раз.
--- expires — до какой даты код работает (os.time в секундах, UTC), nil = навсегда.
--- Новые коды удобно раздавать в описании игры, в группе и у ютуберов.
+-- Promo codes. Case does not matter: "sixseven" = "SIXSEVEN".
+-- Each player can enter a code once.
+-- expires is the date until which the code works (os.time in seconds, UTC), nil = forever.
+-- New codes are handy to hand out in the game description, in the group and to YouTubers.
 
 return {
 	SIXSEVEN = { luckMinutes = 30, text = "🤌" },

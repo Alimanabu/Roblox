@@ -1,4 +1,4 @@
--- Обучение: ведёт новичка по первым шагам и даёт за них монеты.
+-- Tutorial: leads a newbie through the first steps and gives coins for them.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

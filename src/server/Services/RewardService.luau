@@ -1,6 +1,6 @@
--- Выдача наград из разных источников: задания, промокоды, подарки, достижения.
+-- Granting rewards from different sources: quests, promo codes, gifts, achievements.
 -- reward = { coinsMinutes = N, luckMinutes = N, coins = N, creatureRarity = "aura" }
--- Монеты в «минутах дохода», чтобы награда была полезна и новичку, и прокачанному.
+-- Coins in "minutes of income", so the reward is useful to both a newbie and a veteran.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -16,9 +16,9 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local RewardService = {}
 
--- Возвращает сообщение вида «💰 $1.2K + 🍀 x2 удачи на 10 мин» (см. Strings).
--- source задан, если награда получена за Robux (см. Formulas.SOURCE_SPIN): тогда и брейнрот,
--- и монеты, и буст считаются купленными.
+-- Returns a message like "$1.2K + x2 luck for 10 min" (see Strings).
+-- source is set if the reward was received for Robux (see Formulas.SOURCE_SPIN): then the brainrot,
+-- the coins and the boost all count as purchased.
 function RewardService.grant(player, data, reward, source)
 	local parts = {}
 	local coins = reward.coins or 0
@@ -50,7 +50,7 @@ function RewardService.grant(player, data, reward, source)
 		local pool = Creatures.ByRarity[reward.creatureRarity]
 		local passes = MonetizationService.passes(player)
 		if pool and #data.creatures >= Formulas.slots(data, passes) then
-			-- База полна — вместо брейнрота деньги: 10 минут его дохода (минимум 10 мин дохода игрока).
+			-- The base is full: money instead of a brainrot, 10 minutes of its income (at least 10 minutes of the player's income).
 			local creature = pool[1]
 			local coins = math.max(creature.income * 600, Daily.coinsFor(Formulas.totalIncome(data, passes), 10))
 			data.coins += coins
@@ -69,7 +69,7 @@ function RewardService.grant(player, data, reward, source)
 	return S.join(parts, " + ")
 end
 
--- Короткое описание награды для интерфейса (без выдачи).
+-- Short description of the reward for the UI (without granting).
 function RewardService.describe(player, data, reward)
 	local parts = {}
 	local coins = reward.coins or 0

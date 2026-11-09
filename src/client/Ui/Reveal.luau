@@ -1,4 +1,4 @@
--- Анимация «что выпало» после создания брейнрота.
+-- "What dropped" animation after a brainrot is created.
 
 local TweenService = game:GetService("TweenService")
 

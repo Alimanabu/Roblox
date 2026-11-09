@@ -1,11 +1,11 @@
--- Фоновая музыка. Плейлист играет по кругу.
--- Как добавить трек: Creator Store → Audio → найди трек (у Roblox много бесплатной
--- лицензированной музыки) → скопируй ID → впиши "rbxassetid://ID".
--- Сейчас здесь бесплатные треки автора APMOfficial, откуда они, см. docs/LAUNCH.md, раздел 7.
+-- Background music. The playlist loops.
+-- How to add a track: Creator Store -> Audio -> find a track (Roblox has a lot of free
+-- licensed music) -> copy the ID -> enter "rbxassetid://ID".
+-- These are currently free tracks by the author APMOfficial; for where they come from see docs/LAUNCH.md, section 7.
 
 return {
 	Volume = 0.25,
-	LoadTimeout = 15, -- секунд ждём загрузку трека, потом пропускаем его
+	LoadTimeout = 15, -- seconds we wait for a track to load, then skip it
 	Playlist = {
 		"rbxassetid://1836913959", -- World of Robots
 		"rbxassetid://1835725225", -- Disco Sapiens

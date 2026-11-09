@@ -1,4 +1,4 @@
--- Достижения: проверяем условия, выдаём награды и бейджи Roblox.
+-- Achievements: check conditions, grant rewards and Roblox badges.
 
 local BadgeService = game:GetService("BadgeService")
 local Players = game:GetService("Players")
@@ -57,7 +57,7 @@ function AchievementService.snapshot(data)
 end
 
 function AchievementService.init()
-	-- Статистики, которых нет в других сервисах, считаем здесь.
+	-- Statistics that are not in other services are counted here.
 	Actions.connect(function(player, kind, amount)
 		local data = DataService.get(player)
 		if not data then
@@ -75,7 +75,7 @@ function AchievementService.init()
 		task.defer(AchievementService.check, player)
 	end)
 
-	-- Монеты, уровни и т.п. меняются постоянно — проверяем раз в несколько секунд.
+	-- Coins, levels and so on change constantly, so we check once every few seconds.
 	task.spawn(function()
 		while true do
 			task.wait(5)

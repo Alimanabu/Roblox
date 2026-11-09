@@ -1,4 +1,4 @@
--- Точка входа клиента Brainrot Capsule Factory.
+-- Client entry point of Brainrot Capsule Factory.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -39,7 +39,7 @@ local screenGui = Theme.create("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- Масштаб интерфейса под размер экрана (телефоны / планшеты / ПК).
+-- UI scale for the screen size (phones / tablets / PC).
 local uiScale = Theme.create("UIScale", { Parent = screenGui })
 local function updateScale()
 	local camera = workspace.CurrentCamera
@@ -101,7 +101,7 @@ Remotes.Sfx.OnClientEvent:Connect(function(name)
 	Sfx.play(name)
 end)
 
--- Колесо удачи.
+-- Lucky wheel.
 local wheelSpin = WheelSpin.new(screenGui)
 Remotes.WheelResult.OnClientEvent:Connect(function(index)
 	wheelSpin:spin(index, function(final)
@@ -109,14 +109,14 @@ Remotes.WheelResult.OnClientEvent:Connect(function(index)
 	end)
 end)
 
--- Легендарный дроп у кого-то на сервере — шоу.
+-- Someone on the server got a legendary drop: show.
 Remotes.LegendaryDrop.OnClientEvent:Connect(function(info)
 	LegendaryFx.play(screenGui, info, function(name)
 		Sfx.play(name)
 	end)
 end)
 
--- Аура-баттлы.
+-- Aura battles.
 local battleInvite = TradeInvite.new(screenGui, Remotes.BattleRespond, 130)
 Remotes.BattleInvite.OnClientEvent:Connect(function(fromUserId, fromName)
 	battleInvite:show(fromUserId, S.t("battle.invite", { name = fromName }))
@@ -132,7 +132,7 @@ Remotes.BattleResult.OnClientEvent:Connect(function(result)
 	battleView:show(result)
 end)
 
--- Обмен.
+-- Trade.
 local tradeInvite = TradeInvite.new(screenGui)
 Remotes.TradeInvite.OnClientEvent:Connect(function(fromUserId, fromName)
 	tradeInvite:show(fromUserId, S.t("trade.invite", { name = fromName }))
@@ -145,7 +145,7 @@ Remotes.TradeState.OnClientEvent:Connect(function(tradeState)
 	end
 	panels:refresh()
 end)
--- Пока идёт отсчёт обмена, обновляем окно, чтобы цифры менялись.
+-- While the trade countdown runs, we refresh the window so the numbers change.
 task.spawn(function()
 	while true do
 		task.wait(0.5)
@@ -155,14 +155,14 @@ task.spawn(function()
 	end
 end)
 
--- Подошёл к машине на базе -> открываем фабрику.
+-- Walked up to the machine on the base -> open the factory.
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	if prompt.Name == "FactoryPrompt" then
 		panels:open("Factory", true)
 	end
 end)
 
--- Тебя шлёпнули — отлетаешь.
+-- You got slapped: you fly off.
 Remotes.Knockback.OnClientEvent:Connect(function(velocity)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -174,7 +174,7 @@ Remotes.Knockback.OnClientEvent:Connect(function(velocity)
 	end
 end)
 
--- Статус кражи и замка.
+-- Steal and lock status.
 local status = StealStatus.new(screenGui)
 local eventBanner = EventBanner.new(screenGui)
 task.spawn(function()
@@ -182,7 +182,7 @@ task.spawn(function()
 		task.wait(0.2)
 		status:update(player, workspace:FindFirstChild("Plots"))
 		eventBanner:update()
-		-- Минута 67 — дискотека!
+		-- Minute 67: disco!
 		local disco = false
 		for _, activeEvent in ipairs(Events.active(workspace:GetServerTimeNow())) do
 			disco = disco or activeEvent.event.id == Events.SixSeven.id
@@ -197,7 +197,7 @@ RunService.RenderStepped:Connect(function()
 	local t = os.clock()
 	tutorial:animate(t)
 
-	-- Босс на площади покачивается и поворачивается.
+	-- The boss on the plaza sways and turns.
 	local boss = workspace:FindFirstChild("Boss")
 	local bossBase = boss and boss:GetAttribute("BaseCFrame")
 	if bossBase then

@@ -1,12 +1,12 @@
--- Ежедневные награды (серия из 7 дней) и ежедневные задания.
--- Награды в монетах считаются в «минутах дохода», чтобы они были полезны
--- и новичку, и прокачанному игроку.
+-- Daily rewards (a 7-day streak) and daily quests.
+-- Coin rewards are counted in "minutes of income" so that they are useful
+-- to both a newbie and an advanced player.
 
 local S = require(script.Parent.Parent.Strings)
 
 local Daily = {}
 
-Daily.MIN_COINS_PER_MINUTE = 250 -- минимум монет за «минуту дохода»
+Daily.MIN_COINS_PER_MINUTE = 250 -- minimum coins for a "minute of income"
 Daily.QUESTS_PER_DAY = 3
 
 Daily.Rewards = {
@@ -19,7 +19,7 @@ Daily.Rewards = {
 	{ coinsMinutes = 45, luckMinutes = 30, mega = true },
 }
 
--- kind — какое действие считается:
+-- kind is which action is counted:
 --   craft, fuse, sell, steal, slap, slapThief, lock, mutant, sigmaPlus, newIndex
 Daily.QuestPool = {
 	{ id = "craft25", kind = "craft", target = 25, minutes = 5 },
@@ -35,7 +35,7 @@ Daily.QuestPool = {
 	{ id = "index1", kind = "newIndex", target = 1, minutes = 10 },
 }
 
--- Подарки за время в игре (считается с момента захода, сбрасывается при перезаходе).
+-- Gifts for time in game (counted from join, reset on rejoin).
 Daily.Gifts = {
 	{ minutes = 5, reward = { coinsMinutes = 2 } },
 	{ minutes = 15, reward = { luckMinutes = 5 } },
@@ -45,7 +45,7 @@ Daily.Gifts = {
 	{ minutes = 120, reward = { creatureRarity = "aura", coinsMinutes = 10 } },
 }
 
--- Колесо удачи: 1 бесплатное вращение в день + купленные. weight — относительный шанс.
+-- Lucky wheel: 1 free spin per day + bought ones. weight is the relative chance.
 Daily.Wheel = {
 	{ weight = 30, reward = { coinsMinutes = 5 } },
 	{ weight = 20, reward = { luckMinutes = 10 } },

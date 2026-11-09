@@ -1,5 +1,5 @@
--- Тестовые команды для проверки игры: монеты, уровни, брейнроты, ивенты, сброс.
--- Работают в Studio у всех, в опубликованной игре — только у UserId из Config/Admins.
+-- Test commands for checking the game: coins, levels, brainrots, events, reset.
+-- They work for everyone in Studio and in the published game only for the UserIds in Config/Admins.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")

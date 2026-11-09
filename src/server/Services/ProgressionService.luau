@@ -1,4 +1,4 @@
--- Опыт, уровни, улучшения фабрики и перерождения.
+-- Experience, levels, factory upgrades and rebirths.
 
 local Players = game:GetService("Players")
 
@@ -87,7 +87,7 @@ local function buyUpgrade(player, upgradeId)
 	DataService.markDirty(player)
 end
 
--- Постройка следующего этажа базы. Этажи остаются навсегда, даже после перерождения.
+-- Building the next base floor. Floors stay forever, even after a rebirth.
 function ProgressionService.buyFloor(player)
 	local data = DataService.get(player)
 	if not data then
@@ -138,7 +138,7 @@ local function rebirth(player)
 		Remotes.Notify:FireClient(player, S.m("progress.rebirth_coins", { cost = Format.coins(cost) }), BAD)
 		return
 	end
-	-- Перерождение даёт бонус удачи, поэтому при запрете оплачивается только заработанным.
+	-- Rebirth gives a luck bonus, so under restriction it is paid only with earned coins.
 	local earned = Formulas.randomCoins(data, PolicyService.paidRandomRestricted(player))
 	if earned < cost then
 		Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.bought_coins", { coins = Format.coins(cost - earned) }), BAD)
@@ -165,7 +165,7 @@ function ProgressionService.init()
 	Remotes.Rebirth.OnServerEvent:Connect(rebirth)
 	Remotes.BuyFloor.OnServerEvent:Connect(ProgressionService.buyFloor)
 
-	-- Титул над головой.
+	-- Title above the head.
 	local function watchCharacter(player)
 		player.CharacterAdded:Connect(function()
 			task.wait(0.5)

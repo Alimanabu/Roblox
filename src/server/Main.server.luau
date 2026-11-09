@@ -1,10 +1,10 @@
--- Точка входа сервера Brainrot Capsule Factory.
+-- Server entry point of Brainrot Capsule Factory.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Formulas = require(Shared.Util.Formulas)
 local Levels = require(Shared.Config.Levels)
 local Rebirths = require(Shared.Config.Rebirths)
-require(Shared.Remotes) -- создаёт RemoteEvent'ы
+require(Shared.Remotes) -- creates the RemoteEvents
 
 local Services = script.Parent.Services
 local DataService = require(Services.DataService)
@@ -37,7 +37,7 @@ local WildService = require(Services.WildService)
 local NameService = require(Services.NameService)
 local PolicyService = require(Services.PolicyService)
 
--- Что видит клиент: всё нужное для интерфейса, уже посчитанное сервером.
+-- What the client sees: everything the UI needs, already computed by the server.
 DataService.setSnapshotBuilder(function(player, data)
 	local passes = MonetizationService.passes(player)
 	local now = os.time()

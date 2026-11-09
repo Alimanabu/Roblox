@@ -1,4 +1,4 @@
--- Плашки внизу экрана: «неси брейнрота домой» и состояние замка своей базы.
+-- Plates at the bottom of the screen: "carry the brainrot home" and the lock state of your base.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

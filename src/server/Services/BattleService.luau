@@ -1,6 +1,6 @@
--- Аура-баттлы: 3 сильнейших брейнрота против 3 сильнейших соперника (или бота).
--- Каждый раунд — пара брейнротов, сила = Battles.power(доход) ± случайность.
--- Без ставок: брейнроты и монеты не теряются, за победы — очки ауры и монеты.
+-- Aura battles: the 3 strongest brainrots against the opponent's 3 strongest (or a bot's).
+-- Each round is a pair of brainrots, strength = Battles.power(income) +/- randomness.
+-- No bets: brainrots and coins are not lost; wins give aura points and coins.
 
 local Players = game:GetService("Players")
 
@@ -29,7 +29,7 @@ local lastChallenge = {} -- [player] = os.clock()
 local lastPair = {} -- ["minId:maxId"] = os.clock()
 local invites = {} -- [target] = { [fromUserId] = os.clock() }
 
--- Команда: до TEAM_SIZE сильнейших брейнротов игрока.
+-- Team: up to TEAM_SIZE of the player's strongest brainrots.
 local function teamOf(data)
 	local sorted = table.clone(data.creatures)
 	table.sort(sorted, function(a, b)
@@ -42,7 +42,7 @@ local function teamOf(data)
 	return team
 end
 
--- Бот подбирает брейнротов примерно той же редкости (иногда на одну выше или ниже).
+-- The bot picks brainrots of about the same rarity (sometimes one higher or lower).
 local function botTeam(playerTeam)
 	local team = {}
 	for _, member in ipairs(playerTeam) do
@@ -63,9 +63,9 @@ local function roll(member)
 	return math.floor(base * rng:NextNumber(1 - Battles.RANDOM_SPREAD, 1 + Battles.RANDOM_SPREAD))
 end
 
--- Результат со стороны первого участника.
+-- Result from the first participant's side.
 local function fight(teamA, teamB)
-	-- Раундов столько, сколько брейнротов у большей команды: пустых «0 против 0» не бывает.
+	-- As many rounds as the larger team has brainrots: there are no empty "0 vs 0" rounds.
 	local rounds, winsA, winsB, totalA, totalB = {}, 0, 0, 0, 0
 	for i = 1, math.max(#teamA, #teamB) do
 		local a, b = teamA[i], teamB[i]
@@ -83,7 +83,7 @@ local function fight(teamA, teamB)
 		totalB += powerB
 		table.insert(rounds, { a = a, b = b, powerA = powerA, powerB = powerB, aWins = aWins })
 	end
-	-- Ничья по раундам (например, 1:1) — решает суммарная сила.
+	-- A tie on rounds (for example 1:1) is decided by total strength.
 	if winsA == winsB then
 		return rounds, totalA > totalB
 	end
@@ -98,7 +98,7 @@ local function flip(rounds)
 	return flipped
 end
 
--- Начисляет очки и награду; возвращает текст награды.
+-- Grants points and the reward; returns the reward text.
 local function settle(player, data, won, vsBot)
 	local battles = data.battles
 	local today = Daily.today()
@@ -113,7 +113,7 @@ local function settle(player, data, won, vsBot)
 			battles.pvpWins = (battles.pvpWins or 0) + 1
 		end
 		if battles.rewardedToday < Battles.REWARDED_PER_DAY then
-			-- И монеты, и очки за бота — только в пределах дневного лимита (иначе накрутка).
+			-- Both coins and points for a bot only within the daily limit (otherwise farming).
 			battles.rewardedToday += 1
 			battles.points += vsBot and Battles.BOT_WIN_POINTS or Battles.WIN_POINTS
 			rewardText = RewardService.grant(player, data, vsBot and Battles.BotWinReward or Battles.WinReward)
@@ -226,7 +226,7 @@ local function respond(player, fromUserId, accept)
 		return
 	end
 	local key = math.min(player.UserId, from.UserId) .. ":" .. math.max(player.UserId, from.UserId)
-	-- Встречные вызовы не должны обходить паузу между боями с одним соперником.
+	-- Concurrent calls must not bypass the pause between fights with the same opponent.
 	if lastPair[key] and os.clock() - lastPair[key] < Battles.SAME_OPPONENT_COOLDOWN then
 		Remotes.Notify:FireClient(player, S.m("battle.rematch_wait"), BAD)
 		return

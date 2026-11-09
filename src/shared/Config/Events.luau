@@ -1,12 +1,12 @@
--- Ивенты на весь сервер. Время берётся по UTC, поэтому ивенты идут одновременно
--- на всех серверах — можно звать друзей: «через 2 минуты Минута 67!».
+-- Server-wide events. Time is taken in UTC, so events run simultaneously
+-- on all servers: you can call friends, "Minute 67 in 2 minutes!".
 
 local S = require(script.Parent.Parent.Strings)
 
 local Events = {}
 
-Events.CYCLE = 15 * 60 -- случайный ивент начинается каждые 15 минут...
-Events.DURATION = 3 * 60 -- ...и длится 3 минуты
+Events.CYCLE = 15 * 60 -- a random event starts every 15 minutes...
+Events.DURATION = 3 * 60 -- ...and lasts 3 minutes
 
 Events.Random = {
 	{ id = "luck_storm", luck = 2, color = Color3.fromRGB(120, 255, 120) },
@@ -15,17 +15,17 @@ Events.Random = {
 	{ id = "turbo", speed = 2, color = Color3.fromRGB(80, 200, 255) },
 }
 
--- Каждый час с 6:00 по 7:59 минуты — «6-7».
+-- Every hour from minute 6:00 to 7:59: "6-7".
 Events.SixSeven = {
 	id = "minute67",
 	secret = 6.7,
 	mutation67 = 6.7,
 	color = Color3.fromRGB(255, 230, 0),
 	startMinute = 6,
-	endMinute = 8, -- не включительно
+	endMinute = 8, -- exclusive
 }
 
--- Каждый час с :30 до :33 на площадь приходит босс (см. server/Services/BossService).
+-- Every hour from :30 to :33 a boss comes to the plaza (see server/Services/BossService).
 Events.Boss = {
 	id = "boss",
 	color = Color3.fromRGB(255, 70, 70),
@@ -33,7 +33,7 @@ Events.Boss = {
 	endMinute = 33,
 }
 
--- Ивенты, которые идут каждый час в одно и то же время.
+-- Events that run every hour at the same time.
 Events.Hourly = { Events.SixSeven, Events.Boss }
 
 for _, event in ipairs(Events.Random) do
@@ -58,12 +58,12 @@ function Events.byId(id)
 end
 
 local function randomEventFor(cycleIndex)
-	-- Перемешиваем порядок, чтобы ивенты не шли по кругу предсказуемо.
+	-- We shuffle the order so that events do not cycle in a predictable way.
 	local index = (cycleIndex * 7919 + 13) % #Events.Random + 1
 	return Events.Random[index]
 end
 
--- Список активных ивентов: { { event, endsAt } }.
+-- List of active events: { { event, endsAt } }.
 function Events.active(time)
 	local result = {}
 	local cycleIndex = math.floor(time / Events.CYCLE)
@@ -80,7 +80,7 @@ function Events.active(time)
 		end
 	end
 
-	-- Ивент, запущенный вручную через панель «🛠 Тест» (атрибуты на workspace).
+	-- An event started manually through the "Test" panel (attributes on workspace).
 	local forcedId = workspace and workspace:GetAttribute("ForcedEvent")
 	local forcedUntil = workspace and workspace:GetAttribute("ForcedEventUntil")
 	if forcedId and forcedUntil and time < forcedUntil then
@@ -96,7 +96,7 @@ function Events.active(time)
 	return result
 end
 
--- Ближайший ивент, который ещё не начался: event, startsAt.
+-- The nearest event that has not started yet: event, startsAt.
 function Events.nextEvent(time)
 	local cycleIndex = math.floor(time / Events.CYCLE) + 1
 	local nextRandom = cycleIndex * Events.CYCLE
@@ -108,7 +108,7 @@ function Events.nextEvent(time)
 		if startsAt <= time then
 			startsAt += 3600
 		end
-		-- При совпадении по времени показываем ежечасный ивент (он важнее).
+		-- When times coincide we show the hourly event (it matters more).
 		if startsAt <= bestTime then
 			bestEvent, bestTime = hourly, startsAt
 		end
@@ -116,7 +116,7 @@ function Events.nextEvent(time)
 	return bestEvent, bestTime
 end
 
--- Множители от всех активных ивентов.
+-- Multipliers from all active events.
 function Events.modifiers(time)
 	local mods = { luck = 1, income = 1, mutation = 1, speed = 1, secret = 1, mutation67 = 1 }
 	for _, active in ipairs(Events.active(time)) do

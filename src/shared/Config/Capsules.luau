@@ -1,7 +1,7 @@
--- Мем-капсулы: их кидают в машину фабрики, и из них получается брейнрот.
--- weights — относительные веса редкостей (не обязаны давать в сумме 100).
--- level — с какого уровня игрока открывается капсула.
--- rebirths — сколько перерождений нужно.
+-- Meme capsules: they are thrown into the factory machine and a brainrot comes out of them.
+-- weights are relative rarity weights (they need not sum to 100).
+-- level is the player level at which the capsule unlocks.
+-- rebirths is how many rebirths are needed.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -108,7 +108,7 @@ Capsules.List = {
 	},
 }
 
--- Секрет: из ЛЮБОЙ капсулы может выпасть SIX SEVEN с шансом 1 к 67 000 (умножается на удачу).
+-- Secret: from ANY capsule SIX SEVEN can drop with a 1 in 67,000 chance (multiplied by luck).
 Capsules.SECRET_SIXSEVEN_CHANCE = 1 / 67000
 
 Capsules.ById = {}

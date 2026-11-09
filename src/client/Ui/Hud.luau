@@ -1,4 +1,4 @@
--- Основной экран: монеты, доход, уровень, меню и уведомления.
+-- Main screen: coins, income, level, menu and notifications.
 
 local TweenService = game:GetService("TweenService")
 
@@ -33,7 +33,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	local self = setmetatable({}, Hud)
 	self.giftsReady = giftsReady
 
-	-- Монеты сверху по центру.
+	-- Coins at the top center.
 	local coinsFrame = create("Frame", {
 		Name = "Coins",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -58,7 +58,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = coinsFrame,
 	})
 
-	-- Уровень — узкая полоска под монетами (левый верх занимает чат Roblox).
+	-- Level is a thin bar under the coins (the top left is taken by the Roblox chat).
 	local levelFrame = create("Frame", {
 		Name = "Level",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -92,10 +92,10 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = bar,
 	})
 
-	-- Кнопка настроек рядом с уровнем.
+	-- Settings button next to the level.
 	Theme.button({
 		Name = "SettingsButton",
-		-- Слева от монет: справа их закрывает список игроков Roblox.
+		-- To the left of the coins: on the right the Roblox player list covers them.
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(0.5, -168, 0, 8),
 		Size = UDim2.fromOffset(44, 44),
@@ -106,11 +106,11 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		onMenu("Settings")
 	end)
 
-	-- Удача сверху справа.
+	-- Luck at the top right.
 	local luckFrame = create("Frame", {
 		Name = "Luck",
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0.3, 0), -- ниже списка игроков Roblox
+		Position = UDim2.new(1, -10, 0.3, 0), -- below the Roblox player list
 		Size = UDim2.fromOffset(200, 60),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,
@@ -131,7 +131,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = luckFrame,
 	})
 
-	-- Меню слева.
+	-- Menu on the left.
 	local menu = create("Frame", {
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
@@ -140,7 +140,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		BackgroundTransparency = 1,
 		Parent = screenGui,
 	}, {
-		-- Две колонки: меню короче и меньше перекрывается чатом Roblox.
+		-- Two columns: the menu is shorter and overlaps the Roblox chat less.
 		create("UIGridLayout", {
 			CellSize = UDim2.fromOffset(145, 38),
 			CellPadding = UDim2.fromOffset(5, 5),
@@ -169,7 +169,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 			refresh()
 			localPlayer:GetAttributeChangedSignal("IsAdmin"):Connect(refresh)
 		end
-		-- Красный кружок «!», когда в разделе есть что забрать.
+		-- Red "!" dot when a section has something to claim.
 		self.badges[item.id] = create("TextLabel", {
 			Name = "Badge",
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -186,7 +186,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		}, { create("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	end
 
-	-- Уведомления.
+	-- Notifications.
 	self.notifyFrame = create("Frame", {
 		Name = "Notifications",
 		AnchorPoint = Vector2.new(0.5, 0),

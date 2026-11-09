@@ -1,5 +1,5 @@
--- Шоу легендарного дропа: столб света над базой (видно со всей карты), молнии,
--- баннер на весь экран у всех, а у счастливчика — облёт камеры и вспышка.
+-- Legendary drop show: a light pillar above the base (visible across the map), lightning,
+-- a full-screen banner for everyone, and a camera fly-around and flash for the lucky player.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -52,7 +52,7 @@ local function neon(props)
 	return part
 end
 
--- Столб света до неба + кольцо у земли.
+-- Light pillar up to the sky + a ring at the ground.
 local function pillar(position, color)
 	local beam = neon({
 		Shape = Enum.PartType.Cylinder,
@@ -83,7 +83,7 @@ local function pillar(position, color)
 	Debris:AddItem(ring, 2)
 end
 
--- Ломаная молния с неба в точку.
+-- A zigzag lightning bolt from the sky to a point.
 local function lightning(target, color)
 	local from = target + Vector3.new(math.random(-40, 40), 160, math.random(-40, 40))
 	local points = { from }
@@ -136,7 +136,7 @@ local function banner(screenGui, text, color)
 	end)
 end
 
--- Белая вспышка + облёт камеры вокруг базы (только у того, кто выбил).
+-- White flash + camera fly-around the base (only for the player who got the drop).
 local cinematicBusy = false
 local function cinematic(screenGui, center)
 	if cinematicBusy then

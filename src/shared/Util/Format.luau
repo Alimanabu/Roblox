@@ -1,4 +1,4 @@
--- Красивые числа: 1500 -> 1.5K, 2300000 -> 2.3M.
+-- Pretty numbers: 1500 -> 1.5K, 2300000 -> 2.3M.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -36,8 +36,8 @@ function Format.coins(value)
 	return "$" .. Format.number(value)
 end
 
--- Шанс всегда в процентах: Roblox не принимает «1 к N». Длинные дроби округляем до 4 знаков
--- после первой значащей цифры, рядом с такими шансами стоит оговорка odds.rounded.
+-- The chance is always in percent: Roblox does not accept "1 in N". Long fractions are rounded to 4 digits
+-- after the first significant digit, and the odds.rounded note stands next to such chances.
 function Format.percent(fraction)
 	local percent = fraction * 100
 	if percent <= 0 then

@@ -1,6 +1,6 @@
--- Общая шина «игрок что-то сделал»: создал брейнрота, закрыл базу, купил улучшение...
--- Задания и обучение подписываются сюда, а игровой код просто сообщает о действиях.
--- Так сервисы не зависят друг от друга по кругу.
+-- A shared bus "the player did something": created a brainrot, closed the base, bought an upgrade...
+-- Quests and the tutorial subscribe here, while game code just reports actions.
+-- This way services do not depend on each other in a circle.
 
 local Actions = {}
 

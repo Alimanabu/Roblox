@@ -1,5 +1,5 @@
--- Фоновая музыка по плейлисту из Config/Music.
--- Незагруженный трек не присылает Ended, поэтому загрузку ждём с таймаутом и пропускаем его.
+-- Background music from the Config/Music playlist.
+-- A track that fails to load never sends Ended, so we wait for loading with a timeout and skip it.
 
 local SoundService = game:GetService("SoundService")
 
@@ -11,8 +11,8 @@ local Music = {}
 local sound = nil
 local enabled = true
 local index = 0
-local failedInRow = 0 -- сколько треков подряд не загрузилось
-local warned = {} -- о каком треке уже написали в журнал
+local failedInRow = 0 -- how many tracks in a row failed to load
+local warned = {} -- which track has already been written to the log
 
 local playNext
 
@@ -22,13 +22,13 @@ local function skipFailed(track)
 		warn("[Music] Track failed to load, skipping: " .. track)
 	end
 	failedInRow += 1
-	-- Не загрузился весь плейлист: тишина, по кругу не ходим.
+	-- The whole playlist failed to load: silence, do not loop.
 	if failedInRow < #MusicConfig.Playlist then
 		playNext()
 	end
 end
 
--- Каждому треку свой Sound: IsLoaded прошлого трека не примем за загрузку нового.
+-- Each track gets its own Sound: the previous track's IsLoaded is not mistaken for the new one loading.
 playNext = function()
 	if #MusicConfig.Playlist == 0 or not enabled then
 		return

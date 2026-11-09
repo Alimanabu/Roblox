@@ -1,4 +1,4 @@
--- Сохранение прогресса игроков (DataStore) и отправка состояния клиенту.
+-- Saving player progress (DataStore) and sending state to the client.
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
@@ -13,9 +13,9 @@ local DataService = {}
 
 local STORE_NAME = "BrainrotFactory_v1"
 local AUTOSAVE_INTERVAL = 60
--- Блокировка сессии: пока игрок на одном сервере, другой сервер не может загрузить
--- его прогресс (защита от дюпа при быстром перезаходе). Если сервер упал и не снял
--- блокировку, она сама истекает через SESSION_TIMEOUT секунд.
+-- Session lock: while a player is on one server, another server cannot load
+-- their progress (protection against duping on a quick rejoin). If a server crashed and did not release
+-- the lock, it expires on its own after SESSION_TIMEOUT seconds.
 local SESSION_TIMEOUT = 180
 local SESSION_ATTEMPTS = 8
 local MAX_RECEIPTS = 50
@@ -29,14 +29,14 @@ if not storeOk then
 end
 
 local profiles = {} -- [player] = data
-local dirty = {} -- [player] = true, если состояние надо отправить клиенту
-local snapshotBuilder = nil -- function(player, data) -> snapshot, задаётся из Main
-local saveExtras = {} -- функции, которые добавляют в сохранение «временно отсутствующих» брейнротов
-local closeCallbacks = {} -- вызываются при выключении сервера до финального сохранения
--- [player] = true: игрок уходит, обычные сохранения уже не нужны. Слабые ключи:
--- флаг не снимаем, чтобы запоздавший автосейв не вернул блокировку сессии.
+local dirty = {} -- [player] = true if the state must be sent to the client
+local snapshotBuilder = nil -- function(player, data) -> snapshot, set from Main
+local saveExtras = {} -- functions that add "temporarily absent" brainrots to the save
+local closeCallbacks = {} -- called when the server shuts down, before the final save
+-- [player] = true: the player is leaving, regular saves are no longer needed. Weak keys:
+-- we do not clear the flag so that a late autosave does not bring back the session lock.
 local releasing = setmetatable({}, { __mode = "k" })
-local pendingRelease = {} -- [userId] = true: идёт финальное сохранение ушедшего игрока
+local pendingRelease = {} -- [userId] = true: the final save of a departed player is in progress
 
 DataService.Loaded = Instance.new("BindableEvent")
 
@@ -44,7 +44,7 @@ local function defaultData()
 	return {
 		version = 1,
 		coins = Formulas.START_COINS,
-		boughtCoins = 0, -- ещё не потраченные на капсулы монеты за Robux (см. FactoryService.craft)
+		boughtCoins = 0, -- coins bought for Robux and not yet spent on capsules (see FactoryService.craft)
 		totalEarned = 0,
 		level = 1,
 		xp = 0,
@@ -52,26 +52,26 @@ local function defaultData()
 		creatures = {}, -- { { uid = "1", id = "bananito_ninjini", mut = "normal", source = "free" } }
 		nextUid = 1,
 		upgrades = { speed = 0, luck = 0 },
-		floors = 0, -- построенные этажи базы (см. Formulas.Floors), не сбрасываются перерождением
-		boosts = { luckUntil = 0, paidLuckUntil = 0 }, -- paidLuckUntil: до этого времени буст купленный
-		index = {}, -- [creatureId] = true — открытые брейнроты (коллекция)
+		floors = 0, -- built base floors (see Formulas.Floors), not reset by rebirth
+		boosts = { luckUntil = 0, paidLuckUntil = 0 }, -- paidLuckUntil: until this time the boost was purchased
+		index = {}, -- [creatureId] = true: discovered brainrots (collection)
 		stats = { crafted = 0, fused = 0, sold = 0, stolen = 0, lostToThieves = 0, mutants = 0, thievesSlapped = 0 },
 		daily = { streak = 0, lastClaimDay = 0 },
 		quests = { day = 0, list = {} },
 		tutorial = { step = 1, progress = 0 },
-		codes = {}, -- [КОД] = true — введённые промокоды
+		codes = {}, -- [CODE] = true: promo codes entered
 		achievements = {}, -- [id] = true
-		skins = {}, -- [skinId] = true — купленные скины
+		skins = {}, -- [skinId] = true: purchased skins
 		settings = { music = true, sfx = true, announcements = true },
-		pity = {}, -- [capsuleId] = попыток без самой редкой редкости капсулы
+		pity = {}, -- [capsuleId] = attempts without the capsule's rarest rarity
 		wheel = { lastFreeDay = 0, extraSpins = 0 },
 		battles = { points = 0, wins = 0, pvpWins = 0, losses = 0, rewardDay = 0, rewardedToday = 0 },
-		receipts = {}, -- последние обработанные покупки
+		receipts = {}, -- recently processed purchases
 		lastOnline = 0,
 	}
 end
 
--- Добавляет недостающие поля (если мы добавим новые в будущих версиях).
+-- Adds missing fields (in case we add new ones in future versions).
 local function reconcile(data, template)
 	for key, value in pairs(template) do
 		if data[key] == nil then
@@ -108,13 +108,13 @@ function DataService.setSnapshotBuilder(builder)
 	snapshotBuilder = builder
 end
 
--- callback(player) -> список брейнротов, которые должны попасть в сохранение,
--- хотя сейчас их нет в data.creatures (например, их прямо сейчас несёт вор).
+-- callback(player) -> list of brainrots that must go into the save,
+-- even though they are not in data.creatures right now (for example, a thief is carrying them).
 function DataService.addSaveExtra(callback)
 	table.insert(saveExtras, callback)
 end
 
--- Полный сброс прогресса (тест-команда). Покупки за Robux не трогаем.
+-- Full progress reset (test command). Robux purchases are not touched.
 function DataService.reset(player)
 	local old = profiles[player]
 	if not old then
@@ -155,8 +155,8 @@ local function sessionOwnedByOther(saved)
 		and os.time() - (session.time or 0) < SESSION_TIMEOUT
 end
 
--- Что пойдёт в запись. Вызывается внутри UpdateAsync, чтобы каждый повтор брал живые данные:
--- копия из первой попытки записала бы старые монеты рядом с уже подтверждённым чеком.
+-- What goes into the write. Called inside UpdateAsync so that every retry takes live data:
+-- a copy from the first attempt would write old coins next to an already confirmed receipt.
 local function buildSave(player, data, release)
 	local live = profiles[player] or data
 	live.lastOnline = os.time()
@@ -171,9 +171,9 @@ local function buildSave(player, data, release)
 	return toSave
 end
 
--- release = true, когда игрок уходит: снимаем блокировку сессии.
--- Возвращает true, если сохранение прошло. Сохранять некуда: в Studio без API это нормально,
--- а на боевом сервере ответ false, иначе покупка подтвердится без записи.
+-- release = true when the player leaves: release the session lock.
+-- Returns true if the save went through. Nowhere to save: in Studio without the API that is fine,
+-- and on a live server the answer is false, otherwise a purchase would be confirmed without being written.
 function DataService.save(player, release)
 	local data = profiles[player]
 	if not data then
@@ -182,8 +182,8 @@ function DataService.save(player, release)
 	if not store then
 		return RunService:IsStudio()
 	end
-	-- Игрок уже уходит: обычное сохранение могло бы вернуть блокировку сессии
-	-- после финального, и игрок не смог бы зайти на другой сервер.
+	-- The player is already leaving: a regular save could bring back the session lock
+	-- after the final one, and the player could not join another server.
 	if releasing[player] and not release then
 		return false
 	end
@@ -191,13 +191,13 @@ function DataService.save(player, release)
 	local skipped = false
 	local ok, err = withRetries(function()
 		return store:UpdateAsync(keyFor(player), function(saved)
-			-- Проверяем ещё раз внутри: игрок мог уйти, пока это сохранение ждало очереди.
+			-- We check again inside: the player may have left while this save waited in the queue.
 			if releasing[player] and not release then
 				skipped = true
 				return nil
 			end
 			if sessionOwnedByOther(saved) then
-				-- Прогресс уже открыт другим сервером — не затираем его.
+				-- The progress is already opened by another server: do not overwrite it.
 				stolenSession = true
 				return nil
 			end
@@ -216,8 +216,8 @@ function DataService.save(player, release)
 	return true
 end
 
--- Загружает прогресс и ставит блокировку сессии.
--- Возвращает ok, data (data == nil для нового игрока).
+-- Loads progress and sets the session lock.
+-- Returns ok, data (data == nil for a new player).
 local function loadWithLock(player)
 	local key = keyFor(player)
 	for attempt = 1, SESSION_ATTEMPTS do
@@ -252,7 +252,7 @@ local function loadWithLock(player)
 	return false, nil
 end
 
--- Возвращает true, если покупка с этим receiptId уже была выдана.
+-- Returns true if the purchase with this receiptId was already granted.
 function DataService.hasReceipt(data, receiptId)
 	return table.find(data.receipts, receiptId) ~= nil
 end
@@ -265,11 +265,11 @@ function DataService.addReceipt(data, receiptId)
 end
 
 local function onPlayerAdded(player)
-	-- Перезашёл на этот же сервер, пока идёт финальное сохранение прошлого захода, — ждём.
+	-- Rejoined the same server while the previous session's final save is running: wait.
 	while pendingRelease[player.UserId] do
 		task.wait(0.1)
 	end
-	-- Некуда сохранять: прогресс и покупки пропали бы при выходе. В Studio без API это нормально.
+	-- Nowhere to save: progress and purchases would be lost on exit. In Studio without the API that is fine.
 	if not store and not RunService:IsStudio() then
 		player:Kick(S.forPlayer(player, "data.store_unavailable"))
 		return
@@ -280,18 +280,18 @@ local function onPlayerAdded(player)
 		if ok then
 			data = result
 		elseif RunService:IsStudio() then
-			-- В Studio без доступа к API просто играем без сохранений.
+			-- In Studio without API access we just play without saves.
 			warn("[DataService] DataStore is unavailable in Studio (enable API Services). Playing without saves.")
 			store = nil
 		else
-			-- Не даём играть с пустым профилем, иначе затрём настоящий прогресс.
+			-- We do not let the player play with an empty profile, otherwise we would overwrite real progress.
 			player:Kick(S.forPlayer(player, "data.load_failed"))
 			return
 		end
 	end
 
 	if not player.Parent then
-		-- Игрок ушёл, пока грузился: снимаем блокировку, ничего не меняя.
+		-- The player left while loading: release the lock, change nothing.
 		if store and data then
 			pcall(function()
 				store:UpdateAsync(keyFor(player), function(saved)
@@ -306,16 +306,16 @@ local function onPlayerAdded(player)
 		return
 	end
 
-	-- Сохранения до этажей: там было минимум 8 мест, поэтому сразу дарим 1 этаж.
+	-- Saves from before floors: there were at least 8 spots, so we give 1 floor right away.
 	local beforeFloors = type(data) == "table" and data.coins ~= nil and data.floors == nil
 	local beforeSources = type(data) == "table" and data.coins ~= nil and data.boughtCoins == nil
 	data = reconcile(type(data) == "table" and data or {}, defaultData())
 	if beforeFloors then
 		data.floors = 1
 	end
-	-- Сохранения до пометки источника, один раз. В чеках только номера, без товара, поэтому
-	-- «были покупки монет» читаем как «есть хоть один чек»: это шире, но никогда не меньше.
-	-- Позже запись без пометки не трогаем: она значит «источник неизвестен», см. Formulas.isPaidRandom.
+	-- Saves from before the source mark, once. Receipts hold only numbers, without the product, so
+	-- "had coin purchases" is read as "has at least one receipt": this is broader, but never smaller.
+	-- Later we do not touch an entry without a mark: it means "source unknown", see Formulas.isPaidRandom.
 	if beforeSources then
 		local hadPurchases = #data.receipts > 0
 		for _, entry in ipairs(data.creatures) do
@@ -326,7 +326,7 @@ local function onPlayerAdded(player)
 			data.boosts.paidLuckUntil = data.boosts.luckUntil
 		end
 	end
-	-- Старые сохранения: брейнроты без «происхождения» считаем своими.
+	-- Old saves: brainrots without an "origin" are treated as the player's own.
 	for _, entry in ipairs(data.creatures) do
 		if entry.lineage == nil then
 			entry.lineage = Formulas.lineageOf(entry, player.UserId, data.rebirths)
@@ -360,7 +360,7 @@ function DataService.init()
 		task.spawn(onPlayerAdded, player)
 	end
 
-	-- Отправляем изменения клиентам не чаще 5 раз в секунду.
+	-- We send changes to clients at most 5 times per second.
 	task.spawn(function()
 		while true do
 			task.wait(0.2)
@@ -370,7 +370,7 @@ function DataService.init()
 		end
 	end)
 
-	-- Автосейв.
+	-- Autosave.
 	task.spawn(function()
 		while true do
 			task.wait(AUTOSAVE_INTERVAL)
@@ -390,7 +390,7 @@ function DataService.init()
 		local pending = 0
 		for player in pairs(profiles) do
 			pending += 1
-			-- До сохранения: чек или автосейв в этот момент вернули бы блокировку сессии.
+			-- Before saving: a receipt or an autosave at this moment would bring back the session lock.
 			releasing[player] = true
 			task.spawn(function()
 				DataService.save(player, true)

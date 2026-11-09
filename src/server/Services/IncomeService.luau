@@ -1,5 +1,5 @@
--- Пассивный доход: брейнроты на базе приносят монеты каждую секунду.
--- Плюс доход «пока тебя не было» при входе в игру.
+-- Passive income: brainrots on the base bring coins every second.
+-- Plus income "while you were away" when joining the game.
 
 local Players = game:GetService("Players")
 
@@ -47,7 +47,7 @@ end
 
 function IncomeService.init()
 	DataService.Loaded.Event:Connect(function(player)
-		-- Даём геймпассам прогрузиться, чтобы VIP тоже учитывался.
+		-- We let game passes load so that VIP is counted too.
 		task.delay(1, giveOfflineIncome, player)
 	end)
 

@@ -1,4 +1,4 @@
--- Ежедневные награды и задания.
+-- Daily rewards and quests.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -19,7 +19,7 @@ local GOOD = Color3.fromRGB(120, 255, 120)
 local BAD = Color3.fromRGB(255, 110, 110)
 local GOLD = Color3.fromRGB(255, 220, 80)
 
--- Задания на сегодня одинаковые для игрока на любом сервере (зерно = день + UserId).
+-- Today's quests are the same for a player on any server (seed = day + UserId).
 local function ensureQuests(player, data)
 	local day = Daily.today()
 	if data.quests.day == day then
@@ -61,7 +61,7 @@ local function canClaimDaily(data)
 	return data.daily.lastClaimDay ~= Daily.today()
 end
 
--- Какой день серии будет следующим (1..7).
+-- Which day of the streak is next (1..7).
 local function nextStreakDay(data)
 	local today = Daily.today()
 	if data.daily.lastClaimDay == today - 1 or data.daily.lastClaimDay == today then
@@ -111,7 +111,7 @@ local function claimQuest(player, index)
 	DataService.markDirty(player)
 end
 
--- Данные для интерфейса.
+-- Data for the UI.
 function QuestService.snapshot(player, data)
 	ensureQuests(player, data)
 	local income = Formulas.totalIncome(data, MonetizationService.passes(player))

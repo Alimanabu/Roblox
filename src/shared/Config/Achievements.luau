@@ -1,5 +1,5 @@
--- Достижения. check(data) -> true, когда выполнено.
--- badgeId — ID бейджа Roblox (создай в Creator Dashboard → Badges), 0 = без бейджа.
+-- Achievements. check(data) -> true when done.
+-- badgeId is the Roblox badge ID (create it in Creator Dashboard -> Badges), 0 = no badge.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -7,7 +7,7 @@ local Config = script.Parent
 local Creatures = require(Config.Creatures)
 local Seasons = require(Config.Seasons)
 
--- Сезонные брейнроты в счёт «открой всех» не входят: после сезона их не достать.
+-- Seasonal brainrots do not count toward "discover them all": they cannot be obtained after the season.
 local REGULAR_COUNT = 0
 for _, creature in ipairs(Creatures.List) do
 	if not creature.season then
@@ -75,7 +75,7 @@ Achievements.List = {
 	{ id = "streak7", reward = { coinsMinutes = 20 }, check = function(d) return d.daily.streak >= 7 end },
 }
 
--- По достижению на каждый сезон: «получи брейнрота этого сезона».
+-- One achievement per season: "get a brainrot of this season".
 for _, season in ipairs(Seasons.List) do
 	table.insert(Achievements.List, {
 		id = "season_" .. season.id,

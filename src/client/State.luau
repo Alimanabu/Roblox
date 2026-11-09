@@ -1,4 +1,4 @@
--- Хранит последнее состояние игрока, присланное сервером.
+-- Stores the player's latest state sent by the server.
 
 local State = {}
 

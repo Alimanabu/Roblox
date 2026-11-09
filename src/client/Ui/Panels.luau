@@ -1,5 +1,5 @@
--- Окна: Фабрика, База, Улучшения, Перерождение, Индекс, Магазин.
--- Каждое окно перерисовывается только когда меняется то, что в нём показано.
+-- Windows: Factory, Base, Upgrades, Rebirth, Index, Shop.
+-- Each window is redrawn only when what it shows changes.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -59,9 +59,9 @@ local function list(parent, padding)
 	})
 end
 
--- Кнопка с подтверждением: первое нажатие спрашивает «Точно?», второе (за 3 с) выполняет.
--- key — стабильный id кнопки: «взведённое» состояние переживает перерисовку окна.
-local armed = {} -- [key] = до какого os.clock() кнопка ждёт второго нажатия
+-- Confirm button: the first press asks "Sure?", the second (within 3 s) does it.
+-- key is a stable button id: the "armed" state survives a window redraw.
+local armed = {} -- [key] = until which os.clock() the button waits for the second press
 local function confirmButton(key, props, confirmText, action)
 	local normalText = props.Text
 	local normalColor = props.Color or C.Accent
@@ -70,7 +70,7 @@ local function confirmButton(key, props, confirmText, action)
 		if armed[key] and os.clock() < armed[key] then
 			button.Text = confirmText
 			button.BackgroundColor3 = C.Gold
-			-- Новая кнопка после перерисовки тоже должна «остыть» по таймеру.
+			-- A new button after a redraw must also "cool down" by the timer.
 			task.delay(armed[key] - os.clock() + 0.05, function()
 				if button.Parent and not (armed[key] and os.clock() < armed[key]) then
 					button.Text = normalText
@@ -118,25 +118,25 @@ local function creatureName(entry)
 	return name
 end
 
-Panels.onRename = nil -- function(uid, currentName) — задаётся в Main.client
+Panels.onRename = nil -- function(uid, currentName), set in Main.client
 
--- Roblox запрещает игроку платные случайные награды. Пока ответа нет, считаем, что запрещает.
+-- Roblox forbids paid random rewards for the player. Until there is an answer, we assume it forbids.
 local function randomRestricted()
 	return player:GetAttribute("PaidRandomItemsRestricted") ~= false
 end
 
--- Ответа Roblox пока нет: ограничения действуют, но это ещё не запрет региона.
+-- No answer from Roblox yet: the restrictions apply, but this is not yet a region ban.
 local function policyPending()
 	return player:GetAttribute("PaidRandomItemsRestricted") == nil or player:GetAttribute("PolicyUnknown") == true
 end
 
--- Сколько монет можно потратить на то, что ведёт к случайной награде (см. Formulas.randomCoins).
+-- How many coins can be spent on something that leads to a random reward (see Formulas.randomCoins).
 local function randomCoins(state)
 	return Formulas.randomCoins(state, randomRestricted())
 end
 
--- Объяснение в окне: при запрете купленные монеты есть, но на эти цены их не потратить.
--- Говорим про самую дешёвую из таких цен. Пустая строка: объяснять нечего.
+-- Explanation in the window: when restricted, bought coins exist but cannot be spent at these prices.
+-- We talk about the cheapest of such prices. Empty string: nothing to explain.
 local function boughtCoinsText(state, costs)
 	if not randomRestricted() or state.boughtCoins <= 0 then
 		return ""
@@ -166,7 +166,7 @@ local function boughtCoinsNotice(content, text)
 	end
 end
 
--- Кнопка окна шансов. Подпись со словом обязательна: один значок Roblox не принимает.
+-- Odds window button. The label with a word is required: Roblox does not accept a lone icon.
 local function oddsButton(content, panels, order)
 	Theme.button({
 		Size = UDim2.new(1, -10, 0, 34),
@@ -180,11 +180,11 @@ local function oddsButton(content, panels, order)
 end
 
 ---------------------------------------------------------------------------
--- ФАБРИКА
+-- FACTORY
 ---------------------------------------------------------------------------
 local Factory = { title = S.t("panel.factory") }
 
--- Цены капсул, которые игрок сейчас может открыть.
+-- Prices of the capsules the player can open right now.
 local function capsuleCosts(state)
 	local costs = {}
 	local serverNow = workspace:GetServerTimeNow()
@@ -268,11 +268,11 @@ function Factory.build(content, state, panels)
 	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
 		if not Formulas.capsuleInSeason(capsule, serverNow) then
-			continue -- сезонная капсула вне сезона не показывается
+			continue -- a seasonal capsule is not shown out of season
 		end
 		local unlocked = Formulas.capsuleUnlocked(capsule, state)
 		local box = card({
-			LayoutOrder = capsule.season and 0 or capsule.order, -- сезонная капсула первой
+			LayoutOrder = capsule.season and 0 or capsule.order, -- seasonal capsule first
 			BackgroundColor3 = unlocked and C.Card or C.CardLocked,
 			Parent = grid,
 		}, { Theme.stroke(capsule.color, 3), Theme.padding(8) })
@@ -340,7 +340,7 @@ function Factory.build(content, state, panels)
 end
 
 ---------------------------------------------------------------------------
--- БАЗА
+-- BASE
 ---------------------------------------------------------------------------
 local Base = { title = S.t("panel.base") }
 
@@ -348,7 +348,7 @@ local function floorSignature(state)
 	return tostring(state.floors) .. ":" .. tostring(state.floorCost and state.coins >= state.floorCost)
 end
 
--- Карточка этажей: что построено и кнопка «Построить» следующего этажа.
+-- Floors card: what is built and the "Build" button for the next floor.
 local function floorCard(content, state, order)
 	local floors = state.floors or 0
 	local cost = state.floorCost
@@ -433,7 +433,7 @@ function Base.build(content, state, panels)
 
 	oddsButton(content, panels, 9)
 
-	-- Группы по редкостям: скрестить / продать всех.
+	-- Groups by rarity: fuse / sell all.
 	local counts, fusable = {}, {}
 	for _, entry in ipairs(state.creatures) do
 		local creature = Creatures.get(entry.id)
@@ -492,7 +492,7 @@ function Base.build(content, state, panels)
 		Parent = content,
 	})
 
-	-- Список брейнротов, сильные сверху (они же стоят на верхнем этаже).
+	-- List of brainrots, strongest on top (they also stand on the top floor).
 	local places = Formulas.layout(state.creatures, state.floors or 0)
 	for order, place in ipairs(places) do
 		local entry = place.entry
@@ -510,7 +510,7 @@ function Base.build(content, state, panels)
 				TextXAlignment = Enum.TextXAlignment.Left,
 				Parent = row,
 			})
-			-- Нажми на имя — можно переименовать.
+			-- Tap the name to rename.
 			local renameHit = create("TextButton", {
 				Size = UDim2.new(0.42, 0, 1, 0),
 				BackgroundTransparency = 1,
@@ -537,7 +537,7 @@ function Base.build(content, state, panels)
 				TextColor3 = C.Good,
 				Parent = row,
 			})
-			-- Питомец: этот брейнрот будет бегать за тобой.
+			-- Pet: this brainrot will run after you.
 			local isPet = state.pet == entry.uid
 			Theme.button({
 				Size = UDim2.new(0.11, -4, 1, 0),
@@ -558,7 +558,7 @@ function Base.build(content, state, panels)
 				Color = C.Bad,
 				Parent = row,
 			}
-			-- Редких (Аура и выше) и мутантов продаём только с подтверждением.
+			-- Rare ones (Aura and above) and mutants are sold only with confirmation.
 			if rarity.rank >= 5 or entry.mut ~= "normal" then
 				confirmButton("sell:" .. entry.uid, sellProps, S.t("base.confirm_sell"), sell)
 			else
@@ -570,7 +570,7 @@ function Base.build(content, state, panels)
 end
 
 ---------------------------------------------------------------------------
--- УЛУЧШЕНИЯ
+-- UPGRADES
 ---------------------------------------------------------------------------
 local UpgradesPanel = { title = S.t("panel.upgrades") }
 
@@ -635,7 +635,7 @@ function UpgradesPanel.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- ПЕРЕРОЖДЕНИЕ
+-- REBIRTH
 ---------------------------------------------------------------------------
 local Rebirth = { title = S.t("hud.rebirth") }
 
@@ -687,7 +687,7 @@ function Rebirth.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- ИНДЕКС (коллекция)
+-- INDEX (collection)
 ---------------------------------------------------------------------------
 local Index = { title = S.t("panel.index") }
 
@@ -757,7 +757,7 @@ function Index.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- МАГАЗИН
+-- SHOP
 ---------------------------------------------------------------------------
 local Shop = { title = S.t("hud.shop") }
 
@@ -777,7 +777,7 @@ function Shop.signature(state)
 	return table.concat(parts, "|")
 end
 
--- Как усилители меняют шанс самой редкой редкости лучшей открытой капсулы: числа до покупки.
+-- How boosters change the chance of the rarest rarity of the best open capsule: numbers before purchase.
 local function luckExample(content, state, order)
 	local capsule
 	for _, candidate in ipairs(Capsules.List) do
@@ -856,7 +856,7 @@ function Shop.build(content, state, panels)
 		box.Parent = content
 	end
 
-	-- Там, где Roblox запрещает платные случайные награды, не продаём то, что к ним ведёт.
+	-- Where Roblox forbids paid random rewards, we do not sell what leads to them.
 	local restricted = randomRestricted()
 	for _, pass in ipairs(Monetization.GamePasses) do
 		row("pass", pass, state.passes[pass.key], function()
@@ -874,7 +874,7 @@ function Shop.build(content, state, panels)
 end
 
 ---------------------------------------------------------------------------
--- ШАНСЫ: всё, что Roblox требует раскрыть до покупки
+-- ODDS: everything Roblox requires to disclose before purchase
 ---------------------------------------------------------------------------
 local OddsPanel = { title = S.t("panel.odds") }
 
@@ -896,8 +896,8 @@ function OddsPanel.signature(state)
 	return table.concat(parts, "|")
 end
 
--- Удача сейчас и с усилителями, которых у игрока пока нет. Там, где платная удача запрещена,
--- только «сейчас»: предлагать купить нечего.
+-- Luck now and with the boosters the player does not have yet. Where paid luck is forbidden,
+-- only "now": there is nothing to offer for purchase.
 local function luckColumns(state)
 	local columns = { { name = S.t("odds.now"), luck = state.luck } }
 	if randomRestricted() then
@@ -958,7 +958,7 @@ function OddsPanel.build(content, state)
 	end
 	add(S.t("odds.rounded"), C.Muted)
 
-	-- Одна строка на исход: шанс в каждом столбце удачи.
+	-- One row per outcome: the chance in each luck column.
 	local function odds(chanceIn)
 		local values = {}
 		for _, column in ipairs(columns) do
@@ -1018,12 +1018,12 @@ function OddsPanel.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- НАГРАДЫ: ежедневная серия и задания
+-- REWARDS: daily streak and quests
 ---------------------------------------------------------------------------
 local Rewards = { title = S.t("panel.rewards") }
-local codeDraft = "" -- текст промокода не теряется, когда окно перерисовывается
+local codeDraft = "" -- the promo code text is not lost when the window is redrawn
 
--- Сколько минут игрок уже в игре за этот заход.
+-- How many minutes the player has been in the game this session.
 local function playMinutes(state)
 	return (workspace:GetServerTimeNow() - state.playtime.start) / 60
 end
@@ -1103,8 +1103,8 @@ function Rewards.build(content, state)
 		})
 	end
 
-	-- Колесо удачи. Шансы показываем ДО вращения: вращения продаются за Robux,
-	-- а Roblox требует раскрывать шансы платных случайных наград.
+	-- Lucky wheel. We show the odds BEFORE the spin: spins are sold for Robux,
+	-- and Roblox requires disclosing the odds of paid random rewards.
 	local wheelTotal = 0
 	for _, slot in ipairs(Daily.Wheel) do
 		wheelTotal += slot.weight
@@ -1131,7 +1131,7 @@ function Rewards.build(content, state)
 		LayoutOrder = 50,
 		Parent = content,
 	})
-	-- Купленные вращения там, где платные случайные награды запрещены, сервер не потратит.
+	-- Where paid random rewards are forbidden, the server will not spend bought spins.
 	local spinsBlocked = randomRestricted()
 	local paidSpins = wheel.extraSpins > 0 and not spinsBlocked
 	local canSpin = wheel.freeAvailable or paidSpins
@@ -1160,7 +1160,7 @@ function Rewards.build(content, state)
 		end
 	end)
 
-	-- Подарки за время в игре.
+	-- Gifts for time in game.
 	local minutes = playMinutes(state)
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
@@ -1198,7 +1198,7 @@ function Rewards.build(content, state)
 		end)
 	end
 
-	-- Промокоды.
+	-- Promo codes.
 	local codeRow = create("Frame", {
 		Size = UDim2.new(1, -10, 0, 44),
 		BackgroundTransparency = 1,
@@ -1293,7 +1293,7 @@ function Rewards.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- КАК ИГРАТЬ
+-- HOW TO PLAY
 ---------------------------------------------------------------------------
 local Help = { title = S.t("hud.help") }
 
@@ -1345,10 +1345,10 @@ function Help.build(content)
 end
 
 ---------------------------------------------------------------------------
--- ОБМЕН
+-- TRADE
 ---------------------------------------------------------------------------
 local Trade = { title = S.t("panel.trade") }
-Panels.trade = nil -- состояние обмена с сервера (nil — обмена нет)
+Panels.trade = nil -- trade state from the server (nil: no trade)
 
 function Trade.signature(state)
 	local parts = { #Players:GetPlayers() }
@@ -1451,12 +1451,12 @@ function Trade.build(content, state)
 		return
 	end
 
-	-- Идёт обмен.
+	-- A trade is in progress.
 	local selected = {}
 	for _, uid in ipairs(trade.myOffer) do
 		selected[uid] = true
 	end
-	-- Сервер отказал: объясняем над списками, кнопки остаются на месте и видны без прокрутки.
+	-- The server refused: we explain above the lists, the buttons stay in place and are visible without scrolling.
 	local top = 0
 	if trade.notice then
 		top = 44
@@ -1521,7 +1521,7 @@ function Trade.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- НАСТРОЙКИ
+-- SETTINGS
 ---------------------------------------------------------------------------
 local SettingsPanel = { title = S.t("panel.settings") }
 
@@ -1564,10 +1564,10 @@ function SettingsPanel.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- СКИНЫ
+-- SKINS
 ---------------------------------------------------------------------------
 local SkinsPanel = { title = S.t("panel.skins") }
-local selectedSkin = nil -- выбранный скин; nil = «снять скин»
+local selectedSkin = nil -- selected skin; nil = "remove skin"
 
 function SkinsPanel.signature(state)
 	local parts = { tostring(selectedSkin) }
@@ -1678,7 +1678,7 @@ function SkinsPanel.build(content, state, panels)
 end
 
 ---------------------------------------------------------------------------
--- АУРА-БАТТЛЫ
+-- AURA BATTLES
 ---------------------------------------------------------------------------
 local BattlesPanel = { title = S.t("help.10.title") }
 
@@ -1766,7 +1766,7 @@ function BattlesPanel.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- ДОСТИЖЕНИЯ
+-- ACHIEVEMENTS
 ---------------------------------------------------------------------------
 local AchievementsPanel = { title = S.t("hud.achievements") }
 
@@ -1783,7 +1783,7 @@ function AchievementsPanel.build(content, state)
 		LayoutOrder = 0,
 		Parent = content,
 	})
-	-- Сначала полученные, потом остальные (в порядке списка).
+	-- Earned ones first, then the rest (in list order).
 	for order, achievement in ipairs(Achievements.List) do
 		local done = state.achievements.unlocked[achievement.id] == true
 		local row = card({
@@ -1811,7 +1811,7 @@ function AchievementsPanel.build(content, state)
 end
 
 ---------------------------------------------------------------------------
--- ТЕСТ (только админы / Studio)
+-- TEST (admins / Studio only)
 ---------------------------------------------------------------------------
 local Admin = { title = S.t("panel.admin") }
 
@@ -1994,7 +1994,7 @@ function Panels:close()
 	self.content:ClearAllChildren()
 end
 
--- Перерисовать окно, даже если состояние игрока не менялось (например, обмен).
+-- Redraw the window even if the player state did not change (for example, a trade).
 function Panels:refresh()
 	self.lastSignature = nil
 	if self.openName then

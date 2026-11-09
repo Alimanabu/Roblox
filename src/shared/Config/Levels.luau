@@ -1,5 +1,5 @@
--- Уровни игрока. Опыт даётся за каждый созданный брейнрот (чем реже — тем больше).
--- Уровни открывают новые капсулы и дают титулы.
+-- Player levels. XP is given for every brainrot created (the rarer, the more).
+-- Levels unlock new capsules and give titles.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -7,12 +7,12 @@ local Levels = {}
 
 Levels.MAX_LEVEL = 67
 
--- Сколько опыта нужно, чтобы перейти с уровня level на level + 1.
+-- How much XP is needed to go from level level to level + 1.
 function Levels.xpToNext(level)
 	return math.floor(12 * level ^ 1.5 * 1.12 ^ level)
 end
 
--- Титулы: с какого уровня даётся.
+-- Titles: the level from which each is given.
 Levels.Titles = {
 	{ level = 1 },
 	{ level = 3 },
@@ -36,7 +36,7 @@ function Levels.titleKeyFor(level)
 	return "level." .. reached .. ".name"
 end
 
--- Сообщение (см. Strings): титул покажет клиент на языке игрока.
+-- Message (see Strings): the client shows the title in the player's language.
 function Levels.titleFor(level)
 	return S.m(Levels.titleKeyFor(level))
 end

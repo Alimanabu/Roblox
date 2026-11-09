@@ -1,4 +1,4 @@
--- Экран аура-баттла: раунды появляются по очереди, в конце — победа или поражение.
+-- Aura battle screen: rounds appear one by one, at the end a win or a loss.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

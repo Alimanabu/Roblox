@@ -1,4 +1,4 @@
--- Бонусы к доходу: друзья на сервере, участие в группе игры, Roblox Premium.
+-- Income bonuses: friends on the server, joining the game group, Roblox Premium.
 
 local Players = game:GetService("Players")
 
@@ -78,7 +78,7 @@ function SocialService.init()
 			end
 		end)
 	end)
-	-- Подстраховка: вступил в группу или купил Premium прямо в игре.
+	-- Safeguard: joined the group or bought Premium right in the game.
 	task.spawn(function()
 		while true do
 			task.wait(60)

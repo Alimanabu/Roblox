@@ -1,6 +1,6 @@
--- Скины брейнротов: только внешний вид, на доход не влияют.
--- Покупаются за монеты (price) или выдаются кодами/наградами (price = nil).
--- Скин надевается на конкретного брейнрота и остаётся с ним при краже и обмене.
+-- Brainrot skins: looks only, they do not affect income.
+-- Bought with coins (price) or granted by codes/rewards (price = nil).
+-- A skin is put on a specific brainrot and stays with it on steal and trade.
 
 local S = require(script.Parent.Parent.Strings)
 

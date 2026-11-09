@@ -1,5 +1,5 @@
--- Оформление карты: площадь, дорожки к базам, деревья, фонари, статуя легенды, свет.
--- Только декор — на игровую логику не влияет. Всё собрано из простых деталей.
+-- Map decoration: plaza, paths to the bases, trees, lamps, legend statue, lighting.
+-- Decor only: it does not affect game logic. Everything is built from simple parts.
 
 local Lighting = game:GetService("Lighting")
 
@@ -9,7 +9,7 @@ local CreatureModel = require(Shared.Util.CreatureModel)
 
 local MapService = {}
 
--- Должно совпадать с раскладкой в PlotService.
+-- Must match the layout in PlotService.
 local PLOT_COUNT = 8
 local RING_RADIUS = 150
 local PLOT_SIZE = 90
@@ -88,7 +88,7 @@ local function bench(cframe)
 end
 
 local function statue()
-	-- Постамент + огромный SIX SEVEN «из золота».
+	-- Pedestal + a huge "gold" SIX SEVEN.
 	local base = CFrame.new(0, 0, -30)
 	part({
 		Name = "StatueBase",
@@ -154,7 +154,7 @@ function MapService.init()
 
 	lighting()
 
-	-- Площадь.
+	-- Plaza.
 	part({
 		Name = "Plaza",
 		Shape = Enum.PartType.Cylinder,
@@ -168,7 +168,7 @@ function MapService.init()
 		local angle = (i - 1) / PLOT_COUNT * math.pi * 2
 		local dir = Vector3.new(math.cos(angle), 0, math.sin(angle))
 
-		-- Дорожка от площади к базе.
+		-- Path from the plaza to a base.
 		local from = dir * (PLAZA_RADIUS - 2)
 		local to = dir * (RING_RADIUS - PLOT_SIZE / 2 + 1)
 		local middle = (from + to) / 2
@@ -180,23 +180,23 @@ function MapService.init()
 			Material = Enum.Material.Sand,
 		})
 
-		-- Фонари вдоль дорожки.
+		-- Lamps along the path.
 		local side = Vector3.new(-dir.Z, 0, dir.X) * 7
 		lamp(dir * 70 + side)
 		lamp(dir * 70 - side)
 
-		-- Деревья между базами.
+		-- Trees between the bases.
 		local between = (i - 0.5) / PLOT_COUNT * math.pi * 2
 		local betweenDir = Vector3.new(math.cos(between), 0, math.sin(between))
 		tree(betweenDir * 100, 1.2)
 		tree(betweenDir * 165, 1)
-		-- Внешнее кольцо леса.
+		-- Outer ring of forest.
 		for k = 0, 2 do
 			local a = (i - 1 + k / 3) / PLOT_COUNT * math.pi * 2
 			tree(Vector3.new(math.cos(a), 0, math.sin(a)) * 245, 1.4)
 		end
 
-		-- Лавочки по краю площади.
+		-- Benches along the edge of the plaza.
 		local benchPos = Vector3.new(math.cos(between), 0, math.sin(between)) * (PLAZA_RADIUS - 5)
 		bench(CFrame.lookAt(benchPos, Vector3.zero) * CFrame.Angles(0, math.pi, 0))
 	end

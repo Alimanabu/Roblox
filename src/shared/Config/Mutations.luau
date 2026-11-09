@@ -1,5 +1,5 @@
--- Мутации: случайно выпадают при создании брейнрота и умножают доход.
--- chance — шанс в долях (0.06 = 6%). Проверяются от самой редкой к самой частой.
+-- Mutations: drop randomly when a brainrot is created and multiply income.
+-- chance is the chance as a fraction (0.06 = 6%). Checked from the rarest to the most common.
 
 local S = require(script.Parent.Parent.Strings)
 

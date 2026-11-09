@@ -1,8 +1,8 @@
--- Кто видит панель «🛠 Тест» в опубликованной игре. В Studio она есть у всех.
--- Впиши сюда свой UserId (его видно в адресе профиля на roblox.com).
+-- Who sees the "Test" panel in the published game. In Studio everyone has it.
+-- Put your own UserId here (it is visible in the profile address on roblox.com).
 
 return {
 	UserIds = {
-		11771300191, -- PewPewMeowR (владелец игры)
+		11771300191, -- PewPewMeowR (game owner)
 	},
 }

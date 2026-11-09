@@ -1,11 +1,11 @@
--- 3D-превью брейнрота внутри интерфейса (ViewportFrame).
+-- 3D preview of a brainrot inside the UI (ViewportFrame).
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local CreatureModel = require(Shared.Util.CreatureModel)
 
 local Viewport = {}
 
--- Создаёт ViewportFrame с моделью. silhouette = true — чёрный силуэт (ещё не открыт).
+-- Creates a ViewportFrame with the model. silhouette = true is a black silhouette (not discovered yet).
 function Viewport.creature(props, creatureId, mutationId, silhouette, skinId)
 	local frame = Instance.new("ViewportFrame")
 	frame.BackgroundTransparency = 1

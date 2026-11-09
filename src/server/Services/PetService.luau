@@ -1,6 +1,6 @@
--- Питомец: выбранный брейнрот бегает за игроком по карте (его видят все).
--- Сервер только хранит выбор и пишет атрибут Pet = "id|mutation|skin" на игрока;
--- модель и движение делает каждый клиент сам (плавно и без нагрузки на сервер).
+-- Pet: the selected brainrot runs after the player around the map (everyone sees it).
+-- The server only stores the choice and writes the attribute Pet = "id|mutation|skin" on the player;
+-- each client builds the model and the movement itself (smooth and with no server load).
 
 local Players = game:GetService("Players")
 
@@ -21,14 +21,14 @@ local function findEntry(data, uid)
 	return nil
 end
 
--- Обновляет атрибут; если питомца продали/украли/обменяли — снимает его.
+-- Updates the attribute; if the pet was sold/stolen/traded, removes it.
 function PetService.refresh(player)
 	local data = DataService.get(player)
 	if not data or not player.Parent then
 		return
 	end
-	-- Если брейнрота сейчас нет (несут воры, продали) — просто прячем питомца;
-	-- выбор не сбрасываем: после неудачной кражи питомец вернётся.
+	-- If the brainrot is absent right now (thieves carry it, sold), we just hide the pet;
+	-- the choice is not reset: after a failed steal the pet comes back.
 	local entry = data.pet and findEntry(data, data.pet)
 	local value = entry and (entry.id .. "|" .. entry.mut .. "|" .. (entry.skin or "")) or nil
 	if player:GetAttribute("Pet") ~= value then
@@ -44,7 +44,7 @@ local function setPet(player, uid)
 	if not data then
 		return
 	end
-	-- Смена питомца пересобирает модель у всех клиентов — не чаще раза в секунду.
+	-- Changing the pet rebuilds the model on all clients, so at most once per second.
 	local now = os.clock()
 	if lastSet[player] and now - lastSet[player] < SET_COOLDOWN then
 		return
@@ -67,7 +67,7 @@ function PetService.init()
 		lastSet[player] = nil
 	end)
 	DataService.Loaded.Event:Connect(PetService.refresh)
-	-- Брейнротов могут продать, украсть, обменять — периодически сверяемся.
+	-- Brainrots can be sold, stolen, traded, so we re-check periodically.
 	task.spawn(function()
 		while true do
 			task.wait(2)

@@ -1,4 +1,4 @@
--- Анимация колеса удачи: призы мелькают, замедляются и останавливаются на выигрыше.
+-- Lucky wheel animation: prizes flash by, slow down and stop on the winner.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -37,7 +37,7 @@ function WheelSpin:spin(resultIndex, onTick)
 	self.frame.Visible = true
 	task.spawn(function()
 		local count = #Daily.Wheel
-		-- Сколько «щелчков» сделать: несколько полных кругов + до нужного приза.
+		-- How many "clicks" to make: several full turns + up to the needed prize.
 		local steps = count * 3 + resultIndex
 		local started = os.clock()
 		for step = 1, steps do
@@ -50,7 +50,7 @@ function WheelSpin:spin(resultIndex, onTick)
 			if onTick then
 				onTick(step == steps)
 			end
-			-- Замедление к концу: паузы растут квадратично.
+			-- Slowing toward the end: pauses grow quadratically.
 			local progress = step / steps
 			local target = started + DURATION * progress ^ 2
 			task.wait(math.max(0.02, target - os.clock()))

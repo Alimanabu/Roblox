@@ -1,4 +1,4 @@
--- Таблицы лидеров: leaderstats в списке игроков и глобальные табло на площади.
+-- Leaderboards: leaderstats in the player list and global boards on the plaza.
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
@@ -17,8 +17,8 @@ local WRITE_INTERVAL = 120
 local READ_INTERVAL = 300
 local TOP_COUNT = 10
 
--- OrderedDataStore хранит только целые числа до 2^63, а заработок может быть огромным.
--- Поэтому храним логарифм: 1 000 000 * log10(x + 1). Точности хватает для сортировки.
+-- OrderedDataStore stores only integers up to 2^63, while earnings can be huge.
+-- So we store a logarithm: 1 000 000 * log10(x + 1). The precision is enough for sorting.
 local function encode(value)
 	return math.floor(math.log10(math.max(0, value) + 1) * 1000000)
 end
@@ -176,7 +176,7 @@ function LeaderboardService.init()
 		setupLeaderstats(player)
 	end
 
-	-- leaderstats обновляем часто.
+	-- We update leaderstats often.
 	task.spawn(function()
 		while true do
 			task.wait(2)
@@ -192,7 +192,7 @@ function LeaderboardService.init()
 		end
 	end)
 
-	-- Глобальные табло — редко, у DataStore есть лимиты.
+	-- Global boards rarely, DataStore has limits.
 	task.spawn(function()
 		task.wait(10)
 		for _, board in ipairs(BOARDS) do
@@ -212,7 +212,7 @@ function LeaderboardService.init()
 		end
 	end)
 
-	-- При выходе записываем результат, чтобы не потерять последний рывок.
+	-- On exit we write the result so we do not lose the last surge.
 	Players.PlayerRemoving:Connect(function(player)
 		local data = DataService.get(player)
 		if not data then

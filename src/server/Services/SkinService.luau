@@ -1,4 +1,4 @@
--- Скины: покупка за монеты и надевание на брейнротов.
+-- Skins: purchase with coins and putting them on brainrots.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -11,8 +11,8 @@ local PlotService = require(script.Parent.PlotService)
 local TradeService = require(script.Parent.TradeService)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 
--- Смена скина пересобирает модель (и кнопку «Украсть»), поэтому не чаще раза
--- в APPLY_COOLDOWN секунд — иначе можно было бы «сбивать» воров.
+-- Changing a skin rebuilds the model (and the "Steal" button), so at most once per
+-- APPLY_COOLDOWN seconds, otherwise thieves could be "shaken off".
 local APPLY_COOLDOWN = 10
 local lastApply = {} -- [player] = os.clock()
 

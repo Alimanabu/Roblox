@@ -1,5 +1,5 @@
--- Дискотека во время «Минуты 67»: диско-шар над площадью, лазеры, переливы света.
--- Всё только на клиенте (видно всем, потому что у всех одно и то же время ивента).
+-- Disco during "Minute 67": a disco ball above the plaza, lasers, shifting lights.
+-- Client only (everyone sees it because the event time is the same for all).
 
 local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")

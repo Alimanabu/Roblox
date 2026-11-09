@@ -1,6 +1,6 @@
--- Босс-брейнрот: каждый час (Events.Boss) на площадь приходит огромный брейнрот.
--- Игроки шлёпают его Шлёпалкой; он раз в несколько секунд отбрасывает всех рядом.
--- Победили — награда всем по вкладу, лучшему бойцу ещё и брейнрот «Аура».
+-- Boss brainrot: every hour (Events.Boss) a huge brainrot comes to the plaza.
+-- Players slap it with the Slapper; every few seconds it knocks back everyone nearby.
+-- If they win, everyone gets a reward by contribution, and the best fighter also gets an "Aura" brainrot.
 
 local Players = game:GetService("Players")
 
@@ -19,20 +19,20 @@ local BossService = {}
 
 BossService.POSITION = CFrame.new(0, 0, 34) * CFrame.Angles(0, math.pi, 0)
 BossService.SCALE = 3
-BossService.HIT_RANGE = 10 -- от края босса
+BossService.HIT_RANGE = 10 -- from the edge of the boss
 BossService.DAMAGE = 10
 BossService.BASE_HP = 300
 BossService.HP_PER_PLAYER = 200
 BossService.SHOCKWAVE_EVERY = 5
-BossService.SHOCKWAVE_RADIUS = 16 -- не достаёт до спавна в центре площади
+BossService.SHOCKWAVE_RADIUS = 16 -- does not reach the spawn in the center of the plaza
 
 local GOLD = Color3.fromRGB(255, 220, 80)
 local RED = Color3.fromRGB(255, 80, 80)
 
 local boss = nil -- { model, radius, hp, maxHp, damage = { [player] = n }, label, fill }
-local finishedUntil = 0 -- босса уже победили: до конца этого окна ивента не появляется
+local finishedUntil = 0 -- the boss has been defeated: it does not appear until the end of this event window
 
--- Возвращает время конца текущего окна босса или nil.
+-- Returns the end time of the current boss window or nil.
 local function bossWindowEnd()
 	for _, active in ipairs(Events.active(os.time())) do
 		if active.event.id == Events.Boss.id then
@@ -56,7 +56,7 @@ local function spawnBoss()
 	model.Name = "Boss"
 	model:ScaleTo(BossService.SCALE)
 	model:PivotTo(BossService.POSITION)
-	-- Покачивание делает клиент (плавно), сервер модель не двигает.
+	-- The client does the swaying (smoothly), the server does not move the model.
 	model:SetAttribute("BaseCFrame", BossService.POSITION)
 	for _, piece in ipairs(model:GetDescendants()) do
 		if piece:IsA("BasePart") then
@@ -116,7 +116,7 @@ local function despawn(defeated)
 	local current = boss
 	boss = nil
 	current.model:Destroy()
-	-- Не появляемся снова ни в этом окне, ни в «ручном» окне из панели «🛠 Тест».
+	-- We do not appear again in this window or in the "manual" window from the "Test" panel.
 	local forcedUntil = workspace:GetAttribute("ForcedEvent") == Events.Boss.id
 			and (workspace:GetAttribute("ForcedEventUntil") or 0)
 		or 0
@@ -130,7 +130,7 @@ local function despawn(defeated)
 	local total, best, bestDamage = 0, nil, 0
 	for player, damage in pairs(current.damage) do
 		if player.Parent then
-			total += damage -- ушедшие игроки не уменьшают доли остальных
+			total += damage -- players who left do not reduce the others' shares
 		end
 		if damage > bestDamage and player.Parent then
 			best, bestDamage = player, damage
@@ -156,7 +156,7 @@ local function despawn(defeated)
 	end
 end
 
--- Вызывается из Шлёпалки (StealService.slap). Возвращает true, если попали по боссу.
+-- Called from the Slapper (StealService.slap). Returns true if the boss was hit.
 function BossService.tryHit(player, root)
 	if not boss or boss.hp <= 0 then
 		return false
@@ -191,11 +191,11 @@ local function shockwave()
 end
 
 function BossService.init()
-	-- Повторный запуск босса из панели «🛠 Тест» должен работать и после победы.
+	-- Restarting the boss from the "Test" panel must also work after a victory.
 	workspace:GetAttributeChangedSignal("ForcedEventUntil"):Connect(function()
 		finishedUntil = 0
 	end)
-	-- Кто-то зашёл, пока идёт бой — босс становится крепче.
+	-- Someone joined while the fight is on: the boss gets tougher.
 	Players.PlayerAdded:Connect(function()
 		if boss then
 			boss.maxHp += BossService.HP_PER_PLAYER

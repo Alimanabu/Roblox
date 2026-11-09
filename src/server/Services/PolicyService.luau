@@ -1,11 +1,11 @@
--- Региональные правила Roblox (PolicyService). В некоторых странах законы запрещают:
---   • платные случайные награды (ArePaidRandomItemsRestricted) — тогда сервер не выдаёт
---     за Robux монеты, вращения и буст удачи (монеты идут на капсулы со случайным результатом),
---     не тратит купленные вращения, а геймпасс LUCKY не влияет на шансы;
---   • обмен платными предметами (IsPaidItemTradingAllowed = false) — тогда отключаем обмен.
--- Результат пишем атрибутами на игрока, чтобы его видел и клиент (скрыть кнопки).
--- Roblox не ответил: ограничения включены, но атрибут PolicyUnknown говорит, что это не решение
--- о регионе. Спрашиваем в фоне, а игрок до ответа видит «проверяем».
+-- Roblox regional rules (PolicyService). In some countries laws forbid:
+-- - paid random rewards (ArePaidRandomItemsRestricted): then the server does not give out for Robux
+-- coins, spins and luck boost (coins go to capsules with a random result),
+-- does not spend bought spins, and the LUCKY game pass does not affect the odds;
+-- - trading paid items (IsPaidItemTradingAllowed = false): then we turn trading off.
+-- We write the result as attributes on the player so the client sees it too (to hide buttons).
+-- Roblox did not answer: the restrictions are on, but the attribute PolicyUnknown says this is not a decision
+-- about the region. We ask in the background, and until the answer the player sees "checking".
 
 local Players = game:GetService("Players")
 local RobloxPolicy = game:GetService("PolicyService")
@@ -18,10 +18,10 @@ local DataService = require(script.Parent.DataService)
 local PolicyService = {}
 
 local LOAD_ATTEMPTS = 3
-local ANSWER_WAIT = 10 -- дольше всех попыток: паузы 1 + 2 с плюс сами запросы
+local ANSWER_WAIT = 10 -- longer than all the attempts: pauses 1 + 2 s plus the requests themselves
 local RECHECK_INTERVAL = 60
 
-local unanswered = {} -- [player] = true: Roblox не ответил, спросим ещё раз
+local unanswered = {} -- [player] = true: Roblox did not answer, we will ask again
 
 local function apply(player, info)
 	player:SetAttribute("PaidRandomItemsRestricted", info.ArePaidRandomItemsRestricted == true)
@@ -51,7 +51,7 @@ local function load(player)
 	if ok and type(info) == "table" then
 		apply(player, info)
 	else
-		-- Не удалось узнать — перестраховываемся: ограничения включены.
+		-- Could not find out: playing safe, the restrictions are on.
 		player:SetAttribute("PaidRandomItemsRestricted", true)
 		player:SetAttribute("PaidItemTradingAllowed", false)
 		player:SetAttribute("PolicyUnknown", true)
@@ -59,7 +59,7 @@ local function load(player)
 	end
 end
 
--- Фоновая проверка: запрос один, следующая попытка всё равно через RECHECK_INTERVAL.
+-- Background check: one request, the next attempt will be after RECHECK_INTERVAL anyway.
 local function recheck(player)
 	local ok, info = pcall(RobloxPolicy.GetPolicyInfoForPlayerAsync, RobloxPolicy, player)
 	if ok and type(info) == "table" and unanswered[player] and player.Parent then
@@ -72,18 +72,18 @@ function PolicyService.paidRandomRestricted(player)
 	return player:GetAttribute("PaidRandomItemsRestricted") ~= false
 end
 
--- Ответа Roblox пока нет: ограничения действуют, но это ещё не запрет региона.
+-- No answer from Roblox yet: the restrictions apply, but this is not yet a region ban.
 function PolicyService.pending(player)
 	return player:GetAttribute("PaidRandomItemsRestricted") == nil or player:GetAttribute("PolicyUnknown") == true
 end
 
--- Текст отказа из-за этого игрока. Пока ответа нет, отказ не называем запретом.
+-- Refusal text because of this player. Until there is an answer, we do not call the refusal a ban.
 function PolicyService.message(player, key, args)
 	return if PolicyService.pending(player) then S.m("policy.checking") else S.m(key, args)
 end
 
--- Чек может прийти раньше ответа Roblox (повтор при входе): его нельзя считать отказом,
--- поэтому ждём ответ. Если ответа так и нет, paidRandomRestricted остаётся true.
+-- A receipt may arrive before the Roblox answer (a repeat on join): it must not be treated as a refusal,
+-- so we wait for the answer. If there is still none, paidRandomRestricted stays true.
 function PolicyService.awaitAnswer(player)
 	local waited = 0
 	while player.Parent and player:GetAttribute("PaidRandomItemsRestricted") == nil and waited < ANSWER_WAIT do

@@ -1,5 +1,5 @@
--- Аналитика Roblox (Creator Dashboard → Analytics): воронка обучения, экономика,
--- ключевые действия игроков. Все вызовы в pcall — аналитика не должна ломать игру.
+-- Roblox analytics (Creator Dashboard -> Analytics): tutorial funnel, economy,
+-- key player actions. All calls are in pcall: analytics must not break the game.
 
 local Analytics = game:GetService("AnalyticsService")
 
@@ -14,27 +14,27 @@ local AnalyticsService = {}
 local function safe(method, ...)
 	local ok, err = pcall(method, Analytics, ...)
 	if not ok then
-		-- В Studio часть методов может быть недоступна — это нормально.
+		-- In Studio some methods may be unavailable, which is normal.
 		return false, err
 	end
 	return true
 end
 
--- Воронка обучения: шаг 1 = зашёл в игру, дальше шаги из Config/Tutorial.
+-- Tutorial funnel: step 1 = joined the game, then the steps from Config/Tutorial.
 function AnalyticsService.onboardingStep(player, step)
-	-- Roblox принимает названия шагов не длиннее 50 символов — делаем короткие.
+	-- Roblox accepts step names no longer than 50 characters, so we keep them short.
 	local previous = Tutorial.Steps[step - 1]
 	local name = step == 1 and "Joined" or (previous and ("Step" .. (step - 1) .. "_" .. previous.action) or "TutorialDone")
 	safe(Analytics.LogOnboardingFunnelStepEvent, player, step, name)
 end
 
--- Монеты и события копим и отправляем раз в минуту пачкой: так не упрёмся в лимиты
--- Roblox (авто-фабрика крафтит до 3 раз в секунду).
+-- We accumulate coins and events and send them once a minute in a batch, so we do not hit the limits of
+-- Roblox (the auto factory crafts up to 3 times per second).
 local FLUSH_INTERVAL = 60
 local coinFlows = {} -- [player] = { ["Source:Sell"] = amount, ["Sink:Capsule"] = amount }
 local counters = {} -- [player] = { [eventName] = count }
 
--- isSource = true — монеты пришли (продажа, доход), false — потрачены (капсулы, улучшения).
+-- isSource = true: coins arrived (sale, income), false: spent (capsules, upgrades).
 function AnalyticsService.coins(player, isSource, amount, kind)
 	if amount <= 0 then
 		return
@@ -97,7 +97,7 @@ function AnalyticsService.init()
 		if TRACKED[kind] then
 			AnalyticsService.event(player, TRACKED[kind], amount)
 		end
-		-- Шаг обучения мог смениться после этого действия.
+		-- The tutorial step may have changed after this action.
 		task.defer(function()
 			local data = DataService.get(player)
 			if data and lastStep[player] ~= data.tutorial.step then

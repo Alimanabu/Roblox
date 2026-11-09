@@ -1,14 +1,14 @@
--- Все тексты игры: один словарь. Здесь английский оригинал, перевод лежит в таблице
--- локализации Roblox (src/localization/Translations.csv, колонка ru). Новый текст = строка здесь
--- и строка в таблице, tests/run.py проверяет, что они совпадают и что в коде нет чужих текстов.
+-- All game texts: one dictionary. Here is the English original, the translation lives in the
+-- Roblox localization table (src/localization/Translations.csv, columns ru and kk). New text = a line here
+-- and a line in the table; tests/run.py checks that they match and that the code has no stray texts.
 --
--- В тексте параметры в фигурных скобках: "Sold for {coins}".
---   S.t(key, args)        готовый текст на языке игрока (на сервере английский);
---   S.m(key, args)        сообщение: сервер шлёт его клиенту, клиент сам покажет на языке игрока;
---   S.text(value)         текст из сообщения или обычной строки; args тоже могут быть сообщениями;
---   S.join(parts, sep)    сообщение из нескольких частей;
---   S.apply(obj, prop, v) надпись в мире: сервер пишет английский, клиент заменяет (см. client/WorldText);
---   S.forPlayer(p, key)   текст на языке игрока на сервере: только там, где клиента уже нет (Kick).
+-- Parameters in the text go in curly braces: "Sold for {coins}".
+-- S.t(key, args)        ready text in the player's language (English on the server);
+-- S.m(key, args)        message: the server sends it to the client, the client shows it in the player's language;
+-- S.text(value)         text from a message or a plain string; args may be messages too;
+-- S.join(parts, sep)    a message made of several parts;
+-- S.apply(obj, prop, v) world label: the server writes English, the client replaces it (see client/WorldText);
+-- S.forPlayer(p, key)   text in the player's language on the server: only where the client is already gone (Kick).
 
 local Strings = {}
 
@@ -16,16 +16,16 @@ Strings.TAG = "LocalizedText"
 Strings.ATTRIBUTE_PREFIX = "Text_"
 
 local Source = {
-	-- Общее
+	-- General
 	["common.wait"] = "Hold on a couple of seconds",
 	["common.not_enough_coins"] = "Not enough coins: you need {cost}",
 	["common.title_level"] = "{title} • lvl {level}",
 	["common.per_second"] = "{coins}/s",
 
-	-- Числа и время
+	-- Numbers and time
 	["format.hours"] = "{hours} h {minutes} min",
 
-	-- Верхняя панель и меню
+	-- Top bar and menu
 	["hud.rewards"] = "🎁 Rewards",
 	["hud.factory"] = "🏭 Factory",
 	["hud.base"] = "🧠 Base",
@@ -43,7 +43,7 @@ local Source = {
 	["hud.boost"] = "Boost x2: {time}",
 	["hud.vip"] = "👑 VIP: x2 coins",
 
-	-- Заголовки окон
+	-- Window titles
 	["panel.factory"] = "🏭 Brainrot Capsule Factory",
 	["panel.base"] = "🧠 My Base",
 	["panel.upgrades"] = "⬆️ Factory Upgrades",
@@ -55,7 +55,7 @@ local Source = {
 	["panel.skins"] = "🎨 Brainrot Skins",
 	["panel.admin"] = "🛠 Test Commands",
 
-	-- Фабрика
+	-- Factory
 	["factory.announce"] = "🚨 {player} crafted {name} [{rarity}]!",
 	["factory.capsule_locked"] = "This capsule is still locked!",
 	["factory.season_over_auto"] = "The season is over, Auto Factory turned off",
@@ -92,7 +92,7 @@ local Source = {
 	["odds.pool_title"] = "🧠 Brainrots by rarity (equal odds inside a rarity, on the wheel too)",
 	["odds.example"] = "🍀 {capsule}, {rarity}: now {now}, {pass} {lucky}, {product} {boost}",
 
-	-- Окно базы
+	-- Base window
 	["base.perks"] = "{slots} spots, ❤️{hp}",
 	["base.perks_income"] = "{perks}, income x{income}",
 	["base.floor_now"] = "🏗 Now: {floor} ({slots} spots)\nNext {next}: {perks}",
@@ -110,11 +110,11 @@ local Source = {
 	["base.sell"] = "Sell {coins}",
 	["base.confirm_sell"] = "Really sell?",
 
-	-- Окно улучшений
+	-- Upgrades window
 	["upgrades.level"] = "lvl {level}/{max}",
 	["upgrades.max"] = "MAX",
 
-	-- Улучшения
+	-- Upgrades
 	["upgrade.speed.name"] = "Machine Speed",
 	["upgrade.speed.desc"] = "The machine crafts brainrots faster.",
 	["upgrade.luck.name"] = "Luck Beam",
@@ -122,7 +122,7 @@ local Source = {
 	["upgrade.trap.name"] = "Thief Trap",
 	["upgrade.trap.desc"] = "A thief who grabs a brainrot is stunned for 1.5 s per level.",
 
-	-- Перерождение
+	-- Rebirth
 	["rebirth.1.title"] = "Sigma",
 	["rebirth.2.title"] = "Alpha",
 	["rebirth.3.title"] = "Gigachad",
@@ -145,10 +145,10 @@ local Source = {
 	["rebirth.button"] = "♻️ REBIRTH",
 	["rebirth.confirm"] = "⚠️ Sure? Tap again",
 
-	-- Индекс
+	-- Index
 	["index.count"] = "Unlocked: {found} / {total}  (new brainrot = x3 XP)",
 
-	-- Магазин
+	-- Shop
 	["shop.luck_boost_on"] = "🍀 Luck Boost x2 activated!",
 	["shop.spins_added"] = "🎡 +{count} wheel spins!",
 	["shop.purchased"] = "✅ Purchased: {name}",
@@ -161,7 +161,7 @@ local Source = {
 	["shop.soon"] = "Soon",
 	["shop.boosts"] = "Boosts",
 
-	-- Награды
+	-- Rewards
 	["rewards.hint"] = "Log in every day: day 7 is a mega reward!",
 	["rewards.day"] = "Day {day}",
 	["rewards.wheel_odds"] = "🎡 Wheel odds: {odds}",
@@ -182,14 +182,14 @@ local Source = {
 	["rewards.quests"] = "📋 Today's quests (new ones in {time})",
 	["rewards.received"] = "✅ Claimed",
 
-	-- Описание наград
+	-- Rewards description
 	["reward.luck_short"] = "🍀x2 {minutes}m",
 	["reward.luck"] = "🍀 x2 luck for {minutes} min",
 	["reward.skin"] = "🎨 skin",
 	["reward.coins_base_full"] = "💰 {coins} (base is full)",
 	["reward.creature"] = "🧠 {name}",
 
-	-- Задания
+	-- Quests
 	["quest.craft25.text"] = "Craft 25 brainrots",
 	["quest.craft80.text"] = "Craft 80 brainrots",
 	["quest.fuse3.text"] = "Fuse brainrots 3 times",
@@ -206,11 +206,11 @@ local Source = {
 	["quest.daily_reward"] = "🎁 Day {day}: {reward}",
 	["quest.reward"] = "📋 Quest reward: {reward}",
 
-	-- Подарки
+	-- Gifts
 	["gift.not_ready"] = "This gift isn't ready yet ⏰",
 	["gift.claimed"] = "🎁 {minutes} min gift: {reward}",
 
-	-- Колесо удачи
+	-- Lucky wheel
 	["wheel.1.name"] = "💰 5 min of income",
 	["wheel.2.name"] = "🍀 x2 luck 10 min",
 	["wheel.3.name"] = "💰 15 min of income",
@@ -224,13 +224,13 @@ local Source = {
 	["wheel.title"] = "🎡 LUCKY WHEEL",
 	["wheel.spins_kept"] = "🎡 Bought spins don't work here. They stay on your account",
 
-	-- Промокоды
+	-- Promo codes
 	["code.skin67.text"] = "Skin 67 unlocked! Put it on in 🎨 Skins",
 	["code.invalid"] = "❌ That code doesn't exist (or it has expired)",
 	["code.used"] = "You've already used this code",
 	["code.redeemed"] = "🎟️ Code {code}: {reward} {text}",
 
-	-- Как играть
+	-- How to play
 	["help.1.body"] = "Buy meme capsules and craft brainrots. The more popular the trend, the rarer the drop: Normie → Low-key → Rizz → Sigma → Aura → Skibidi → Brainrot God → SIX SEVEN 🤌",
 	["help.2.body"] = "Brainrots stand on your base and earn coins every second. When you run out of space, sell the weak ones or fuse 3 of the same rarity into 1 rarer one.",
 	["help.3.body"] = "You start with 5 spots on the ground. Build Floor 1 for $100K (10 spots), then Floor 2 for $100M (10 more spots). The strongest brainrots move up: income is x2 there and they're harder to steal. Build at the yellow sign on your base or in ⬆️ Upgrades. Floors stay even after a rebirth.",
@@ -256,7 +256,7 @@ local Source = {
 	["help.11.title"] = "👹 Boss",
 	["help.12.title"] = "🎉 Events",
 
-	-- Обмен
+	-- Trade
 	["trade.region_you"] = "Trading isn't available in your region",
 	["trade.region_them"] = "Trading isn't available for this player",
 	["trade.invite_cooldown"] = "Wait a little before sending another invite",
@@ -290,18 +290,18 @@ local Source = {
 	["trade.ready"] = "✅ Ready",
 	["trade.leave"] = "🚪 Leave trade",
 
-	-- Приглашения
+	-- Invitations
 	["invite.accept"] = "✅ Accept",
 	["invite.decline"] = "❌ No",
 
-	-- Настройки
+	-- Settings
 	["settings.music"] = "🎵 Music",
 	["settings.sfx"] = "🔊 Sounds",
 	["settings.announcements"] = "📢 Server announcements (who dropped/stole what)",
 	["settings.on"] = "ON",
 	["settings.off"] = "OFF",
 
-	-- Окно скинов
+	-- Skins window
 	["skins.hint"] = "Skins are just for looks. Pick a skin, then press “Put on” next to a brainrot.",
 	["skins.selected"] = "✅ Selected",
 	["skins.select"] = "Select",
@@ -311,7 +311,7 @@ local Source = {
 	["skins.put_on"] = "🎨 Put on",
 	["skins.remove"] = "Remove",
 
-	-- Скины
+	-- Skins
 	["skin.fire.name"] = "🔥 Fire",
 	["skin.ice.name"] = "🧊 Ice",
 	["skin.toxic.name"] = "☢️ Toxic",
@@ -326,14 +326,14 @@ local Source = {
 	["skin.no_change_in_trade"] = "You can't change skins during a trade",
 	["skin.cooldown"] = "You can change a skin once every {seconds} seconds",
 
-	-- Окно баттлов
+	-- Battles window
 	["battles.stats"] = "✨ {rank} • aura points: {points} • wins {wins} / losses {losses}",
 	["battles.hint"] = "Your 3 strongest brainrots fight. You lose nothing! Win rewards left today: {left}",
 	["battles.no_team"] = "Craft some brainrots at the 🏭 Factory first",
 	["battles.train"] = "🤖 Train with a bot",
 	["battles.challenge"] = "⚔️ Challenge",
 
-	-- Аура-баттлы
+	-- Aura battles
 	["battle.rank.0"] = "No Aura",
 	["battle.rank.100"] = "Aura Rookie",
 	["battle.rank.300"] = "Aura Farmer",
@@ -357,10 +357,10 @@ local Source = {
 	["battle.footer"] = "Aura points: {points} • {rank}",
 	["battle.footer_reward"] = "Reward: {reward}   {footer}",
 
-	-- Окно достижений
+	-- Achievements window
 	["achievements.count"] = "Unlocked: {count} / {total}",
 
-	-- Достижения
+	-- Achievements
 	["achievement.first.name"] = "First Brainrot",
 	["achievement.first.desc"] = "Craft your first brainrot",
 	["achievement.craft100.name"] = "Meme Mill",
@@ -426,7 +426,7 @@ local Source = {
 	["achievement.season.desc"] = "Get a brainrot from the “{season}” season",
 	["achievement.unlocked"] = "🏆 Unlocked “{name}”! {reward}",
 
-	-- Тест-команды
+	-- Test commands
 	["admin.level"] = "Level {level}",
 	["admin.given"] = "Given: {name}",
 	["admin.given_mutant"] = "Given Mutant 67: {name}",
@@ -457,30 +457,30 @@ local Source = {
 	["admin.reset"] = "⚠️ RESET PROGRESS",
 	["admin.hint"] = "For testing the game only. Visible in Studio and to admins from Config/Admins.",
 
-	-- Имена
+	-- Names
 	["rename.title"] = "✏️ What will you name this brainrot?",
 	["rename.placeholder"] = "For example: Vinny 🤌 (up to 20 characters)",
 	["rename.ok"] = "✅ Done",
 	["rename.cancel"] = "Cancel",
 
-	-- Проверка имён
+	-- Name check
 	["name.too_long"] = "Names can be up to {max} characters",
 	["name.filter_failed"] = "Couldn't check the name, please try again",
 	["name.changed"] = "✏️ Its name is now “{name}”",
 	["name.removed"] = "Name removed",
 
-	-- Показ нового брейнрота
+	-- New brainrot reveal
 	["reveal.fused"] = "🧬 FUSED",
 	["reveal.new"] = "✨ NEW!",
 
-	-- Статус кражи и замка
+	-- Steal and lock status
 	["status.carry"] = "🏃 Carry the brainrot to your base! {time}",
 	["status.shield"] = "🛡️ Shield {time}",
 	["status.locked"] = "🔒 Base locked {time}",
 	["status.lock_ready"] = "⏳ Lock ready in {time}",
 	["status.open"] = "🔓 Base is open!",
 
-	-- Кража
+	-- Stealing
 	["steal.carry_label"] = "🦹 {name}",
 	["steal.reason_thief_left"] = "the thief left",
 	["steal.reason_past_life"] = "you can't take back your own brainrot from a past life",
@@ -519,7 +519,7 @@ local Source = {
 	["steal.reason_too_fast"] = "you moved too fast",
 	["steal.too_fast"] = "🚫 You moved too fast! Wait a moment and try again",
 
-	-- Надписи на базе
+	-- Base labels
 	["plot.machine"] = "🏭 MACHINE",
 	["plot.open_factory"] = "Open factory",
 	["plot.machine_object"] = "Brainrot Machine",
@@ -544,7 +544,7 @@ local Source = {
 	["plot.locked_seconds"] = "🔒 {seconds} s",
 	["plot.owner_base"] = "{name}'s base",
 
-	-- Дикие брейнроты
+	-- Wild brainrots
 	["wild.catch"] = "Catch",
 	["wild.object"] = "Wild {name}",
 	["wild.label"] = "🦎 Wild {name}\n[{rarity}]",
@@ -553,7 +553,7 @@ local Source = {
 	["wild.caught"] = "🦎 Caught a wild {name}!",
 	["wild.caught_announce"] = "🦎 {player} caught a wild {name}!",
 
-	-- Босс
+	-- Boss
 	["boss.health"] = "👹 Orso Ohio — {hp} / {max}",
 	["boss.arrived"] = "👹 The brainrot boss is on the plaza! Run and slap it!",
 	["boss.escaped"] = "👹 The boss got away... Slap harder next time!",
@@ -561,7 +561,7 @@ local Source = {
 	["boss.defeated"] = "🏆 Boss defeated!",
 	["boss.reward"] = "👹 Boss reward: {reward}",
 
-	-- Ивенты
+	-- Events
 	["event.luck_storm.name"] = "🍀 Luck Storm",
 	["event.luck_storm.desc"] = "x2 luck for everyone!",
 	["event.money_rain.name"] = "💰 Money Rain",
@@ -580,7 +580,7 @@ local Source = {
 	["event.next"] = "Next event",
 	["event.next_in"] = "{name} in {time}",
 
-	-- Обучение
+	-- Tutorial
 	["tutorial.1.text"] = "Tap 🏭 Factory and craft your first brainrot!",
 	["tutorial.2.text"] = "Brainrots earn coins every second! Craft 4 more",
 	["tutorial.3.text"] = "Buy any upgrade in ⬆️ Upgrades",
@@ -590,7 +590,7 @@ local Source = {
 	["tutorial.finished"] = "🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌",
 	["tutorial.step"] = "📚 Tutorial {index}/{total}",
 
-	-- Прогресс
+	-- Progress
 	["progress.level_up"] = "⭐ New level: {level}!",
 	["progress.new_title"] = "🏷️ New title: {title}",
 	["progress.capsule_unlocked"] = "🔓 Capsule unlocked: {name}",
@@ -605,13 +605,13 @@ local Source = {
 	["progress.rebirth_announce"] = "♻️ {name} was reborn as “{title}”!",
 	["progress.overhead"] = "[{rebirth}]\n{title}",
 
-	-- Доход
+	-- Income
 	["income.offline"] = "💤 While you were away, your brainrots earned {coins}",
 
-	-- Питомец
+	-- Pet
 	["pet.following"] = "🐾 This brainrot now follows you around!",
 
-	-- Табло
+	-- Leaderboards
 	["leaderboard.top_earned"] = "💰 Top Earners",
 	["leaderboard.top_rebirths"] = "♻️ Top Rebirths",
 	["leaderboard.loading"] = "Loading...",
@@ -620,17 +620,17 @@ local Source = {
 	["leaderboard.income"] = "Income/s",
 	["leaderboard.rebirths"] = "Rebirths",
 
-	-- Карта
+	-- Map
 	["map.statue"] = "🤌 Legend: SIX SEVEN 🤌",
 
-	-- Эффекты
+	-- Effects
 	["fx.legendary"] = "🌟 LEGENDARY DROP! 🌟",
 
-	-- Сохранения
+	-- Saves
 	["data.load_failed"] = "Couldn't load your progress (you may still be connected to another server). Please rejoin in a minute!",
 	["data.store_unavailable"] = "Saving is unavailable right now, so your progress would be lost. Please rejoin in a few minutes!",
 
-	-- Брейнроты
+	-- Brainrots
 	["creature.bananito_ninjini.name"] = "Bananito Ninjini",
 	["creature.bananito_ninjini.desc"] = "A banana ninja. Trying really hard.",
 	["creature.tostino_volantino.name"] = "Tostino Volantino",
@@ -725,7 +725,7 @@ local Source = {
 	["creature.vampiro_dj.desc"] = "A vampire DJ. Only plays at night, but loud.",
 	["creature.mutated"] = "{mutation} {name}",
 
-	-- Редкости
+	-- Rarities
 	["rarity.normie.name"] = "Normie",
 	["rarity.lowkey.name"] = "Low-key",
 	["rarity.rizz.name"] = "Rizz",
@@ -735,14 +735,14 @@ local Source = {
 	["rarity.god.name"] = "Brainrot God",
 	["rarity.sixseven.name"] = "SIX SEVEN 🤌",
 
-	-- Мутации
+	-- Mutations
 	["mutation.golden.name"] = "Golden",
 	["mutation.diamond.name"] = "Diamond",
 	["mutation.rainbow.name"] = "Rainbow",
 	["mutation.sixseven.name"] = "Mutation 67",
 	["mutation.cosmic.name"] = "Cosmic",
 
-	-- Капсулы
+	-- Capsules
 	["capsule.old_meme.name"] = "Old Meme",
 	["capsule.old_meme.desc"] = "A meme from 2016. Cringe, but it works.",
 	["capsule.chat_meme.name"] = "Chat Meme",
@@ -770,7 +770,7 @@ local Source = {
 	["capsule.ultra_brainrot.name"] = "Ultra Brainrot",
 	["capsule.ultra_brainrot.desc"] = "The final form of the internet. 🤌",
 
-	-- Титулы уровней
+	-- Level titles
 	["level.1.name"] = "Noob",
 	["level.3.name"] = "Schoolkid",
 	["level.6.name"] = "Memologist",
@@ -782,12 +782,12 @@ local Source = {
 	["level.50.name"] = "Meme Emperor",
 	["level.67.name"] = "King 67 🤌",
 
-	-- Этажи
+	-- Floors
 	["floor.0.name"] = "Ground",
 	["floor.1.name"] = "Floor 1",
 	["floor.2.name"] = "Floor 2",
 
-	-- Геймпассы (id и цены в Config/Monetization)
+	-- Game passes (ids and prices in Config/Monetization)
 	["pass.VIP.name"] = "VIP",
 	["pass.VIP.desc"] = "x2 coins forever",
 	["pass.LUCKY.name"] = "Lucky",
@@ -799,7 +799,7 @@ local Source = {
 	["pass.FAST_MACHINE.name"] = "Turbo Machine",
 	["pass.FAST_MACHINE.desc"] = "The machine runs 2x faster",
 
-	-- Разовые покупки
+	-- One-time purchases
 	["product.LUCK_BOOST.name"] = "Luck Boost x2",
 	["product.LUCK_BOOST.desc"] = "x2 luck for 15 minutes",
 	["product.COINS_SMALL.name"] = "Bag of Coins",
@@ -809,7 +809,7 @@ local Source = {
 	["product.COINS_BIG.name"] = "Chest of Coins",
 	["product.COINS_BIG.desc"] = "1 hour of income (min. 50K)",
 
-	-- Сезоны
+	-- Seasons
 	["season.halloween.name"] = "🎃 Halloween",
 	["season.newyear.name"] = "🎄 New Year",
 	["season.valentine.name"] = "💘 Valentine's Day",
@@ -818,12 +818,12 @@ local Source = {
 
 Strings.Source = Source
 
-local TRANSLATIONS_RETRY = 30 -- секунд до новой попытки, если таблица ещё не загрузилась
+local TRANSLATIONS_RETRY = 30 -- seconds until a new attempt if the table has not loaded yet
 
-local translations = {} -- [язык] = { [ключ] = перевод }, только загруженные таблицы
-local retryAt = {} -- [язык] = когда снова пробовать загрузить таблицу
+local translations = {} -- [language] = { [key] = translation }, only loaded tables
+local retryAt = {} -- [language] = when to try loading the table again
 
--- Язык определяем один раз: на сервере и в тестах игрока нет, там английский.
+-- We determine the language once: on the server and in tests there is no player, so English.
 local function detectLanguage()
 	local ok, language = pcall(function()
 		return string.sub(game:GetService("Players").LocalPlayer.LocaleId, 1, 2)
@@ -831,7 +831,7 @@ local function detectLanguage()
 	return ok and language or "en"
 end
 
--- Читаем таблицу сами: так английский работает, даже если перевод не загрузился.
+-- We read the table ourselves: this way English works even if the translation did not load.
 local function translationsFor(language)
 	if language == "en" then
 		return nil
@@ -844,7 +844,7 @@ local function translationsFor(language)
 	local map = {}
 	local ok, err = pcall(function()
 		local localization = game:GetService("LocalizationService")
-		-- Ждём только при загрузке: потом запрос идёт из отрисовки, её нельзя останавливать.
+		-- We wait only on load: later the request comes from rendering, which must not be stopped.
 		local localizationTable = if firstTry
 			then localization:WaitForChild("Translations", 5)
 			else localization:FindFirstChild("Translations")
@@ -858,16 +858,16 @@ local function translationsFor(language)
 	if not ok then
 		warn("[Strings] Translation table unavailable:", err)
 	end
-	-- Пустой результат не запоминаем: таблица могла ещё не дойти до клиента.
+	-- An empty result is not remembered: the table may not have reached the client yet.
 	if next(map) then
 		translations[language] = map
 	end
 	return translations[language]
 end
 
--- Метка уведомления вмещает 79 знаков. В этих строках {name} рядом с именами игроков, наградой
--- или советом может не влезть: тогда сокращаем только его, на столько, сколько не хватило, на
--- языке игрока. Остальные строки и карточка брейнрота показывают имя целиком.
+-- The notification label fits 79 characters. In these lines {name} next to player names, a reward
+-- or a tip may not fit: then we shorten only it, by as much as was missing, in
+-- the player's language. The other lines and the brainrot card show the name in full.
 local MAX_MESSAGE = 79
 local MIN_NAME = 8
 local FIT_NAME = {
@@ -948,8 +948,8 @@ function Strings.forPlayer(player, key, args)
 	return render(string.sub(player.LocaleId or "en", 1, 2), Strings.m(key, args))
 end
 
--- Заполняет запись конфига текстами из словаря: item.name и item.nameKey = "<prefix>.name".
--- Сервер шлёт клиенту S.m(item.nameKey), клиент читает item.name на своём языке.
+-- Fills a config entry with texts from the dictionary: item.name and item.nameKey = "<prefix>.name".
+-- The server sends the client S.m(item.nameKey), the client reads item.name in its own language.
 function Strings.fill(item, prefix, ...)
 	for _, field in ipairs({ ... }) do
 		local key = prefix .. "." .. field

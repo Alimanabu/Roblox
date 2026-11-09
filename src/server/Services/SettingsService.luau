@@ -1,4 +1,4 @@
--- Настройки игрока (музыка, звуки, объявления) — сохраняются вместе с прогрессом.
+-- Player settings (music, sounds, announcements), saved together with progress.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)

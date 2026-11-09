@@ -1,4 +1,4 @@
--- Питомцы игроков: брейнрот бегает за хозяином, подпрыгивает и смотрит туда же.
+-- Player pets: a brainrot runs after its owner, hops and looks the same way.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,7 +8,7 @@ local CreatureModel = require(Shared.Util.CreatureModel)
 
 local PetFollow = {}
 
-local PET_HEIGHT = 3.2 -- примерный рост питомца в студах
+local PET_HEIGHT = 3.2 -- approximate height of the pet in studs
 local pets = {} -- [player] = { key, model, cframe }
 
 local folder = Instance.new("Folder")
@@ -65,13 +65,13 @@ function PetFollow.start()
 					end
 				end
 				if pet then
-					-- Справа-сзади от хозяина, у земли, с подпрыгиванием.
+					-- Behind and to the right of the owner, near the ground, hopping.
 					local target = root.CFrame * CFrame.new(3.5, -2.6, 3.5)
 					local alpha = 1 - math.exp(-dt * 8)
 					pet.cframe = pet.cframe:Lerp(target, alpha)
 					local hop = math.abs(math.sin(t * 6 + player.UserId % 10)) * 0.6
 					local spin = CFrame.identity
-					-- Во время «Минуты 67» (дискотека) питомцы тоже пляшут.
+					-- During "Minute 67" (disco) pets dance too.
 					if workspace:FindFirstChild("DiscoBall") then
 						hop *= 2.5
 						spin = CFrame.Angles(0, t * 5, 0)

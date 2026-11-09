@@ -1,6 +1,6 @@
--- Обучение для новичков: шаги по порядку.
--- action — какое действие засчитывает шаг (см. server/Services/Actions), count — сколько раз.
--- menu — какую кнопку меню подсветить.
+-- Tutorial for newbies: steps in order.
+-- action is the action that counts the step (see server/Services/Actions), count is how many times.
+-- menu is which menu button to highlight.
 
 local S = require(script.Parent.Parent.Strings)
 

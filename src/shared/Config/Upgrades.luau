@@ -1,4 +1,4 @@
--- Улучшения фабрики за монеты.
+-- Factory upgrades for coins.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -16,7 +16,7 @@ Upgrades.List = {
 		maxLevel = 20,
 		baseCost = 500,
 		costMult = 2.6,
-		leadsToRandom = true, -- меняет шансы капсул (см. Formulas.randomCoins)
+		leadsToRandom = true, -- changes capsule odds (see Formulas.randomCoins)
 	},
 	{
 		id = "trap",

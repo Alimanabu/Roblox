@@ -1,4 +1,4 @@
--- Цвета, шрифты и маленькие помощники для создания интерфейса кодом.
+-- Colors, fonts and small helpers for building the UI in code.
 
 local Theme = {}
 

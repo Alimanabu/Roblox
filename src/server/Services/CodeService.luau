@@ -1,4 +1,4 @@
--- Промокоды.
+-- Promo codes.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)

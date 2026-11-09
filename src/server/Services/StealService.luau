@@ -1,13 +1,13 @@
--- Кража брейнротов с чужих баз.
+-- Stealing brainrots from other bases.
 --
--- Как это работает:
---   1. Подходишь к чужому брейнроту и шлёпаешь его Шлёпалкой, пока не кончится ❤️
---      (на земле 5, на 1 этаже 10, на 2 этаже 20). Брейнрот оглушён — зажимаешь F.
---      Чем реже брейнрот и чем выше этаж — тем дольше держать F.
---   2. Брейнрот у тебя над головой, ты бежишь медленнее и подсвечен красным.
---   3. Добеги до своей базы за CARRY_TIME секунд — брейнрот твой.
---   4. Хозяин может догнать и шлёпнуть Шлёпалкой — брейнрот вернётся к нему.
---   5. Хозяин может закрыть базу замком на LOCK_TIME секунд (надо стоять у кнопки).
+-- How it works:
+-- 1. You walk up to someone else's brainrot and slap it with the Slapper until its hearts run out
+-- (on the ground 5, on floor 1 10, on floor 2 20). The brainrot is stunned: hold F.
+-- The rarer the brainrot and the higher the floor, the longer you hold F.
+-- 2. The brainrot is above your head, you run slower and glow red.
+-- 3. Reach your own base within CARRY_TIME seconds and the brainrot is yours.
+-- 4. The owner can catch you and slap you with the Slapper: the brainrot returns to them.
+-- 5. The owner can close the base with a lock for LOCK_TIME seconds (they must stand at the button).
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -35,7 +35,7 @@ local StealService = {}
 
 StealService.CARRY_TIME = 60
 StealService.LOCK_TIME = 60
-StealService.LOCK_COOLDOWN = 30 -- после конца замка нельзя сразу закрыть снова
+StealService.LOCK_COOLDOWN = 30 -- after the lock ends it cannot be locked again right away
 StealService.JOIN_SHIELD = 90
 StealService.CARRY_SPEED = 12
 StealService.NORMAL_SPEED = 16
@@ -43,24 +43,24 @@ StealService.SLAP_RANGE = 9
 StealService.SLAP_COOLDOWN = 0.8
 StealService.SLAP_FORCE = 70
 StealService.TRAP_STUN_PER_LEVEL = 1.5
-StealService.STUN_TIME = 15 -- сколько секунд оглушённого брейнрота можно схватить
-StealService.REGEN_DELAY = 5 -- через сколько секунд без ударов ❤️ начинает восстанавливаться
+StealService.STUN_TIME = 15 -- how many seconds a stunned brainrot can be grabbed
+StealService.REGEN_DELAY = 5 -- after how many seconds without hits the hearts start to regenerate
 
 local BAD = Color3.fromRGB(255, 110, 110)
 local GOOD = Color3.fromRGB(120, 255, 120)
 local WARN = Color3.fromRGB(255, 170, 60)
 
 local carries = {} -- [thief] = { owner, entry, deadline, visual, highlight, diedConn }
-local lockedUntil = {} -- [owner] = время сервера
-local lockKind = {} -- [owner] = "shield" (защита при входе) | "lock" (замок)
-local lockReadyAt = {} -- [owner] = когда снова можно нажать замок
+local lockedUntil = {} -- [owner] = server time
+local lockKind = {} -- [owner] = "shield" (protection on join) | "lock" (lock)
+local lockReadyAt = {} -- [owner] = when the lock can be pressed again
 local lastSlap = {} -- [player] = os.clock()
-local closing = false -- сервер выключается: новые кражи запрещены
-local holdStart = {} -- [player] = { prompt, os.clock() }: сервер сам проверяет время удержания
-local damaged = setmetatable({}, { __mode = "k" }) -- [модель брейнрота] = true: ❤️ не полное
-local lastHit = setmetatable({}, { __mode = "k" }) -- [модель брейнрота] = os.clock() последнего удара
-local hitAlertAt = {} -- [owner] = os.clock(): не спамим хозяину «тебя бьют»
-local hintAt = {} -- [player] = os.clock(): подсказка «сначала шлёпни»
+local closing = false -- the server is shutting down: new steals are forbidden
+local holdStart = {} -- [player] = { prompt, os.clock() }: the server checks the hold time itself
+local damaged = setmetatable({}, { __mode = "k" }) -- [brainrot model] = true: hearts not full
+local lastHit = setmetatable({}, { __mode = "k" }) -- [brainrot model] = os.clock() of the last hit
+local hitAlertAt = {} -- [owner] = os.clock(): we do not spam the owner with "you are being hit"
+local hintAt = {} -- [player] = os.clock(): the "slap first" hint
 
 local function now()
 	return workspace:GetServerTimeNow()
@@ -94,7 +94,7 @@ function StealService.isCarrying(player)
 end
 
 local function setLock(owner, seconds, kind)
-	-- Атрибут на участке выставляет цикл ниже (база может назначиться чуть позже).
+	-- The attribute on the plot is set by the loop below (the base may be assigned a bit later).
 	lockedUntil[owner] = now() + seconds
 	lockKind[owner] = kind
 	if kind == "lock" then
@@ -102,8 +102,8 @@ local function setLock(owner, seconds, kind)
 	end
 end
 
--- Сколько брейнротов хозяина сейчас несут воры. Пока > 0, перерождаться нельзя
--- (иначе неудачная кража вернула бы брейнрота в уже «чистую» базу).
+-- How many of the owner's brainrots thieves are carrying now. While > 0, rebirth is not allowed
+-- (otherwise a failed steal would return the brainrot to an already "clean" base).
 local function updateRobbed(owner)
 	local count = 0
 	for _, carry in pairs(carries) do
@@ -116,7 +116,7 @@ local function updateRobbed(owner)
 	end
 end
 
--- Брейнрот над головой вора.
+-- Brainrot above the thief's head.
 local function makeCarryVisual(thief, entry)
 	local character = thief.Character
 	local head = character and character:FindFirstChild("Head")
@@ -127,7 +127,7 @@ local function makeCarryVisual(thief, entry)
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(entry.mut)
 
-	-- Модель уменьшаем и приклеиваем к голове вора.
+	-- We shrink the model and attach it to the thief's head.
 	local model, body = CreatureModel.build(entry.id, entry.mut, head.CFrame * CFrame.new(0, 0.6, 0), entry.skin)
 	model.Name = "StolenBrainrot"
 	local scale = math.min(1, 2.5 / creature.size)
@@ -176,8 +176,8 @@ local function makeCarryVisual(thief, entry)
 	return model, highlight
 end
 
--- Кража передаёт брейнрота, как обмен: там, где Roblox запрещает платные случайные награды,
--- платного нельзя ни отдать, ни получить. Возвращает текст отказа или nil.
+-- A steal transfers the brainrot like a trade: where Roblox forbids paid random rewards,
+-- a paid one can be neither given nor received. Returns the refusal text or nil.
 local function paidRandomRefusal(entry, thief, owner, key)
 	if not Formulas.isPaidRandom(entry) then
 		return nil
@@ -219,7 +219,7 @@ local function endCarry(thief, success, reason)
 	local name = displayName(entry)
 	updateRobbed(owner)
 
-	-- Перед зачислением ещё раз проверяем место: вор мог забить базу, пока бежал.
+	-- Before crediting we check the spot again: the thief could have filled the base while running.
 	local thiefData = success and DataService.get(thief)
 	if success and not thiefData then
 		success, reason = false, S.m("steal.reason_thief_left")
@@ -228,7 +228,7 @@ local function endCarry(thief, success, reason)
 	elseif success and #thiefData.creatures >= Formulas.slots(thiefData, MonetizationService.passes(thief)) then
 		success, reason = false, S.m("steal.reason_no_space")
 	elseif success then
-		-- Запрет мог прийти, пока вор бежал.
+		-- The restriction could have arrived while the thief was running.
 		local refusal = paidRandomRefusal(entry, thief, owner, "steal.reason_random")
 		if refusal then
 			success, reason = false, refusal
@@ -267,14 +267,14 @@ local function endCarry(thief, success, reason)
 			DataService.markDirty(owner)
 			Remotes.Notify:FireClient(owner, S.m("steal.lost", { thief = thief.DisplayName, name = name }), BAD)
 			Remotes.Sfx:FireClient(owner, "lose")
-			-- Сразу сохраняем хозяина: в его прошлых сохранениях брейнрот ещё числился,
-			-- и если сервер упадёт, он оказался бы у двоих.
+			-- We save the owner immediately: in their earlier saves the brainrot was still listed,
+			-- and if the server crashed it would end up with two people.
 			task.spawn(DataService.save, owner)
 		end
 		return
 	end
 
-	-- Неудача: брейнрот возвращается хозяину.
+	-- Failure: the brainrot returns to the owner.
 	local ownerData = DataService.get(owner)
 	if ownerData then
 		table.insert(ownerData.creatures, entry)
@@ -290,7 +290,7 @@ local function endCarry(thief, success, reason)
 end
 
 local function startSteal(thief, prompt)
-	-- Prompt -> Body -> модель брейнрота -> папка Creatures -> модель базы.
+	-- Prompt -> Body -> brainrot model -> Creatures folder -> base model.
 	local creaturesFolder = prompt:FindFirstAncestor("Creatures")
 	local plotModel = creaturesFolder and creaturesFolder.Parent
 	local owner = plotModel and PlotService.ownerOfModel(plotModel)
@@ -299,7 +299,7 @@ local function startSteal(thief, prompt)
 		return
 	end
 
-	-- Пока у брейнрота есть ❤️, его не схватить: сначала шлёпай.
+	-- While a brainrot has hearts it cannot be grabbed: slap first.
 	local creatureModel = prompt.Parent and prompt.Parent.Parent
 	if not creatureModel or creatureModel:GetAttribute("StunnedUntil") == nil then
 		holdStart[thief] = nil
@@ -310,7 +310,7 @@ local function startSteal(thief, prompt)
 		return
 	end
 
-	-- Защита от читеров: клиент мог «нажать» мгновенно или издалека.
+	-- Cheater protection: the client could have "pressed" instantly or from afar.
 	local hold = holdStart[thief]
 	holdStart[thief] = nil
 	local thiefRoot = rootOf(thief)
@@ -382,7 +382,7 @@ local function startSteal(thief, prompt)
 	thief:SetAttribute("CarryDeadline", deadline)
 	updateRobbed(owner)
 
-	-- Ловушка хозяина: вор стоит на месте, пока его бьёт током.
+	-- Owner's trap: the thief stands still while being shocked.
 	local trapLevel = ownerData.upgrades.trap or 0
 	if trapLevel > 0 then
 		local stun = trapLevel * StealService.TRAP_STUN_PER_LEVEL
@@ -424,12 +424,12 @@ local function onLockPrompt(player, prompt)
 	if owner ~= player then
 		return
 	end
-	-- Замок закрывают только у кнопки: «вернуться домой» телепортом нельзя.
+	-- The lock is closed only at the button: you cannot use "return home" by teleport.
 	local root = rootOf(player)
 	if not root or (root.Position - prompt.Parent.Position).Magnitude > prompt.MaxActivationDistance + 6 or not MoveGuardService.canAct(player) then
 		return
 	end
-	-- Защиту при входе можно «продлить» замком (это шаг обучения), обычный замок — нет.
+	-- Protection on join can be "extended" with the lock (this is a tutorial step), a regular lock cannot.
 	if StealService.isLocked(player) and lockKind[player] == "lock" then
 		Remotes.Notify:FireClient(player, S.m("steal.already_locked"), WARN)
 		return
@@ -445,7 +445,7 @@ local function onLockPrompt(player, prompt)
 	Remotes.Sfx:FireClient(player, "lock")
 end
 
--- Удар Шлёпалкой по чужому брейнроту: минус 1 ❤️. На нуле брейнрот оглушён и его можно украсть.
+-- A Slapper hit on someone else's brainrot: minus 1 heart. At zero the brainrot is stunned and can be stolen.
 local function hitBrainrot(player, root)
 	if carries[player] then
 		return
@@ -466,7 +466,7 @@ local function hitBrainrot(player, root)
 					local offset = base.Position - root.Position
 					local flat = Vector3.new(offset.X, 0, offset.Z)
 					local distance = flat.Magnitude
-					-- По высоте — только свой этаж: с земли до 2 этажа не дотянуться.
+					-- By height, only your own floor: you cannot reach floor 2 from the ground.
 					if
 						distance <= StealService.SLAP_RANGE
 						and math.abs(offset.Y) < 7
@@ -505,7 +505,7 @@ local function hitBrainrot(player, root)
 	PlotService.refreshHp(target)
 end
 
--- ❤️ брейнротов: оглушение проходит, без ударов здоровье восстанавливается.
+-- Brainrot hearts: the stun wears off, without hits health regenerates.
 local function updateHp(t)
 	local clock = os.clock()
 	for model in pairs(damaged) do
@@ -533,8 +533,8 @@ local function updateHp(t)
 	end
 end
 
--- Шлёпалка: отталкивает игроков. Если шлёпнуть вора — он роняет брейнрота.
--- По чужому брейнроту — снимает ему ❤️.
+-- Slapper: pushes players back. If you slap a thief, they drop the brainrot.
+-- On someone else's brainrot it removes a heart.
 local function slap(player)
 	local nowClock = os.clock()
 	if lastSlap[player] and nowClock - lastSlap[player] < StealService.SLAP_COOLDOWN then
@@ -616,8 +616,8 @@ local function watchTool(tool, player)
 	end)
 end
 
--- Отменить все кражи (брейнроты возвращаются хозяевам). Вызывается при выключении сервера,
--- чтобы кража не завершилась уже после последнего сохранения хозяина (иначе дюп).
+-- Cancel all steals (brainrots return to the owners). Called when the server shuts down,
+-- so that a steal does not finish after the owner's last save (otherwise a dupe).
 function StealService.cancelAll(reason)
 	for thief in pairs(carries) do
 		endCarry(thief, false, reason)
@@ -630,7 +630,7 @@ function StealService.init()
 		StealService.cancelAll(S.m("steal.reason_shutdown"))
 	end)
 
-	-- Пока вор несёт брейнрота, он должен попадать в сохранение хозяина.
+	-- While a thief carries a brainrot, it must be included in the owner's save.
 	DataService.addSaveExtra(function(owner)
 		local extras = {}
 		for _, carry in pairs(carries) do
@@ -655,7 +655,7 @@ function StealService.init()
 		end
 	end)
 
-	-- Шлёпалка у каждого игрока.
+	-- A Slapper for every player.
 	local template = createSlapper()
 	template.Parent = StarterPack
 	local function giveTool(player)
@@ -680,7 +680,7 @@ function StealService.init()
 		giveTool(player)
 	end
 
-	-- Защита при входе.
+	-- Protection on join.
 	DataService.Loaded.Event:Connect(function(player)
 		setLock(player, StealService.JOIN_SHIELD, "shield")
 		task.delay(3, function()
@@ -691,9 +691,9 @@ function StealService.init()
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
-		-- Вор вышел — брейнрот возвращается.
+		-- The thief left: the brainrot returns.
 		endCarry(player, false, S.m("steal.reason_thief_left"))
-		-- Хозяин вышел — все кражи его брейнротов отменяются.
+		-- The owner left: all steals of their brainrots are cancelled.
 		for thief, carry in pairs(carries) do
 			if carry.owner == player then
 				endCarry(thief, false, S.m("steal.reason_owner_left"))
@@ -714,7 +714,7 @@ function StealService.init()
 			local t = now()
 			updateHp(t)
 
-			-- Замки: обновляем забор и выталкиваем чужаков.
+			-- Locks: update the fence and push strangers out.
 			for _, owner in ipairs(Players:GetPlayers()) do
 				local plot = PlotService.getPlot(owner)
 				if plot then
@@ -738,7 +738,7 @@ function StealService.init()
 				end
 			end
 
-			-- Кражи: добежал до базы или время вышло.
+			-- Steals: reached the base or time ran out.
 			for thief, carry in pairs(carries) do
 				local plot = PlotService.getPlot(thief)
 				local root = rootOf(thief)

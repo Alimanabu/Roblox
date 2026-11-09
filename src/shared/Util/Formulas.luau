@@ -1,6 +1,6 @@
--- Вся игровая математика в одном месте.
--- Используется и сервером (для расчётов), и клиентом (чтобы показывать цифры).
--- passes — таблица { VIP = true, LUCKY = true, ... } с купленными геймпассами.
+-- All game math in one place.
+-- Used by both the server (for calculations) and the client (to show the numbers).
+-- passes is a table { VIP = true, LUCKY = true, ... } of purchased game passes.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -14,21 +14,21 @@ local Seasons = require(Config.Seasons)
 
 local Formulas = {}
 
--- mods — множители от ивентов (см. Config/Events). Если не передали — без ивентов.
+-- mods are multipliers from events (see Config/Events). If not passed: no events.
 local NO_MODS = { luck = 1, income = 1, mutation = 1, speed = 1, secret = 1, mutation67 = 1 }
 Formulas.NO_MODS = NO_MODS
 
-Formulas.START_COINS = 150 -- хватает на первую капсулу
+Formulas.START_COINS = 150 -- enough for the first capsule
 Formulas.BASE_CRAFT_TIME = 3
 Formulas.MIN_CRAFT_TIME = 0.3
-Formulas.SELL_SECONDS = 20 -- брейнрот продаётся за 20 секунд своего дохода
-Formulas.FUSE_COUNT = 3 -- сколько одинаковых по редкости нужно для скрещивания
-Formulas.OFFLINE_RATE = 0.5 -- 50% дохода, пока игрока нет
+Formulas.SELL_SECONDS = 20 -- a brainrot sells for 20 seconds of its income
+Formulas.FUSE_COUNT = 3 -- how many of the same rarity are needed for fusing
+Formulas.OFFLINE_RATE = 0.5 -- 50% of income while the player is away
 Formulas.OFFLINE_MAX_SECONDS = 3 * 60 * 60
 
--- Этажи базы. Сначала брейнроты стоят прямо на земле, потом этажи покупаются.
--- Сильнейшие брейнроты встают наверх: там больше дохода и их труднее украсть.
--- hp — сколько раз вор должен шлёпнуть брейнрота, прежде чем его можно схватить.
+-- Base floors. First brainrots stand right on the ground, then floors are bought.
+-- The strongest brainrots stand on top: more income there and they are harder to steal.
+-- hp is how many times a thief must slap a brainrot before it can be grabbed.
 Formulas.FLOOR_SLOTS = 10
 Formulas.Floors = {
 	[0] = { slots = 5, hp = 5, income = 1, stealTime = 1 },
@@ -40,7 +40,7 @@ for index = 0, Formulas.MAX_FLOORS do
 	S.fill(Formulas.Floors[index], "floor." .. index, "name")
 end
 
--- Сколько этажей построено (геймпасс «Огромная база» сразу даёт 1 этаж).
+-- How many floors are built (the "Huge Base" game pass gives 1 floor right away).
 function Formulas.floors(data, passes)
 	local floors = math.clamp(data.floors or 0, 0, Formulas.MAX_FLOORS)
 	if passes.BIG_BASE then
@@ -49,7 +49,7 @@ function Formulas.floors(data, passes)
 	return floors
 end
 
--- Цена следующего этажа (nil — всё построено). С «Огромной базой» 2 этаж за полцены.
+-- The price of the next floor (nil: all built). With "Huge Base" floor 2 is half price.
 function Formulas.floorCost(floors, passes)
 	local floor = Formulas.Floors[floors + 1]
 	if not floor then
@@ -76,7 +76,7 @@ function Formulas.slots(data, passes)
 	return slotsForFloors(Formulas.floors(data, passes))
 end
 
--- Какой этаж у места: места 1..10 — внизу (земля или 1 этаж), 11..20 — на 2 этаже.
+-- Which floor a spot is on: spots 1..10 are on the bottom (ground or floor 1), 11..20 on floor 2.
 function Formulas.floorOfPad(pad, floors)
 	if pad > Formulas.FLOOR_SLOTS then
 		return 2
@@ -84,9 +84,9 @@ function Formulas.floorOfPad(pad, floors)
 	return math.min(floors, 1)
 end
 
--- Раскладка брейнротов по местам. Сильнейшие — наверх.
--- Возвращает список { entry, pad, floor } (кто не влез — без pad) и сколько мест внизу и наверху.
--- Внизу мест может быть больше лимита: например, брейнрот вернулся после неудачной кражи.
+-- Layout of brainrots over spots. The strongest go on top.
+-- Returns a list { entry, pad, floor } (those who did not fit have no pad) and how many spots are on the bottom and on top.
+-- The bottom may hold more than the limit: for example, a brainrot came back after a failed steal.
 function Formulas.layout(creatures, floors)
 	local sorted = table.clone(creatures)
 	table.sort(sorted, function(a, b)
@@ -124,13 +124,13 @@ function Formulas.craftTime(data, passes, mods)
 	return math.max(Formulas.MIN_CRAFT_TIME, time)
 end
 
-Formulas.LUCKY_MULT = 1.5 -- геймпасс «Счастливчик»
-Formulas.LUCK_BOOST_MULT = 2 -- буст удачи
-Formulas.MAX_SECRET_CHANCE = 0.01 -- выше удача секрет не поднимает
-Formulas.MAX_MUTATION_LUCK = 4 -- удача сильнее этой на мутации не влияет
+Formulas.LUCKY_MULT = 1.5 -- "Lucky" game pass
+Formulas.LUCK_BOOST_MULT = 2 -- luck boost
+Formulas.MAX_SECRET_CHANCE = 0.01 -- luck does not raise the secret above this
+Formulas.MAX_MUTATION_LUCK = 4 -- luck stronger than this does not affect mutations
 
--- Действует ли буст сейчас. noPaidLuck: купленная часть (остаток после смены региона) не действует,
--- бесплатный хвост после неё сохраняется: буст дают и бесплатно (серия, подарки).
+-- Whether the boost is active now. noPaidLuck: the bought part (the remainder after a region change) does not work,
+-- the free tail after it is kept: boosts are also given for free (streak, gifts).
 function Formulas.boostActive(data, now, noPaidLuck)
 	if not data.boosts.luckUntil or now >= data.boosts.luckUntil then
 		return false
@@ -138,7 +138,7 @@ function Formulas.boostActive(data, now, noPaidLuck)
 	return not noPaidLuck or not data.boosts.paidLuckUntil or now >= data.boosts.paidLuckUntil
 end
 
--- noPaidLuck: Roblox запрещает игроку платные случайные награды, платная удача на шансы не влияет.
+-- noPaidLuck: Roblox forbids paid random rewards for the player, paid luck does not affect the odds.
 function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	mods = mods or NO_MODS
 	local luck = (1 + 0.08 * (data.upgrades.luck or 0)) * mods.luck
@@ -152,20 +152,20 @@ function Formulas.luck(data, passes, now, mods, noPaidLuck)
 	return luck
 end
 
--- Откуда брейнрот (entry.source). Там, где Roblox запрещает платные случайные награды,
--- всё кроме SOURCE_FREE нельзя ни отдать, ни получить в обмене (см. TradeService).
-Formulas.SOURCE_FREE = "free" -- капсула за заработанные монеты, награда, дикий брейнрот
-Formulas.SOURCE_COINS = "coins" -- капсула за купленные монеты, хотя бы частично
-Formulas.SOURCE_LUCK = "luck" -- бросок с LUCKY или купленным бустом
-Formulas.SOURCE_SPIN = "spin" -- купленное вращение колеса
+-- Where a brainrot came from (entry.source). Where Roblox forbids paid random rewards,
+-- everything except SOURCE_FREE can be neither given nor received in a trade (see TradeService).
+Formulas.SOURCE_FREE = "free" -- a capsule for earned coins, a reward, a wild brainrot
+Formulas.SOURCE_COINS = "coins" -- a capsule for bought coins, at least partly
+Formulas.SOURCE_LUCK = "luck" -- a roll with LUCKY or a bought boost
+Formulas.SOURCE_SPIN = "spin" -- a bought wheel spin
 
--- Нет пометки: источник неизвестен, считаем платным.
+-- No mark: source unknown, we treat it as paid.
 function Formulas.isPaidRandom(entry)
 	return entry.source ~= Formulas.SOURCE_FREE
 end
 
--- Сколько монет можно потратить на то, что ведёт к случайной награде. Там, где Roblox запрещает
--- платные случайные награды, монеты за Robux на это не идут. Подходит и данным, и снимку клиента.
+-- How many coins can be spent on something that leads to a random reward. Where Roblox forbids
+-- paid random rewards, Robux coins do not go to it. Fits both the data and the client snapshot.
 function Formulas.randomCoins(data, restricted)
 	if restricted then
 		return math.max(data.coins - data.boughtCoins, 0)
@@ -173,7 +173,7 @@ function Formulas.randomCoins(data, restricted)
 	return data.coins
 end
 
--- Вошла ли в бросок купленная удача. Буст, полученный бесплатно, сюда не считается.
+-- Whether bought luck went into the roll. A boost received for free does not count here.
 function Formulas.usesPaidLuck(data, passes, now, noPaidLuck)
 	if noPaidLuck then
 		return false
@@ -190,12 +190,12 @@ function Formulas.incomeMultiplier(data, passes, mods)
 	if passes.VIP then
 		mult *= 2
 	end
-	-- Бонус за друзей / группу / Premium (считает сервер, см. SocialService).
+	-- Bonus for friends / group / Premium (computed by the server, see SocialService).
 	mult *= 1 + (passes.socialBonus or 0)
 	return mult
 end
 
--- Доход одного брейнрота без глобальных множителей.
+-- Income of one brainrot without global multipliers.
 function Formulas.creatureBaseIncome(entry)
 	local creature = Creatures.get(entry.id)
 	if not creature then
@@ -204,7 +204,7 @@ function Formulas.creatureBaseIncome(entry)
 	return creature.income * Mutations.get(entry.mut).mult
 end
 
--- floor — этаж, на котором стоит брейнрот (наверху доход больше).
+-- floor is the floor the brainrot stands on (more income on top).
 function Formulas.creatureIncome(entry, data, passes, mods, floor)
 	local floorMult = floor and Formulas.Floors[floor].income or 1
 	return Formulas.creatureBaseIncome(entry) * floorMult * Formulas.incomeMultiplier(data, passes, mods)
@@ -220,7 +220,7 @@ function Formulas.totalIncome(data, passes, mods)
 	return total * Formulas.incomeMultiplier(data, passes, mods)
 end
 
-Formulas.SELL_PAID_SHARE = 0.6 -- продать можно максимум за 60% от потраченного
+Formulas.SELL_PAID_SHARE = 0.6 -- can be sold for at most 60% of what was spent
 
 function Formulas.sellValue(entry)
 	local value = math.floor(Formulas.creatureBaseIncome(entry) * Formulas.SELL_SECONDS)
@@ -230,7 +230,7 @@ function Formulas.sellValue(entry)
 	return value
 end
 
--- Гарантированная попытка: всё, что ниже редкости гарантии, превращается в неё.
+-- Guaranteed attempt: everything below the guarantee rarity turns into it.
 local function withGuarantee(chances, top)
 	local rank = Rarities.get(top).rank
 	local result = {}
@@ -248,11 +248,11 @@ local function withGuarantee(chances, top)
 	return result
 end
 
--- Шансы редкостей для капсулы с учётом удачи.
--- Удача умножает веса всех редкостей, кроме самой частой в капсуле:
--- «удача x2» = редкие тренды выпадают примерно в 2 раза чаще.
--- Возвращает список { rarity = id, chance = 0..1 } от обычных к редким, в сумме ровно 1.
--- pity — попыток без самой редкой редкости капсулы: на гарантированной попытке шансы другие.
+-- Rarity odds for a capsule taking luck into account.
+-- Luck multiplies the weights of all rarities except the most common in the capsule:
+-- "luck x2" = rare trends drop about 2 times more often.
+-- Returns a list { rarity = id, chance = 0..1 } from common to rare, summing to exactly 1.
+-- pity is attempts without the capsule's rarest rarity: on the guaranteed attempt the odds are different.
 function Formulas.rarityChances(capsule, luck, mods, pity)
 	mods = mods or NO_MODS
 	local entries = {}
@@ -307,8 +307,8 @@ function Formulas.rollRarity(capsule, luck, rng, mods)
 	return chances[#chances - (chances[#chances].secret and 1 or 0)].rarity
 end
 
--- Гарантия: самая редкая редкость капсулы (без секретов) и через сколько попыток
--- она выпадет точно. Порог = 3 средних «ожидания» без удачи.
+-- Guarantee: the capsule's rarest rarity (without secrets) and after how many attempts
+-- it drops for sure. Threshold = 3 average "expectations" without luck.
 function Formulas.pityRarity(capsule)
 	local top
 	for _, rarity in ipairs(Rarities.List) do
@@ -329,7 +329,7 @@ function Formulas.pityThreshold(capsule)
 	return math.huge
 end
 
--- Попытка засчитана: какая редкость выпала в итоге, новый счётчик гарантии и сработала ли она.
+-- An attempt counted: which rarity finally dropped, the new guarantee counter and whether it triggered.
 function Formulas.applyPity(capsule, rarityId, pity)
 	local top = Rarities.get(Formulas.pityRarity(capsule)).rank
 	local count = pity + 1
@@ -343,7 +343,7 @@ function Formulas.applyPity(capsule, rarityId, pity)
 	return rarityId, count, forced
 end
 
--- Шанс одной проверки мутации: проверка идёт, только если все более редкие не выпали.
+-- The chance of one mutation check: the check runs only if all rarer ones did not drop.
 local function mutationRoll(mutation, luck, mods)
 	local chance = mutation.chance * math.min(luck, Formulas.MAX_MUTATION_LUCK) * mods.mutation
 	if mutation.id == "sixseven" then
@@ -354,7 +354,7 @@ end
 
 function Formulas.rollMutation(luck, rng, mods)
 	mods = mods or NO_MODS
-	-- Проверяем от самой редкой мутации к самой частой.
+	-- We check from the rarest mutation to the most common.
 	for index = #Mutations.List, 2, -1 do
 		local mutation = Mutations.List[index]
 		if rng:NextNumber() < mutationRoll(mutation, luck, mods) then
@@ -364,7 +364,7 @@ function Formulas.rollMutation(luck, rng, mods)
 	return "normal"
 end
 
--- Настоящие шансы исходов rollMutation: { mutation = id, chance = 0..1 }, в сумме ровно 1.
+-- The real odds of rollMutation outcomes: { mutation = id, chance = 0..1 }, summing to exactly 1.
 function Formulas.mutationChances(luck, mods)
 	mods = mods or NO_MODS
 	local left = 1
@@ -379,7 +379,7 @@ function Formulas.mutationChances(luck, mods)
 	return result
 end
 
--- season — для сезонной капсулы: берём брейнротов сезона (если такой редкости нет — обычных).
+-- season is for a seasonal capsule: we take the season's brainrots (if there is none of that rarity, regular ones).
 function Formulas.creaturePool(rarityId, season)
 	local seasonPools = season and Creatures.BySeason[season]
 	return (seasonPools and seasonPools[rarityId]) or Creatures.ByRarity[rarityId]
@@ -390,20 +390,20 @@ function Formulas.randomCreatureOf(rarityId, rng, season)
 	return pool[rng:NextInteger(1, #pool)]
 end
 
--- Сезонная капсула доступна только во время сезона. now — Unix-время (сервер: os.time,
--- клиент: workspace:GetServerTimeNow()).
+-- A seasonal capsule is available only during the season. now is Unix time (server: os.time,
+-- client: workspace:GetServerTimeNow()).
 function Formulas.capsuleInSeason(capsule, now)
 	return capsule.season == nil or Seasons.isActive(capsule.season, now or os.time())
 end
 
--- «Родословная» брейнрота: { ["UserId"] = самое раннее поколение (номер перерождения),
--- в котором этот игрок им владел }. Нельзя вернуть себе брейнрота «из прошлой жизни»
--- (обменом, кражей или через скрещивание у друга).
+-- A brainrot's "lineage": { ["UserId"] = the earliest generation (rebirth number)
+-- in which this player owned it }. You cannot get a brainrot back from a "past life"
+-- (by trade, steal or fusing at a friend's).
 function Formulas.lineageOf(entry, fallbackUserId, fallbackGen)
 	if entry.lineage then
 		return entry.lineage
 	end
-	-- Старый формат (origin/gen) или совсем старые записи.
+	-- Old format (origin/gen) or very old entries.
 	return { [tostring(entry.origin or fallbackUserId)] = entry.gen or fallbackGen or 0 }
 end
 

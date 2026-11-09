@@ -1,4 +1,4 @@
--- Геймпассы и разовые покупки за Robux.
+-- Game passes and one-time purchases for Robux.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -15,30 +15,30 @@ local PolicyService = require(script.Parent.PolicyService)
 
 local MonetizationService = {}
 
--- Геймпассы игрока изменились: база могла вырасти (см. PlotService).
+-- The player's game passes changed: the base may have grown (see PlotService).
 MonetizationService.PassesChanged = Instance.new("BindableEvent")
 
 local PASS_CHECK_ATTEMPTS = 4
 local PASS_RECHECK_INTERVAL = 60
 
 local ownedPasses = {} -- [player] = { VIP = true, ... }
-local uncheckedPasses = {} -- [player] = { VIP = true, ... }: Roblox не ответил, проверим ещё раз
+local uncheckedPasses = {} -- [player] = { VIP = true, ... }: Roblox did not answer, we will check again
 
 function MonetizationService.passes(player)
 	return ownedPasses[player] or {}
 end
 
--- Удача, с которой сервер бросает шансы. Все броски и показ шансов идут через неё.
+-- The luck the server rolls the odds with. All rolls and odds displays go through it.
 function MonetizationService.luck(player, data, now, mods)
 	return Formulas.luck(data, MonetizationService.passes(player), now, mods, PolicyService.paidRandomRestricted(player))
 end
 
--- Вошла ли в бросок купленная удача: от этого зависит пометка брейнрота (Formulas.isPaidRandom).
+-- Whether bought luck went into the roll: the brainrot's mark depends on it (Formulas.isPaidRandom).
 function MonetizationService.paidLuck(player, data, now)
 	return Formulas.usesPaidLuck(data, MonetizationService.passes(player), now, PolicyService.paidRandomRestricted(player))
 end
 
--- Сбой запроса не значит «не куплено»: нет ответа Roblox, значит nil, а не false.
+-- A failed request does not mean "not purchased": no answer from Roblox means nil, not false.
 local function ownsPass(player, pass, attempts)
 	for attempt = 1, attempts do
 		local ok, result = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
@@ -57,8 +57,8 @@ local function ownsPass(player, pass, attempts)
 end
 
 local function refreshPasses(player)
-	-- Дополняем таблицу, а не заменяем: пока идут повторы, игрок мог купить геймпасс,
-	-- а ещё в ней хранится бонус за друзей.
+	-- We add to the table instead of replacing it: while retries run, the player may have bought a game pass,
+	-- and the friend bonus is also stored there.
 	local owned = ownedPasses[player] or {}
 	ownedPasses[player] = owned
 	for _, pass in ipairs(Monetization.GamePasses) do
@@ -78,9 +78,9 @@ local function refreshPasses(player)
 	end
 end
 
--- Фоновая проверка геймпассов, на которые Roblox не ответил при входе. Запрос один:
--- следующая попытка всё равно будет через PASS_RECHECK_INTERVAL. Геймпасс только
--- добавляется, поэтому никакой ответ не снимает уже выданное.
+-- Background check of game passes that Roblox did not answer at join. One request:
+-- the next attempt will be after PASS_RECHECK_INTERVAL anyway. A game pass is only
+-- added, so no answer removes what was already granted.
 local function recheckPasses(player)
 	local unchecked = uncheckedPasses[player]
 	if not unchecked then
@@ -117,7 +117,7 @@ function MonetizationService.setSocialBonus(player, bonus)
 	ownedPasses[player].socialBonus = bonus > 0 and bonus or nil
 end
 
--- Выдаёт содержимое разовой покупки. Возвращает true, если выдали.
+-- Grants the contents of a one-time purchase. Returns true if granted.
 local function grantProduct(player, data, product)
 	if product.kind == "luckBoost" then
 		local now = os.time()
@@ -160,8 +160,8 @@ local function processReceipt(receiptInfo)
 		if not product then
 			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
-		-- Кнопки скрывает клиент, но окно покупки читер откроет сам. Покупку не подтверждаем:
-		-- ответ PolicyService мог быть сбоем, тогда чек выдастся при следующем заходе.
+		-- The client hides the buttons, but a cheater can open the purchase prompt themselves. We do not confirm the purchase:
+		-- the PolicyService answer may have been a failure, then the receipt is granted on the next join.
 		if product.leadsToRandom and PolicyService.paidRandomRestricted(player) then
 			Remotes.Notify:FireClient(player, PolicyService.message(player, "shop.region"), Color3.fromRGB(255, 110, 110))
 			return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -174,9 +174,9 @@ local function processReceipt(receiptInfo)
 		DataService.markDirty(player)
 	end
 
-	-- Подтверждаем покупку Roblox только после успешного сохранения: если сервер
-	-- упадёт раньше, Roblox повторит выдачу на следующем заходе. Повторный чек тоже
-	-- сохраняем: уже выдано не значит уже записано, прошлое сохранение могло не пройти.
+	-- We confirm the purchase to Roblox only after a successful save: if the server
+	-- crashes earlier, Roblox repeats the grant on the next join. A repeated receipt is also
+	-- saved: already granted does not mean already written, the previous save may have failed.
 	if not DataService.save(player) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end

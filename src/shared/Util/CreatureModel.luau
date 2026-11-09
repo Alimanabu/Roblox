@@ -1,6 +1,6 @@
--- Собирает модель брейнрота из простых деталей: тело, глаза, рот, аксессуары.
--- Перед модели смотрит в +Z. Все детали заякорены, двигать модель через PivotTo.
--- Это «временные» модели — позже их можно заменить на нормальные меши и скины.
+-- Builds a brainrot model from simple parts: body, eyes, mouth, accessories.
+-- The front of the model faces +Z. All parts are anchored, move the model via PivotTo.
+-- These are "temporary" models: later they can be replaced with proper meshes and skins.
 
 local Config = script.Parent.Parent.Config
 local Creatures = require(Config.Creatures)
@@ -19,7 +19,7 @@ local function darker(color, amount)
 	return Color3.fromHSV(h, s, math.max(0, v - (amount or 0.2)))
 end
 
--- Контекст сборки: размеры тела и функция добавления деталей.
+-- Build context: body sizes and a function for adding parts.
 local function newBuilder(model, origin, w, h, d)
 	local b = { model = model, origin = origin, w = w, h = h, d = d }
 
@@ -57,7 +57,7 @@ local function newBuilder(model, origin, w, h, d)
 	return b
 end
 
--- Вертикальный цилиндр (у Roblox ось цилиндра — X, поворачиваем на 90°).
+-- A vertical cylinder (in Roblox the cylinder axis is X, so we rotate by 90 degrees).
 local UPRIGHT = CFrame.Angles(0, 0, math.pi / 2)
 
 local Accessories = {}
@@ -193,7 +193,7 @@ function Accessories.headphones(b)
 end
 
 function Accessories.glitch(b)
-	-- Детерминированный «глитч»: одинаковый у всех копий этого брейнрота.
+	-- A deterministic "glitch": the same for all copies of this brainrot.
 	local rng = Random.new(67)
 	for _ = 1, 7 do
 		local offset = Vector3.new(rng:NextNumber(-0.6, 0.6) * b.w, rng:NextNumber(-0.5, 0.6) * b.h, rng:NextNumber(-0.6, 0.6) * b.d)
@@ -220,7 +220,7 @@ function Accessories.cape(b)
 end
 
 function Accessories.hands67(b)
-	-- Руки в жесте «6-7»: одна выше, другая ниже. Клиент их покачивает.
+	-- Hands in the "6-7" gesture: one higher, the other lower. The client swings them.
 	for index, side in ipairs({ -1, 1 }) do
 		local hand = b.add(
 			"Hand67",
@@ -286,8 +286,8 @@ local function applySkin(model, body, skin)
 	end
 end
 
--- Возвращает Model. cframe — где стоит центр «пола» под брейнротом.
--- skinId — необязательный скин (Config/Skins).
+-- Returns a Model. cframe is where the center of the "floor" under the brainrot stands.
+-- skinId is an optional skin (Config/Skins).
 function CreatureModel.build(creatureId, mutationId, cframe, skinId)
 	local creature = Creatures.get(creatureId)
 	local rarity = Rarities.get(creature.rarity)
@@ -328,7 +328,7 @@ function CreatureModel.build(creatureId, mutationId, cframe, skinId)
 	body.CastShadow = true
 	model.PrimaryPart = body
 
-	-- Лицо.
+	-- Face.
 	local eye = math.max(0.35, math.min(w, h) * 0.24)
 	local faceZ = d / 2 * (shape == "ball" and 0.82 or 1) + 0.02
 	for _, side in ipairs({ -1, 1 }) do
@@ -344,7 +344,7 @@ function CreatureModel.build(creatureId, mutationId, cframe, skinId)
 		end
 	end
 
-	-- Свечение и частицы для редких.
+	-- Glow and particles for rare ones.
 	if rarity.rank >= 5 then
 		local light = Instance.new("PointLight")
 		light.Color = rarity.rainbow and Color3.new(1, 1, 1) or rarity.color

@@ -1,4 +1,4 @@
--- Колесо удачи: 1 бесплатное вращение в день + купленные за Robux.
+-- Lucky wheel: 1 free spin per day + those bought for Robux.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -14,7 +14,7 @@ local WheelService = {}
 
 local GOLD = Color3.fromRGB(255, 220, 80)
 local BAD = Color3.fromRGB(255, 110, 110)
-local SPIN_COOLDOWN = 3 -- столько длится анимация на клиенте
+local SPIN_COOLDOWN = 3 -- how long the animation lasts on the client
 
 local rng = Random.new()
 local lastSpin = {} -- [player] = os.clock()
@@ -48,7 +48,7 @@ local function spin(player)
 	if data.wheel.lastFreeDay ~= today then
 		data.wheel.lastFreeDay = today
 	elseif data.wheel.extraSpins > 0 then
-		-- Лишние вращения бывают только купленные: это платная случайная награда.
+		-- Extra spins can only be bought: this is a paid random reward.
 		if PolicyService.paidRandomRestricted(player) then
 			Remotes.Notify:FireClient(player, PolicyService.message(player, "wheel.spins_kept"), BAD)
 			return
@@ -64,7 +64,7 @@ local function spin(player)
 	local index = roll()
 	local slot = Daily.Wheel[index]
 	Remotes.WheelResult:FireClient(player, index)
-	-- Награду выдаём сразу (сохранится), а сообщение — когда колесо остановится.
+	-- We grant the reward immediately (it will be saved), and the message when the wheel stops.
 	local text = RewardService.grant(player, data, slot.reward, source)
 	DataService.markDirty(player)
 	task.delay(SPIN_COOLDOWN, function()

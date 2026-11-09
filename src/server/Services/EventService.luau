@@ -1,4 +1,4 @@
--- Ивенты на весь сервер: объявления о начале/конце и множители для расчётов.
+-- Server-wide events: announcements of start/end and multipliers for calculations.
 
 local Lighting = game:GetService("Lighting")
 
@@ -14,7 +14,7 @@ function EventService.mods()
 end
 
 function EventService.init()
-	-- Небо слегка окрашивается в цвет активного ивента.
+	-- The sky is slightly tinted in the color of the active event.
 	local tint = Instance.new("ColorCorrectionEffect")
 	tint.Name = "EventTint"
 	tint.Enabled = false
@@ -43,7 +43,7 @@ function EventService.init()
 			end
 			activeIds = current
 
-			-- Предупреждаем за минуту до ивента.
+			-- We warn a minute before the event.
 			local nextEvent, startsAt = Events.nextEvent(now)
 			local key = nextEvent.id .. startsAt
 			if startsAt - now <= 60 and not warned[key] then

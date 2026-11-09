@@ -1,6 +1,6 @@
--- Редкости брейнротов.
--- Главное правило игры: ЧЕМ ПОПУЛЯРНЕЕ ТРЕНД — ТЕМ РЕЖЕ ОН ВЫПАДАЕТ.
--- Порядок в списке = от самого обычного к самому редкому.
+-- Brainrot rarities.
+-- The main rule of the game: THE MORE POPULAR THE TREND, THE RARER IT DROPS.
+-- Order in the list = from the most common to the rarest.
 
 local S = require(script.Parent.Parent.Strings)
 
@@ -42,7 +42,7 @@ Rarities.List = {
 		color = Color3.fromRGB(255, 255, 255),
 		rainbow = true,
 		xp = 250,
-		announce = true, -- объявляем на весь сервер
+		announce = true, -- announce to the whole server
 	},
 	{
 		id = "sixseven",

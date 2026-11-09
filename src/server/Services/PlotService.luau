@@ -1,5 +1,5 @@
--- Базы игроков: участок, машина-фабрика и брейнроты, стоящие на постаментах.
--- Пока всё сделано из простых деталей — позже заменим на нормальные модели и скины.
+-- Player bases: plot, factory machine and brainrots standing on pedestals.
+-- For now everything is made from simple parts; later we will replace them with proper models and skins.
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -26,14 +26,14 @@ local PLOT_COUNT = 8
 local PLOT_SIZE = 90
 local RING_RADIUS = 150
 
--- Здание базы: 1 этаж на земле, 2 этаж над ним. На каждом этаже 2 ряда по 5 мест.
-local FLOOR_HEIGHT = 14 -- на сколько 2 этаж выше земли
+-- Base building: floor 1 on the ground, floor 2 above it. Each floor has 2 rows of 5 spots.
+local FLOOR_HEIGHT = 14 -- how much higher floor 2 is than the ground
 local PAD_X = { -24, -12, 0, 12, 24 }
 local PAD_Z = { -21, -9 }
 local BUILDING_CENTER_Z = -15
 local BUILDING_WIDTH = 68
 local BUILDING_DEPTH = 30
-local RAILING_HEIGHT = 8 -- выше прыжка: с брейнротом через стекло не перепрыгнешь
+local RAILING_HEIGHT = 8 -- above a jump: you cannot jump over the glass with a brainrot
 
 PlotService.PLOT_SIZE = PLOT_SIZE
 
@@ -89,7 +89,7 @@ local function buildWorld()
 		})
 	end
 
-	-- Центр: площадь со спавном и большой табличкой.
+	-- Center: a plaza with the spawn and a big sign.
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "CenterSpawn"
 	spawn.Anchored = true
@@ -97,7 +97,7 @@ local function buildWorld()
 	spawn.Position = Vector3.new(0, 0.5, 0)
 	spawn.Color = Color3.fromRGB(255, 210, 60)
 	spawn.Material = Enum.Material.SmoothPlastic
-	spawn.Duration = 0 -- без пузыря силового поля
+	spawn.Duration = 0 -- without the force-field bubble
 	spawn.Parent = workspace
 	MoveGuardService.setSpawnPoint(spawn.Position)
 
@@ -114,7 +114,7 @@ local function buildWorld()
 	for i = 1, PLOT_COUNT do
 		local angle = (i - 1) / PLOT_COUNT * math.pi * 2
 		local origin = Vector3.new(math.cos(angle) * RING_RADIUS, 0, math.sin(angle) * RING_RADIUS)
-		-- Участок «смотрит» в центр карты.
+		-- The plot "looks" at the center of the map.
 		local cframe = CFrame.lookAt(origin, Vector3.new(0, 0, 0))
 
 		local model = Instance.new("Model")
@@ -130,7 +130,7 @@ local function buildWorld()
 		})
 		model.PrimaryPart = floor
 
-		-- Светящийся бортик своего цвета у каждой базы.
+		-- A glowing border of its own color for each base.
 		local rimColor = Color3.fromHSV((i - 1) / PLOT_COUNT, 0.7, 1)
 		local half = PLOT_SIZE / 2
 		for _, rim in ipairs({
@@ -180,7 +180,7 @@ local function buildWorld()
 		billboard(ownerSign, UDim2.fromOffset(400, 80), Vector3.zero, S.m("plot.free_base"), Color3.fromRGB(200, 200, 200)).Name =
 			"OwnerGui"
 
-		-- Кнопка замка: закрывает базу от воров.
+		-- Lock button: closes the base from thieves.
 		local lockButton = part({
 			Name = "LockButton",
 			Size = Vector3.new(6, 1, 6),
@@ -199,7 +199,7 @@ local function buildWorld()
 		lockPrompt.RequiresLineOfSight = false
 		lockPrompt.Parent = lockButton
 
-		-- Лазерный забор: виден, когда база закрыта.
+		-- Laser fence: visible when the base is closed.
 		local barrier = Instance.new("Folder")
 		barrier.Name = "Barrier"
 		barrier.Parent = model
@@ -224,7 +224,7 @@ local function buildWorld()
 			})
 		end
 
-		-- Табличка стройки: тут покупаются этажи.
+		-- Build sign: floors are bought here.
 		part({
 			Name = "BuildPost",
 			Size = Vector3.new(0.8, 6, 0.8),
@@ -267,7 +267,7 @@ local function buildWorld()
 	end
 end
 
--- Место на базе: 1..10 — внизу, 11..20 — на 2 этаже.
+-- Spot on the base: 1..10 on the bottom, 11..20 on floor 2.
 local function padCFrame(plot, pad)
 	local index = (pad - 1) % Formulas.FLOOR_SLOTS
 	local x = PAD_X[index % #PAD_X + 1]
@@ -276,7 +276,7 @@ local function padCFrame(plot, pad)
 	return plot.cframe * CFrame.new(x, y, z)
 end
 
--- Деталь здания в локальных координатах участка.
+-- A building part in the plot's local coordinates.
 local function buildingPart(plot, name, size, offset, props)
 	local p = part({
 		Name = name,
@@ -307,7 +307,7 @@ local function floorSign(plot, height, text, color)
 	billboard(anchor, UDim2.fromOffset(220, 44), Vector3.zero, text, color).MaxDistance = 90
 end
 
--- Строит здание под нужное число этажей. Следующий этаж показан «призраком».
+-- Builds the building for the needed number of floors. The next floor is shown as a "ghost".
 local function buildBuilding(plot, floors)
 	plot.model.Building:ClearAllChildren()
 	local slab = Vector3.new(BUILDING_WIDTH, 0.4, BUILDING_DEPTH)
@@ -338,7 +338,7 @@ local function buildBuilding(plot, floors)
 		return
 	end
 
-	-- 2 этаж: колонны, пол, стеклянные перила, площадка и пандус справа.
+	-- Floor 2: columns, floor, glass railings, a landing and a ramp on the right.
 	local halfW, halfD = BUILDING_WIDTH / 2, BUILDING_DEPTH / 2
 	for _, corner in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
 		buildingPart(
@@ -354,12 +354,12 @@ local function buildBuilding(plot, floors)
 		Color = Color3.fromRGB(255, 215, 90),
 		Material = Enum.Material.Marble,
 	})
-	-- Площадка у пандуса.
+	-- Landing by the ramp.
 	buildingPart(plot, "Landing", Vector3.new(8, 1, 8), center * CFrame.new(halfW + 4, top - 0.5, halfD - 6), {
 		Color = Color3.fromRGB(255, 215, 90),
 		Material = Enum.Material.Marble,
 	})
-	-- Пандус от земли (сзади) вверх к площадке.
+	-- Ramp from the ground (at the back) up to the landing.
 	local run, rise = 30, FLOOR_HEIGHT
 	local angle = math.atan2(rise, run)
 	local ramp = buildingPart(
@@ -376,7 +376,7 @@ local function buildBuilding(plot, floors)
 	glass(plot, Vector3.new(BUILDING_WIDTH, h, 0.5), center * CFrame.new(0, y, -halfD))
 	glass(plot, Vector3.new(BUILDING_WIDTH, h, 0.5), center * CFrame.new(0, y, halfD))
 	glass(plot, Vector3.new(0.5, h, BUILDING_DEPTH), center * CFrame.new(-halfW, y, 0))
-	-- Справа проход на площадку (последние 8 стадов перед задней стенкой).
+	-- Passage to the landing on the right (the last 8 studs before the back wall).
 	glass(plot, Vector3.new(0.5, h, BUILDING_DEPTH - 10), center * CFrame.new(halfW, y, -5))
 	glass(plot, Vector3.new(0.5, h, 2), center * CFrame.new(halfW, y, halfD - 1))
 	glass(plot, Vector3.new(0.5, h, 8), center * CFrame.new(halfW + 8, y, halfD - 6))
@@ -385,7 +385,7 @@ local function buildBuilding(plot, floors)
 	floorSign(plot, top + RAILING_HEIGHT + 2, S.m("plot.floor2_sign", { hp = Formulas.Floors[2].hp, income = Formulas.Floors[2].income }), Color3.fromRGB(255, 220, 80))
 end
 
--- Табличка стройки и само здание.
+-- The build sign and the building itself.
 local function updateBuilding(plot, floors, passes)
 	if plot.builtFloors ~= floors then
 		plot.builtFloors = floors
@@ -414,7 +414,7 @@ local HP_FULL = Color3.fromRGB(90, 230, 110)
 local HP_LOW = Color3.fromRGB(255, 70, 70)
 local STUNNED = Color3.fromRGB(255, 220, 60)
 
--- Полоска ❤️ над брейнротом и кнопка кражи. Пока ❤️ есть — красть нельзя, надо шлёпать.
+-- The heart bar above a brainrot and the steal button. While hearts remain you cannot steal, you must slap.
 function PlotService.refreshHp(model)
 	local body = model.PrimaryPart
 	local gui = body and body:FindFirstChild("InfoGui")
@@ -455,7 +455,7 @@ local function labelText(entry, creature, rarity, mutation, data, passes, floor)
 		nameText = S.m("creature.mutated", { mutation = S.m(mutation.nameKey), name = nameText })
 	end
 	if entry.nickname then
-		-- Подпись с RichText: экранируем, чтобы имя не ломало разметку.
+		-- Label with RichText: we escape it so the name does not break the markup.
 		local safe = entry.nickname:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
 		nameText = S.m("plot.nickname", { nickname = safe, name = nameText })
 	end
@@ -475,12 +475,12 @@ local function buildCreature(plot, entry, standCFrame, data, passes, floor)
 	local model, body = CreatureModel.build(entry.id, entry.mut, standCFrame, entry.skin)
 	model.Name = "Creature"
 	model:SetAttribute("Uid", entry.uid)
-	-- Клиент по этому атрибуту делает анимацию «покачивания».
+	-- The client uses this attribute to do the "swaying" animation.
 	model:SetAttribute("BaseCFrame", standCFrame)
 	local size = model:GetAttribute("Height")
 
-	-- Чужие игроки могут украсть брейнрота: сначала выбить ❤️ Шлёпалкой, потом зажать F.
-	-- Чем реже брейнрот и чем выше этаж — тем дольше красть.
+	-- Other players can steal a brainrot: first knock out the hearts with the Slapper, then hold F.
+	-- The rarer the brainrot and the higher the floor, the longer it takes to steal.
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "StealPrompt"
 	S.apply(prompt, "ObjectText", S.m(creature.nameKey))
@@ -532,8 +532,8 @@ local function buildCreature(plot, entry, standCFrame, data, passes, floor)
 	return model
 end
 
--- Обновляет базу. Важно: не пересоздаём брейнротов, которые не изменились —
--- иначе у вора, который как раз зажал «Украсть», пропала бы кнопка.
+-- Updates the base. Important: do not recreate brainrots that did not change,
+-- otherwise a thief who just held "Steal" would lose the button.
 function PlotService.render(player)
 	local plot = plotOf[player]
 	local data = DataService.get(player)
@@ -544,10 +544,10 @@ function PlotService.render(player)
 	local floors = Formulas.floors(data, passes)
 	updateBuilding(plot, floors, passes)
 
-	-- Сильнейшие брейнроты стоят наверху (там доход больше и их труднее украсть).
+	-- The strongest brainrots stand on top (income is higher there and they are harder to steal).
 	local places, lower, upper = Formulas.layout(data.creatures, floors)
 
-	-- Постаменты: пересоздаём только когда меняется их количество.
+	-- Pedestals: recreated only when their number changes.
 	local padsFolder = plot.model.Pads
 	local padsKey = lower .. ":" .. upper
 	if padsFolder:GetAttribute("Layout") ~= padsKey then
@@ -590,7 +590,7 @@ function PlotService.render(player)
 			local standCFrame = padCFrame(plot, place.pad) * CFrame.new(0, 0.6, 0)
 			local model = existing[entry.uid]
 			existing[entry.uid] = nil
-			-- Сменили скин — модель надо пересобрать.
+			-- The skin changed: the model must be rebuilt.
 			if model and model:GetAttribute("Skin") ~= entry.skin then
 				model:Destroy()
 				model = nil
@@ -601,7 +601,7 @@ function PlotService.render(player)
 					model:PivotTo(standCFrame)
 				end
 				local rarity = Rarities.get(creature.rarity)
-				-- Переехал на другой этаж — там другое ❤️.
+				-- Moved to another floor: it has different hearts there.
 				if model:GetAttribute("Floor") ~= place.floor then
 					setFloor(model, place.floor, rarity.rank)
 					PlotService.refreshHp(model)
@@ -616,7 +616,7 @@ function PlotService.render(player)
 		end
 	end
 
-	-- Кого больше нет в данных (продали, скрестили, украли) — убираем.
+	-- Anyone no longer in the data (sold, fused, stolen) is removed.
 	for _, model in pairs(existing) do
 		model:Destroy()
 	end
@@ -635,14 +635,14 @@ function PlotService.ownerOfModel(model)
 	return nil
 end
 
--- Находится ли точка внутри участка (с небольшим запасом по краям).
+-- Whether a point is inside the plot (with a small margin at the edges).
 function PlotService.isInside(plot, position, margin)
 	local localPos = plot.cframe:PointToObjectSpace(position)
 	local half = PLOT_SIZE / 2 + (margin or 0)
 	return math.abs(localPos.X) <= half and math.abs(localPos.Z) <= half and localPos.Y < 40
 end
 
--- Стоит ли точка на чьей-нибудь (или свободной) базе.
+-- Whether a point stands on anyone's (or a free) base.
 function PlotService.isOnAnyPlot(position, margin)
 	for _, plot in ipairs(plots) do
 		if PlotService.isInside(plot, position, margin) then
@@ -652,7 +652,7 @@ function PlotService.isOnAnyPlot(position, margin)
 	return false
 end
 
--- Точка сразу за забором участка, куда выталкиваем чужаков.
+-- A point right outside the plot fence where we push strangers.
 function PlotService.outsideCFrame(plot, position)
 	local localPos = plot.cframe:PointToObjectSpace(position)
 	local half = PLOT_SIZE / 2 + 6
@@ -727,8 +727,8 @@ local function teleportHome(player, character)
 	if not root then
 		return
 	end
-	-- Roblox ставит персонажа на точку спавна уже ПОСЛЕ CharacterAdded и перебивает
-	-- телепорт. Ждём, пока персонаж появится в мире, и только потом переносим домой.
+	-- Roblox puts the character on the spawn point AFTER CharacterAdded and overrides the
+	-- teleport. We wait until the character appears in the world and only then move them home.
 	if not character:IsDescendantOf(workspace) then
 		character.AncestryChanged:Wait()
 	end
@@ -765,7 +765,7 @@ function PlotService.init()
 	ProgressionService.FloorBuilt.Event:Connect(PlotService.render)
 	MonetizationService.PassesChanged.Event:Connect(PlotService.render)
 
-	-- Табличка стройки: хозяин покупает следующий этаж.
+	-- Build sign: the owner buys the next floor.
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 		if prompt.Name == "BuildPrompt" then
 			local plotModel = prompt:FindFirstAncestorWhichIsA("Model")
@@ -775,7 +775,7 @@ function PlotService.init()
 		end
 	end)
 
-	-- Перерисовываем раз в несколько секунд: покупка слотов, VIP и т.п.
+	-- We redraw every few seconds: slot purchases, VIP and so on.
 	task.spawn(function()
 		local lastKey = {}
 		while true do

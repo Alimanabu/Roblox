@@ -1,9 +1,9 @@
--- Брейнроты на базах покачиваются и крутятся; редкие переливаются радугой.
--- Кнопку «Украсть» видно только на чужих базах, кнопку замка — только на своей.
+-- Brainrots on the bases sway and spin; rare ones shimmer with a rainbow.
+-- The "Steal" button is only visible on other players' bases, the lock button only on your own.
 --
--- Телефон не должен каждый кадр перебирать все модели на карте (до 160), поэтому работа разделена:
--- раз в REFRESH_EVERY секунд обходим базы, ставим кнопки и собираем список тех, кто рядом с камерой;
--- каждый кадр двигаем только их, а дальних ещё и через кадр (раз в FAR_EVERY кадров).
+-- A phone must not loop over every model on the map (up to 160) each frame, so the work is split:
+-- every REFRESH_EVERY seconds we walk the bases, place the buttons and collect those near the camera;
+-- each frame we move only those, and the far ones every other frame (once per FAR_EVERY frames).
 
 local RunService = game:GetService("RunService")
 
@@ -12,8 +12,8 @@ local DiscoFx = require(script.Parent.DiscoFx)
 local BaseAnimator = {}
 
 BaseAnimator.REFRESH_EVERY = 0.25
-BaseAnimator.ANIMATE_DISTANCE = 140 -- дальше камеры не анимируем совсем
-BaseAnimator.NEAR_DISTANCE = 70 -- ближе анимируем каждый кадр
+BaseAnimator.ANIMATE_DISTANCE = 140 -- farther than the camera: not animated at all
+BaseAnimator.NEAR_DISTANCE = 70 -- closer: animated every frame
 BaseAnimator.FAR_EVERY = 3
 
 local nearby = {} -- { { model, body, base, phase, far, rainbow } }
@@ -38,7 +38,7 @@ local function refresh(plots, player)
 		local shieldOnly = plot:GetAttribute("LockKind") == "shield"
 		local ready = (plot:GetAttribute("LockReadyAt") or 0) <= serverNow
 		setEnabled(lockButton and lockButton:FindFirstChild("LockPrompt"), isMine and ready and (not locked or shieldOnly))
-		-- Табличка стройки: этажи покупает только хозяин.
+		-- Build sign: only the owner buys floors.
 		local buildSign = plot:FindFirstChild("BuildSign")
 		setEnabled(buildSign and buildSign:FindFirstChild("BuildPrompt"), isMine and plot:GetAttribute("CanBuild") == true)
 
@@ -75,7 +75,7 @@ local function animate()
 		if item.model.Parent and (not item.far or (index + frame) % BaseAnimator.FAR_EVERY == 0) then
 			local base, phase = item.base, item.phase
 			if disco then
-				-- Дискотека: прыгают в такт и крутятся.
+				-- Disco: they jump to the beat and spin.
 				item.model:PivotTo(
 					base
 						* CFrame.new(0, math.abs(math.sin(t * 6)) * 2.2, 0)
