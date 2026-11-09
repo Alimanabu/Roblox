@@ -92,6 +92,20 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = bar,
 	})
 
+	-- Session goal under the level: one line with the next thing to do, a tap opens the rewards.
+	self.goalButton = Theme.button({
+		Name = "Goal",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 152),
+		Size = UDim2.fromOffset(360, 36),
+		Text = "",
+		Color = C.Background,
+		Visible = false,
+		Parent = screenGui,
+	}, function()
+		onMenu("Rewards")
+	end)
+
 	-- Settings button next to the level.
 	Theme.button({
 		Name = "SettingsButton",
@@ -190,7 +204,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.notifyFrame = create("Frame", {
 		Name = "Notifications",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 156),
+		Position = UDim2.new(0.5, 0, 0, 196), -- below the session goal
 		Size = UDim2.fromOffset(560, 300),
 		BackgroundTransparency = 1,
 		Parent = screenGui,
@@ -206,7 +220,64 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	return self
 end
 
+-- The session goal: what to do next, and when there is nothing left today, why to come back tomorrow.
+-- Order: daily reward, finished quest, ready gift, the closest unfinished quest, the next gift,
+-- tomorrow's streak day. now is the server time (the tests pass their own).
+function Hud.goal(state, now)
+	now = now or workspace:GetServerTimeNow()
+	local r = state.rewards
+	local total = #r.rewards
+	if r.canClaim then
+		return S.t("hud.goal_daily", { day = r.nextDay, total = total })
+	end
+	local best, bestShare
+	for _, quest in ipairs(r.quests) do
+		if not quest.claimed then
+			if quest.progress >= quest.target then
+				return S.t("hud.goal_quest_done")
+			end
+			local share = quest.progress / math.max(1, quest.target)
+			if not best or share > bestShare then
+				best, bestShare = quest, share
+			end
+		end
+	end
+	local minutes = (now - state.playtime.start) / 60
+	local nextGift
+	for _, gift in ipairs(state.playtime.gifts) do
+		if not gift.claimed then
+			if minutes >= gift.minutes then
+				return S.t("hud.goal_gift")
+			end
+			nextGift = nextGift or gift -- gifts go from the shortest time to the longest
+		end
+	end
+	if best then
+		return S.t("hud.goal_quest", { quest = S.text(best.text), progress = best.progress, target = best.target })
+	end
+	if nextGift then
+		return S.t("hud.goal_next_gift", { minutes = math.max(1, math.ceil(nextGift.minutes - minutes)) })
+	end
+	local tomorrow = r.streak % total + 1
+	-- The day changes at midnight UTC (Daily.today). Counted here: the state comes only on changes.
+	local time = Format.time(86400 - math.floor(now) % 86400)
+	if tomorrow == total then
+		return S.t("hud.goal_mega", { time = time, day = tomorrow })
+	end
+	return S.t("hud.goal_tomorrow", { time = time, day = tomorrow, total = total })
+end
+
+-- Called on every state change and once a second: the timers in the goal run without new state.
+function Hud:refreshGoal(state)
+	if state then
+		self.goalButton.Text = Hud.goal(state)
+		self.goalButton.Visible = true
+	end
+end
+
 function Hud:update(state)
+	self:refreshGoal(state)
+
 	local rewardsReady = state.rewards.canClaim or self.giftsReady(state) or state.wheel.freeAvailable
 	for _, quest in ipairs(state.rewards.quests) do
 		if quest.progress >= quest.target and not quest.claimed then

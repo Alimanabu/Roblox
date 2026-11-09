@@ -178,8 +178,13 @@ end)
 local status = StealStatus.new(screenGui)
 local eventBanner = EventBanner.new(screenGui)
 task.spawn(function()
+	local ticks = 0
 	while true do
 		task.wait(0.2)
+		ticks += 1
+		if ticks % 5 == 0 then
+			hud:refreshGoal(State.current)
+		end
 		status:update(player, workspace:FindFirstChild("Plots"))
 		eventBanner:update()
 		-- Minute 67: disco!

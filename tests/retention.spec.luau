@@ -419,6 +419,192 @@ scenario("сохранение с неполным playtime (нет списка
 	leave(player)
 end)
 
+---------------------------------------------------------------------------
+-- Цель сессии под уровнем: что делать дальше и зачем вернуться завтра.
+-- Строку считает клиент (Hud.goal) из того же состояния, что сервер шлёт игроку.
+---------------------------------------------------------------------------
+local Hud = shared_require("client/Ui/Hud")
+local ClientState = shared_require("client/State")
+local Actions = shared_require("Services/Actions")
+local GOALER = 7009
+
+local function stateOf(player)
+	DataService.sendNow(player)
+	for index = #World.sent, 1, -1 do
+		local sent = World.sent[index]
+		if sent.remote == "State" and sent.player == player then
+			return sent.args[1]
+		end
+	end
+	error("сервер не прислал состояние")
+end
+
+local function goalOf(player)
+	return Hud.goal(stateOf(player))
+end
+
+local TOTAL = #Daily.Rewards
+
+local function goalButton()
+	for _, item in ipairs(gui:GetDescendants()) do
+		if item.Name == "Goal" then
+			return item
+		end
+	end
+	return nil
+end
+
+scenario("цель на экране: строка видна, совпадает с расчётом, нажатие открывает награды", function()
+	closePanel()
+	World.advance(1.2)
+	local button = goalButton()
+	check(button ~= nil, "нет строки цели на экране")
+	if not button then
+		return
+	end
+	check(button.Visible == true, "строка цели скрыта")
+	check(button.Text == Hud.goal(ClientState.current), "на экране не та цель: " .. tostring(button.Text))
+	check(not string.find(button.Text, "{", 1, true), "незаполненный параметр в цели: " .. button.Text)
+	World.click(button)
+	World.advance(0.3)
+	check(hasText(S.t("rewards.hint")), "нажатие на цель не открыло награды")
+	closePanel()
+end)
+
+local goaler = join(GOALER, "Goaler")
+local goalData = DataService.get(goaler)
+
+-- Первое невыполненное задание игрока (по порядку в списке) и его описание.
+local function openQuest(data)
+	for index, quest in ipairs(data.quests.list) do
+		if not quest.claimed then
+			return index, quest, Daily.QuestById[quest.id]
+		end
+	end
+	return nil
+end
+
+local function questGoal(def, progress)
+	return S.t("hud.goal_quest", { quest = text(def.textKey), progress = progress, target = def.target })
+end
+
+scenario("цель: новичок видит награду дня 1; после получения она не предлагается и второй раз не выдаётся", function()
+	check(goalOf(goaler) == S.t("hud.goal_daily", { day = 1, total = TOTAL }), "нет цели «награда дня 1»: " .. goalOf(goaler))
+	check(claimToday(goaler) > 0, "награда дня 1 не выдана")
+	local after = goalOf(goaler)
+	check(after ~= S.t("hud.goal_daily", { day = 1, total = TOTAL }), "после получения цель всё ещё «награда дня»")
+	check(claimToday(goaler) == 0, "награда дня выдана дважды за день")
+	check(goalOf(goaler) == after, "повторный запрос награды поменял цель")
+end)
+
+scenario("цель: ближайшее задание с прогрессом; прогресс в цели переживает выход и возврат в тот же день", function()
+	local index, quest, def = openQuest(goalData)
+	check(index ~= nil and def ~= nil, "у игрока нет заданий")
+	check(goalOf(goaler) == questGoal(def, 0), "цель не первое задание 0/" .. def.target .. ": " .. goalOf(goaler))
+	local step = math.max(1, def.target - 1)
+	Actions.fire(goaler, def.kind, step)
+	check(quest.progress == step, "прогресс задания не вырос: " .. quest.progress)
+	check(goalOf(goaler) == questGoal(def, step), "цель не показывает прогресс " .. step .. ": " .. goalOf(goaler))
+	leave(goaler)
+	goaler = join(GOALER, "Goaler")
+	goalData = DataService.get(goaler)
+	check(goalData.quests.list[index].progress == step, "прогресс задания потерян после выхода")
+	check(goalOf(goaler) == questGoal(def, step), "после возврата цель не та: " .. goalOf(goaler))
+end)
+
+scenario("цель: выполненное задание просит забрать награду; после получения цель — следующее задание", function()
+	local index, quest, def = openQuest(goalData)
+	Actions.fire(goaler, def.kind, def.target)
+	check(goalOf(goaler) == S.t("hud.goal_quest_done"), "нет цели «забери награду за задание»: " .. goalOf(goaler))
+	fromPlayer(Remotes.ClaimQuest, goaler, index)
+	check(quest.claimed, "награда за задание не выдана")
+	-- Следующее — ближайшее к завершению из оставшихся (одно действие может двигать два задания).
+	local best, bestShare
+	for _, other in ipairs(goalData.quests.list) do
+		local otherDef = Daily.QuestById[other.id]
+		local share = other.progress / otherDef.target
+		if not other.claimed and (not best or share > bestShare) then
+			best, bestShare = other, share
+		end
+	end
+	check(best ~= nil and best ~= quest, "полученное задание снова в цели")
+	check(goalOf(goaler) == questGoal(Daily.QuestById[best.id], best.progress), "цель не следующее задание: " .. goalOf(goaler))
+end)
+
+scenario("цель: подарок за время готов → забрать; всё сделано → «вернись через …: день серии 2/7»", function()
+	-- Отсчёт подарков проверен выше; здесь ставим 2 часа игры, чтобы открылись все.
+	goalData.playtime.seconds = Daily.Gifts[#Daily.Gifts].minutes * 60 + 60
+	check(goalOf(goaler) == S.t("hud.goal_gift"), "нет цели «забери подарок»: " .. goalOf(goaler))
+	for index = 1, #Daily.Gifts do
+		claimGift(goaler, index)
+		check(goalData.playtime.claimed[tostring(index)] == true, "подарок " .. index .. " не выдан")
+	end
+	check(goalOf(goaler) ~= S.t("hud.goal_gift"), "после всех подарков цель всё ещё «подарок»")
+	local index, _, def = openQuest(goalData)
+	while index do
+		Actions.fire(goaler, def.kind, def.target)
+		fromPlayer(Remotes.ClaimQuest, goaler, index)
+		index, _, def = openQuest(goalData)
+	end
+	local state = stateOf(goaler)
+	local now = workspace:GetServerTimeNow()
+	local left = (Daily.today() + 1) * DAY - now
+	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.time(left), day = 2, total = TOTAL }),
+		"нет цели «вернись завтра, день 2»: " .. Hud.goal(state, now))
+	-- Таймер идёт без нового состояния от сервера.
+	check(Hud.goal(state, now + 120) == S.t("hud.goal_tomorrow", { time = Format.time(left - 120), day = 2, total = TOTAL }),
+		"таймер цели стоит без нового состояния")
+end)
+
+scenario("цель: назавтра «награда дня 2», после пропуска дня снова «день 1»", function()
+	goaler = nextDay(goaler, GOALER, "Goaler")
+	goalData = DataService.get(goaler)
+	check(goalOf(goaler) == S.t("hud.goal_daily", { day = 2, total = TOTAL }), "назавтра нет цели «день 2»: " .. goalOf(goaler))
+	check(claimToday(goaler) > 0 and goalData.daily.streak == 2, "день 2 не засчитан: серия " .. goalData.daily.streak)
+	goaler = nextDay(goaler, GOALER, "Goaler", 2)
+	goalData = DataService.get(goaler)
+	check(goalOf(goaler) == S.t("hud.goal_daily", { day = 1, total = TOTAL }), "после пропуска дня цель не «день 1»: " .. goalOf(goaler))
+	check(claimToday(goaler) > 0 and goalData.daily.streak == 1, "после пропуска дня серия не 1: " .. goalData.daily.streak)
+	check(claimToday(goaler) == 0, "после пропуска дня награда выдана дважды")
+	leave(goaler)
+end)
+
+scenario("цель: после дня 6 зовёт за мега-наградой дня 7, после дня 7 — снова день 1", function()
+	local state = stateOf(viewer)
+	state.rewards.canClaim = false
+	for _, quest in ipairs(state.rewards.quests) do
+		quest.claimed = true
+	end
+	local now = workspace:GetServerTimeNow()
+	-- Задания сделаны, остался последний подарок: цель — сколько минут до него.
+	local gifts = state.playtime.gifts
+	for index, gift in ipairs(gifts) do
+		gift.claimed = index < #gifts
+	end
+	state.playtime.start = now - 10 * 60
+	local wait = gifts[#gifts].minutes - 10
+	check(Hud.goal(state, now) == S.t("hud.goal_next_gift", { minutes = wait }), "нет цели «следующий подарок через " .. wait .. " мин»: " .. Hud.goal(state, now))
+	gifts[#gifts].claimed = true
+	local time = Format.time((Daily.today() + 1) * DAY - now)
+	state.rewards.streak = TOTAL - 1
+	check(Hud.goal(state, now) == S.t("hud.goal_mega", { time = time, day = TOTAL }), "нет цели «мега-награда»: " .. Hud.goal(state, now))
+	state.rewards.streak = TOTAL
+	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = time, day = 1, total = TOTAL }), "после дня 7 цель не «день 1»")
+	-- Ни одна цель не длиннее 60 знаков при самом длинном задании: строка на экране одна.
+	local longest = 0
+	for _, def in ipairs(Daily.QuestPool) do
+		longest = math.max(longest, utf8.len(questGoal(def, def.target - 1)) or 0)
+	end
+	for _, line in ipairs({
+		S.t("hud.goal_daily", { day = TOTAL, total = TOTAL }), S.t("hud.goal_quest_done"), S.t("hud.goal_gift"),
+		S.t("hud.goal_next_gift", { minutes = 120 }), S.t("hud.goal_mega", { time = Format.time(DAY - 1), day = TOTAL }),
+		S.t("hud.goal_tomorrow", { time = Format.time(DAY - 1), day = TOTAL, total = TOTAL }),
+	}) do
+		longest = math.max(longest, utf8.len(line) or 0)
+	end
+	check(longest <= 60, "цель длиннее 60 знаков: " .. longest)
+end)
+
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)
 
 if failures == 0 then

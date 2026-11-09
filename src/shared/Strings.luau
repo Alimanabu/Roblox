@@ -42,6 +42,13 @@ local Source = {
 	["hud.luck"] = "🍀 Luck x{luck}",
 	["hud.boost"] = "Boost x2: {time}",
 	["hud.vip"] = "👑 VIP: x2 coins",
+	["hud.goal_daily"] = "🎁 Daily reward ready: day {day}/{total}!",
+	["hud.goal_quest_done"] = "✅ Quest done! Tap to claim",
+	["hud.goal_gift"] = "⏰ Playtime gift ready! Tap to claim",
+	["hud.goal_quest"] = "🎯 {quest}: {progress}/{target}",
+	["hud.goal_next_gift"] = "⏰ Next gift in {minutes} min",
+	["hud.goal_tomorrow"] = "🔥 Come back in {time}: streak day {day}/{total}",
+	["hud.goal_mega"] = "🔥 Come back in {time}: day {day} mega reward!",
 
 	-- Window titles
 	["panel.factory"] = "🏭 Brainrot Capsule Factory",

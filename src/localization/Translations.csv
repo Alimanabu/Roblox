@@ -20,6 +20,13 @@ hud.admin,🛠 Test,,,🛠 Тест,🛠 Тест
 hud.luck,🍀 Luck x{luck},,,🍀 Удача x{luck},🍀 Сәт x{luck}
 hud.boost,Boost x2: {time},,,Буст x2: {time},Күшейткіш x2: {time}
 hud.vip,👑 VIP: x2 coins,,,👑 VIP: x2 монет,👑 VIP: x2 монета
+hud.goal_daily,🎁 Daily reward ready: day {day}/{total}!,,,🎁 Награда дня готова: день {day}/{total}!,🎁 Күндік сыйлық дайын: {day}/{total}-күн!
+hud.goal_quest_done,✅ Quest done! Tap to claim,,,"✅ Задание выполнено! Нажми, чтобы забрать",✅ Тапсырма орындалды! Алу үшін бас
+hud.goal_gift,⏰ Playtime gift ready! Tap to claim,,,"⏰ Подарок за игру готов! Нажми, чтобы забрать",⏰ Ойын сыйлығы дайын! Алу үшін бас
+hud.goal_quest,🎯 {quest}: {progress}/{target},,,🎯 {quest}: {progress}/{target},🎯 {quest}: {progress}/{target}
+hud.goal_next_gift,⏰ Next gift in {minutes} min,,,⏰ Следующий подарок через {minutes} мин,⏰ Келесі сыйлық {minutes} мин кейін
+hud.goal_tomorrow,🔥 Come back in {time}: streak day {day}/{total},,,🔥 Возвращайся через {time}: день серии {day}/{total},🔥 {time} кейін қайт: серияның {day}/{total}-күні
+hud.goal_mega,🔥 Come back in {time}: day {day} mega reward!,,,🔥 Возвращайся через {time}: день {day} — мега-награда!,🔥 {time} кейін қайт: {day}-күн — мега сыйлық!
 panel.factory,🏭 Brainrot Capsule Factory,,,🏭 Фабрика капсул с брейнротами,🏭 Brainrot Capsule Factory
 panel.base,🧠 My Base,,,🧠 Моя база,🧠 Менің базам
 panel.upgrades,⬆️ Factory Upgrades,,,⬆️ Улучшения фабрики,⬆️ Фабриканы жақсарту
