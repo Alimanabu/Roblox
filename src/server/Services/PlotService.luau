@@ -608,7 +608,8 @@ function PlotService.render(player)
 				end
 				local gui = model.PrimaryPart and model.PrimaryPart:FindFirstChild("InfoGui")
 				if gui then
-					gui.Label.Text = labelText(entry, creature, rarity, Mutations.get(entry.mut), data, passes, place.floor)
+					-- labelText returns a message (table), not a string: S.apply translates it for each client.
+						S.apply(gui.Label, "Text", labelText(entry, creature, rarity, Mutations.get(entry.mut), data, passes, place.floor))
 				end
 			else
 				buildCreature(plot, entry, standCFrame, data, passes, place.floor)

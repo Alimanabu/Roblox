@@ -28,3 +28,19 @@ if bad:
     print("❌ не упало:", bad)
     sys.exit(1)
 print(f"✅ Отрицательный тест: {len(cases)} поломок таблицы пойманы, исходная таблица проходит")
+
+# Присвоения Text: таблица-сообщение S.m вместо строки должна ронять проверку (PlotService:611).
+assert run.check_text_assignments() == 0, "src должен проходить проверку Text"
+broken = {
+    "прямая S.m": 'gui.Label.Text = S.m("plot.creature_label")',
+    "функция-сообщение": "gui.Label.Text = labelText(entry, creature, rarity)",
+    "S.join": 'self.label.Text = S.join({ S.m("a") }, " ")',
+    "S.m в конкатенации": 'label.Text = "x" .. S.m("a")',
+}
+missed = [n for n, line in broken.items() if run.check_text_assignments({"x.luau": line}) != 1]
+ok_lines = ['label.Text = S.t("a", { name = S.m("b") })', 'label.Text = S.text(S.m("a"))']
+false_alarm = [l for l in ok_lines if run.check_text_assignments({"x.luau": l}) != 0]
+if missed or false_alarm:
+    print("❌ Text: не упало", missed, "ложное срабатывание", false_alarm)
+    sys.exit(1)
+print(f"✅ Отрицательный тест Text: {len(broken)} поломок пойманы, {len(ok_lines)} законных вызовов проходят")

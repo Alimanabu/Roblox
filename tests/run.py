@@ -139,10 +139,63 @@ def check_dictionary():
         print(f"✅ Словарь и таблица перевода: {len(source)} строк совпадают, текстов мимо словаря нет")
     return 1 if problems else 0
 
+# Присвоение в текстовое поле: "Text = ..." или "X.Text = ..." (не RichText, не PlaceholderText).
+TEXT_ASSIGN = re.compile(r"(?<![A-Za-z])(Text|ObjectText|ActionText|ToolTip)\s*=(?!=)\s*(.+)")
+# Что возвращает таблицу-сообщение, а не строку: S.m, S.join и функции, которые их возвращают.
+MESSAGE_CALLS = re.compile(r"(?<!\w)S\.(?:m|join)\(|(?<!\w)labelText\(")
+STRING_WRAPPERS = ("S.t(", "S.text(", "S.forPlayer(")
+
+
+def strip_wrapped(rhs):
+    """Убирает из выражения вызовы S.t(...)/S.text(...): внутри них таблица-сообщение законна."""
+    for wrapper in STRING_WRAPPERS:
+        while wrapper in rhs:
+            start = rhs.index(wrapper)
+            depth, i = 0, start + len(wrapper) - 1
+            while i < len(rhs):
+                depth += {"(": 1, ")": -1}.get(rhs[i], 0)
+                if depth == 0:
+                    break
+                i += 1
+            rhs = rhs[:start] + "_" + rhs[i + 1:]
+    return rhs
+
+
+def check_text_assignments(files=None):
+    """В Text, ObjectText, ActionText, ToolTip нельзя писать таблицу-сообщение S.m (ошибка Roblox
+    "string expected, got table", PlotService:611, 10.11): её отдают в S.t/S.text или S.apply.
+    files: {имя: текст} для отрицательного теста. Печатает список всех присвоений с отметкой."""
+    problems, listing = [], []
+    if files is None:
+        files = {}
+        for path, _, names in os.walk(os.path.join(ROOT, "src")):
+            for name in names:
+                if name.endswith(".luau"):
+                    full = os.path.join(path, name)
+                    files[os.path.relpath(full, ROOT).replace(os.sep, "/")] = open(full, encoding="utf-8").read()
+    for name, text in sorted(files.items()):
+        for number, line in enumerate(text.splitlines(), 1):
+            code = line.split("--")[0]
+            match = TEXT_ASSIGN.search(code)
+            if not match:
+                continue
+            bad = bool(MESSAGE_CALLS.search(strip_wrapped(match.group(2))))
+            listing.append(f"{name}:{number} {'ОШИБКА' if bad else 'проверено'}")
+            if bad:
+                problems.append(f"{name}:{number}: в {match.group(1)} пишется таблица-сообщение, нужна S.apply или S.t/S.text")
+    for problem in problems:
+        print("❌ " + problem)
+    if not problems:
+        print(f"✅ Присвоения Text: {len(listing)} мест в src, таблицы-сообщения вместо строки нет")
+    if os.environ.get("TEXT_LIST"):
+        print("\n".join(listing))
+    return 1 if problems else 0
+
 
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
+    text_assign = check_text_assignments()
 
     services = []
     for name in ["DataService", "MonetizationService", "PolicyService"]:
@@ -169,7 +222,7 @@ def main():
     retention_ru = world("retention.spec.luau", "ru-ru")
     retention_kk = world("retention.spec.luau", "kk-kz")
 
-    return (economy or purchases or dictionary or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
+    return (economy or purchases or dictionary or text_assign or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
             or rejoin or frames or loading or retention or retention_ru or retention_kk)
 
 

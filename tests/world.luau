@@ -386,6 +386,10 @@ Meta.__newindex = function(self, key, value)
 	if key == "Position" and PARTS[state.props.ClassName] then
 		key, value = "CFrame", CFrame.new(value)
 	end
+	-- Как настоящий Roblox: в текстовое поле можно записать только строку (не таблицу-сообщение S.m).
+	if TEXT_FIELDS[key] and type(value) ~= "string" then
+		error(string.format("Unable to assign property %s. string expected, got %s", key, type(value)), 2)
+	end
 	state.props[key] = value
 	if TEXT_FIELDS[key] and type(value) == "string" and value ~= "" then
 		World.texts[value] = true
