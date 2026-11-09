@@ -33,6 +33,7 @@ local dirty = {} -- [player] = true if the state must be sent to the client
 local snapshotBuilder = nil -- function(player, data) -> snapshot, set from Main
 local saveExtras = {} -- functions that add "temporarily absent" brainrots to the save
 local closeCallbacks = {} -- called when the server shuts down, before the final save
+local beforeSave = {} -- functions(player, data): bring computed fields up to date right before a write
 -- [player] = true: the player is leaving, regular saves are no longer needed. Weak keys:
 -- we do not clear the flag so that a late autosave does not bring back the session lock.
 local releasing = setmetatable({}, { __mode = "k" })
@@ -60,6 +61,9 @@ local function defaultData()
 		quests = { day = 0, list = {} },
 		tutorial = { step = 1, progress = 0 },
 		codes = {}, -- [CODE] = true: promo codes entered
+		-- Time in the game today (UTC day), summed over all sessions: the gifts for time are counted from it.
+		-- claimed: ["1"] = true by gift number (string keys, so that the DataStore keeps them).
+		playtime = { day = 0, seconds = 0, claimed = {} },
 		achievements = {}, -- [id] = true
 		skins = {}, -- [skinId] = true: purchased skins
 		settings = { music = true, sfx = true, announcements = true },
@@ -128,6 +132,11 @@ function DataService.reset(player)
 	return fresh
 end
 
+-- callback(player, data) is called inside the write, so it must not yield.
+function DataService.onBeforeSave(callback)
+	table.insert(beforeSave, callback)
+end
+
 function DataService.onClose(callback)
 	table.insert(closeCallbacks, callback)
 end
@@ -160,6 +169,9 @@ end
 local function buildSave(player, data, release)
 	local live = profiles[player] or data
 	live.lastOnline = os.time()
+	for _, callback in ipairs(beforeSave) do
+		callback(player, live)
+	end
 	local toSave = table.clone(live)
 	toSave.creatures = table.clone(live.creatures)
 	for _, callback in ipairs(saveExtras) do

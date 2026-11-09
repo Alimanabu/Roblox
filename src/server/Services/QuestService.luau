@@ -150,7 +150,21 @@ function QuestService.snapshot(player, data)
 	}
 end
 
+-- The client script needs a few seconds after joining to start listening: a reminder sent earlier would be lost.
+local REMIND_DELAY = 8
+
+-- A reminder when the player joins: the daily reward waits for them, and the streak is at stake.
+local function remindDaily(player)
+	task.delay(REMIND_DELAY, function()
+		local data = player.Parent and DataService.get(player)
+		if data and canClaimDaily(data) then
+			Remotes.Notify:FireClient(player, S.m("quest.daily_ready", { day = nextStreakDay(data), total = #Daily.Rewards }), GOLD)
+		end
+	end)
+end
+
 function QuestService.init()
+	DataService.Loaded.Event:Connect(remindDaily)
 	Actions.connect(onAction)
 	Remotes.ClaimDaily.OnServerEvent:Connect(claimDaily)
 	Remotes.ClaimQuest.OnServerEvent:Connect(claimQuest)

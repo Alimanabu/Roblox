@@ -83,6 +83,13 @@ function World.advance(seconds)
 	clock = target
 end
 
+-- Прыжок через долгое время (сутки): всё, что ждало, просыпается один раз, как после паузы сервера.
+-- Игрок, который всё это время в игре, получит время «за все эти сутки», поэтому прыгаем, когда игрока нет.
+function World.skip(seconds)
+	clock += seconds
+	wakeSleepers(clock)
+end
+
 function World.now()
 	return clock
 end

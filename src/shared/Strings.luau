@@ -171,14 +171,14 @@ local Source = {
 	["rewards.spins_blocked"] = "Purchase unavailable",
 	["rewards.spins_buy"] = "+3 spins R$ {price}",
 	["rewards.spins_soon"] = "+3 spins (soon)",
-	["rewards.gifts"] = "⏰ Playtime gifts (you've played {minutes} min)",
+	["rewards.gifts"] = "⏰ Playtime gifts (you've played {minutes} min today)",
 	["rewards.gift_done"] = "✅ {minutes} min",
 	["rewards.gift_claim"] = "🎁 Claim!\n{reward}",
 	["rewards.gift_wait"] = "⏰ in {minutes} min\n{reward}",
 	["rewards.code_placeholder"] = "🎟️ Code (for example, SIXSEVEN)",
 	["rewards.code_enter"] = "Redeem code",
 	["rewards.claim_day"] = "🎁 Claim day {day}",
-	["rewards.come_back"] = "✅ Come back tomorrow",
+	["rewards.come_back"] = "✅ Next reward in {time}",
 	["rewards.quests"] = "📋 Today's quests (new ones in {time})",
 	["rewards.received"] = "✅ Claimed",
 
@@ -204,6 +204,7 @@ local Source = {
 	["quest.done"] = "📋 Quest complete: {text}! Claim your reward 🎁",
 	["quest.daily_claimed"] = "Today's reward is already claimed. Come back tomorrow!",
 	["quest.daily_reward"] = "🎁 Day {day}: {reward}",
+	["quest.daily_ready"] = "🎁 Your daily reward is ready: day {day} of {total}! Open 🎁 Rewards",
 	["quest.reward"] = "📋 Quest reward: {reward}",
 
 	-- Gifts

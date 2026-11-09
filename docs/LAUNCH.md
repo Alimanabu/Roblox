@@ -74,6 +74,8 @@ RELEASE — coins + luck
 SKIN67 — secret Skin 67
 ```
 
+Коды `DISCORD` и `YOUTUBE` (по монетам и удаче, как RELEASE) в текст магазина не вставлять: они для сервера Discord, группы и описаний роликов (список кодов в `src/shared/Config/Codes.luau`). Число вводов игра пока не считает.
+
 ### Русский перевод (Localization → Game Information → Russian)
 ```
 🧠 Открывай мем-капсулы, собирай брейнротов от Нормиса до SIX SEVEN и построй самую богатую базу на сервере! 🤌

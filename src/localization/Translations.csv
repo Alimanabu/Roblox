@@ -137,7 +137,7 @@ rewards.spin_tomorrow,🎡 Free spin tomorrow,,,🎡 Бесплатное вра
 rewards.spins_blocked,Purchase unavailable,,,Покупка недоступна,Сатып алу мүмкін емес
 rewards.spins_buy,+3 spins R$ {price},,,+3 вращения R$ {price},+3 айналым R$ {price}
 rewards.spins_soon,+3 spins (soon),,,+3 вращения (скоро),+3 айналым (жақында)
-rewards.gifts,⏰ Playtime gifts (you've played {minutes} min),,,⏰ Подарки за игру (ты играешь {minutes} мин),⏰ Ойын уақыты үшін сыйлықтар (сен {minutes} мин ойнадың)
+rewards.gifts,⏰ Playtime gifts (you've played {minutes} min today),,,⏰ Подарки за игру (сегодня ты играешь {minutes} мин),⏰ Ойын уақыты үшін сыйлықтар (бүгін сен {minutes} мин ойнадың)
 rewards.gift_done,✅ {minutes} min,,,✅ {minutes} мин,✅ {minutes} мин
 rewards.gift_claim,"🎁 Claim!
 {reward}",,,"🎁 Забрать!
@@ -150,7 +150,7 @@ rewards.gift_wait,"⏰ in {minutes} min
 rewards.code_placeholder,"🎟️ Code (for example, SIXSEVEN)",,,"🎟️ Промокод (например, SIXSEVEN)","🎟️ Код (мысалы, SIXSEVEN)"
 rewards.code_enter,Redeem code,,,Ввести код,Кодты қолдану
 rewards.claim_day,🎁 Claim day {day},,,🎁 Забрать день {day},🎁 {day}-күнді алу
-rewards.come_back,✅ Come back tomorrow,,,✅ Приходи завтра,✅ Ертең қайта кел
+rewards.come_back,✅ Next reward in {time},,,✅ Следующая награда через {time},✅ Келесі сыйлық {time} кейін
 rewards.quests,📋 Today's quests (new ones in {time}),,,📋 Задания на сегодня (новые через {time}),📋 Бүгінгі тапсырмалар (жаңалары {time} кейін)
 rewards.received,✅ Claimed,,,✅ Получено,✅ Алынды
 reward.luck_short,🍀x2 {minutes}m,,,🍀x2 {minutes}м,🍀x2 {minutes}м
@@ -170,6 +170,7 @@ quest.mutant1.text,Get a mutated brainrot,,,Получи брейнрота с �
 quest.sigma5.text,Get 5 brainrots of Sigma rarity or rarer,,,Получи 5 брейнротов «Сигма» или реже,Сигма немесе одан сирек деңгейдегі 5 брейнрот ал
 quest.index1.text,Unlock a new brainrot in the Index,,,Открой нового брейнрота в Индексе,Индекстен жаңа брейнрот аш
 quest.done,📋 Quest complete: {text}! Claim your reward 🎁,,,📋 Задание выполнено: {text}! Забери награду 🎁,📋 Тапсырма орындалды: {text}! Сыйлығыңды ал 🎁
+quest.daily_ready,🎁 Your daily reward is ready: day {day} of {total}! Open 🎁 Rewards,,,🎁 Твоя ежедневная награда готова: день {day} из {total}! Открой 🎁 Награды,🎁 Күндік сыйлығың дайын: {day}-күн / {total}! 🎁 Сыйлықтарды аш
 quest.daily_claimed,Today's reward is already claimed. Come back tomorrow!,,,Сегодняшняя награда уже получена. Приходи завтра!,Бүгінгі сыйлық алынып қойған. Ертең қайта кел!
 quest.daily_reward,🎁 Day {day}: {reward},,,🎁 День {day}: {reward},🎁 {day}-күн: {reward}
 quest.reward,📋 Quest reward: {reward},,,📋 Награда за задание: {reward},📋 Тапсырма сыйлығы: {reward}

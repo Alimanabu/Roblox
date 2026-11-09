@@ -1042,6 +1042,7 @@ function Rewards.signature(state)
 	local r = state.rewards
 	local parts = {
 		tostring(r.canClaim),
+		math.floor(r.secondsToReset / 60), -- the timer to the next reward is redrawn every minute
 		r.nextDay,
 		r.streak,
 		S.text(r.rewards[1]),
@@ -1234,7 +1235,8 @@ function Rewards.build(content, state)
 
 	Theme.button({
 		Size = UDim2.new(0.5, 0, 0, 48),
-		Text = r.canClaim and S.t("rewards.claim_day", { day = r.nextDay }) or S.t("rewards.come_back"),
+		Text = r.canClaim and S.t("rewards.claim_day", { day = r.nextDay })
+			or S.t("rewards.come_back", { time = Format.time(r.secondsToReset) }),
 		Color = r.canClaim and C.Good or C.CardLocked,
 		LayoutOrder = 2,
 		Parent = content,

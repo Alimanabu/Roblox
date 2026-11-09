@@ -107,6 +107,7 @@ end
 function COMMANDS.resetDaily(player, data)
 	data.daily.lastClaimDay = 0
 	data.quests.day = 0
+	data.playtime = { day = 0, seconds = 0, claimed = {} }
 	return S.m("admin.daily_reset")
 end
 

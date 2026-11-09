@@ -9,5 +9,8 @@ return {
 	RIZZ = { creatureRarity = "rizz" },
 	SIGMA = { coinsMinutes = 5, luckMinutes = 10 },
 	RELEASE = { coinsMinutes = 15, luckMinutes = 15 },
-	SKIN67 = { skin = "sixseven", textKey = "code.skin67.text" },
+	-- For videos, the group and Discord: one code per place, so that it is clear where the players came from.
+	DISCORD = { coinsMinutes = 10, luckMinutes = 10 },
+	YOUTUBE = { coinsMinutes = 12, luckMinutes = 15 },
+	SKIN67 ={ skin = "sixseven", textKey = "code.skin67.text" },
 }
