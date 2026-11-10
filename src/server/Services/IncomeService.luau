@@ -16,7 +16,8 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local IncomeService = {}
 
--- Custom event in Creator Hub -> Analytics: a return that brought offline income (not a funnel step).
+-- Custom event in Creator Hub -> Analytics: a return after a real break (the same 10+ minutes as the window)
+-- that brought offline income; a server hop does not count. Not a funnel step.
 IncomeService.RETURN_EVENT = "OfflineIncomeReturn"
 
 -- Income while away (Formulas.offlineIncome). Away 10+ minutes: the "Welcome back" window with the sum,
@@ -31,16 +32,19 @@ function IncomeService.giveOfflineIncome(player)
 	if amount <= 0 then
 		return 0
 	end
+	local welcome = away >= Formulas.WELCOME_MIN_SECONDS
 	data.coins += amount
 	AnalyticsService.coins(player, true, amount, "Offline")
-	AnalyticsService.event(player, IncomeService.RETURN_EVENT, 1)
+	if welcome then
+		AnalyticsService.event(player, IncomeService.RETURN_EVENT, 1)
+	end
 	data.totalEarned += amount
 	DataService.markDirty(player)
 	task.delay(2, function()
 		if not player.Parent then
 			return
 		end
-		if away >= Formulas.WELCOME_MIN_SECONDS then
+		if welcome then
 			Remotes.WelcomeBack:FireClient(player, amount)
 		else
 			Remotes.Notify:FireClient(
