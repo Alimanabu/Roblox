@@ -126,6 +126,7 @@ local function onAdmin(player, command, arg)
 	if not handler or not data then
 		return
 	end
+	data.funnel.admin = true -- any admin command makes the profile a test one: no analytics funnel steps
 	local result = handler(player, data, arg)
 	if result then
 		DataService.markDirty(player)

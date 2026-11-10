@@ -63,8 +63,10 @@ local function defaultData()
 		tutorial = { step = 1, progress = 0 },
 		-- Analytics funnels (AnalyticsService): what has been sent, so every step goes out once per life.
 		-- onboarding: the last tutorial funnel step sent; loop: the last main funnel step sent;
-		-- done: facts of the main funnel ["capsule"] = true; session: funnelSessionId of the player.
-		funnel = { onboarding = 0, loop = 0, done = {}, session = "" },
+		-- done: facts of the main funnel ["capsule"] = true; session: funnelSessionId of the player;
+		-- firstDay: UTC day number of the first visit (0 = not set yet); admin: an admin command touched
+		-- this profile, so it is no longer a real player and sends no funnel steps.
+		funnel = { onboarding = 0, loop = 0, done = {}, session = "", firstDay = 0, admin = false },
 		codes = {}, -- [CODE] = true: promo codes entered
 		-- Time in the game today (UTC day), summed over all sessions: the gifts for time are counted from it.
 		-- claimed: ["1"] = true by gift number (string keys, so that the DataStore keeps them).
@@ -148,6 +150,7 @@ function DataService.reset(player)
 	local fresh = defaultData()
 	fresh.receipts = old.receipts
 	fresh.session = old.session
+	fresh.funnel.admin = true -- a reset profile is a test profile, not a new player
 	profiles[player] = fresh
 	dirty[player] = true
 	return fresh

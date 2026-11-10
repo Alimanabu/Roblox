@@ -26,6 +26,9 @@ end
 -- and a jump over several steps (the daily reward was already claimed) still sends every one of them.
 function AnalyticsService.onboardingTo(player, data, target)
 	local funnel = data.funnel
+	if funnel.admin then
+		return
+	end
 	target = math.min(target, #Funnels.ONBOARDING)
 	while funnel.onboarding < target do
 		local step = funnel.onboarding + 1
@@ -38,6 +41,9 @@ end
 -- The fact "done" may come earlier than its turn (sold before the first fuse): it waits in the profile.
 local function loopFlush(player, data)
 	local funnel = data.funnel
+	if funnel.admin then
+		return
+	end
 	while funnel.loop < #Funnels.LOOP do
 		local step = Funnels.LOOP[funnel.loop + 1]
 		if not funnel.done[step.key] then
@@ -134,8 +140,14 @@ function AnalyticsService.init()
 		-- lastOnline is written by a real save: it exists only if the previous visit saved something.
 		local last = data.lastOnline or 0
 		done.saved = done.saved or last > 0 or nil
-		-- By the UTC day of the last save, not by 24 hours: joined the next calendar day = returned.
-		if last > 0 and math.floor(os.time() / SECONDS_PER_DAY) > math.floor(last / SECONDS_PER_DAY) then
+		-- "Returned on day 2" = the first visit day + exactly 1 calendar day (UTC), and nothing was played on
+		-- this day before (a session that crossed midnight is not a return). Later returns do not count.
+		local today = math.floor(os.time() / SECONDS_PER_DAY)
+		if data.funnel.firstDay == 0 then
+			-- An old save has no first day: the day of its last save is the closest thing we know.
+			data.funnel.firstDay = if last > 0 then math.floor(last / SECONDS_PER_DAY) else today
+		end
+		if today == data.funnel.firstDay + 1 and math.floor(last / SECONDS_PER_DAY) < today then
 			done.returned = true
 		end
 		loopFlush(player, data)
