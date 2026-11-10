@@ -99,16 +99,17 @@ function Theme.button(props, onClick)
 	return button
 end
 
--- ✕ in the corner of a plate: hides the plate until the HUD is shown again with the eye (Theme.reopenAll).
--- The plate's own code shows it with Theme.show, which keeps a closed plate hidden.
-Theme.CLOSE = 40
+-- ✕ in the corner of a plate: hides the plate. The flag is tied to the reason the plate is shown:
+-- Theme.show(frame, visible, key) clears it when the reason is gone (visible = false) or changed (another key:
+-- the next tutorial step, the lock turning from open to closed). The eye clears all of them (Theme.reopenAll).
+Theme.CLOSE = 36 -- on PC, in screen units; on touch screens Hud sizes it in points (Layout.PT.CLOSE)
 Theme.closables = {}
 
 function Theme.closable(frame)
 	local button = Theme.button({
 		Name = "Close",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 2, 0, -2),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -4, 0.5, 0),
 		Size = UDim2.fromOffset(Theme.CLOSE, Theme.CLOSE),
 		Text = "✕",
 		Color = Theme.Colors.Bad,
@@ -116,19 +117,28 @@ function Theme.closable(frame)
 		Parent = frame,
 	}, function()
 		frame:SetAttribute("Closed", true)
+		frame:SetAttribute("ClosedKey", frame:GetAttribute("ShownKey"))
 		frame.Visible = false
 	end)
 	table.insert(Theme.closables, frame)
 	return button
 end
 
-function Theme.show(frame, visible)
-	frame.Visible = visible and frame:GetAttribute("Closed") ~= true
+function Theme.show(frame, visible, key)
+	local closed = frame:GetAttribute("Closed") == true
+	if closed and (not visible or frame:GetAttribute("ClosedKey") ~= key) then
+		frame:SetAttribute("Closed", nil)
+		frame:SetAttribute("ClosedKey", nil)
+		closed = false
+	end
+	frame:SetAttribute("ShownKey", if visible then key else nil)
+	frame.Visible = visible and not closed
 end
 
 function Theme.reopenAll()
 	for _, frame in ipairs(Theme.closables) do
 		frame:SetAttribute("Closed", nil)
+		frame:SetAttribute("ClosedKey", nil)
 	end
 end
 

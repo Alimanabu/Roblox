@@ -70,7 +70,7 @@ local function updateScale()
 	local size = camera.ViewportSize
 	uiScale.Scale = Layout.scale(size)
 	eyeScale.Scale = uiScale.Scale
-	hud:applyLayout(size, Layout.isTouch())
+	hud:applyLayout(size, Layout.isTouch(), uiScale.Scale)
 end
 updateScale()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
@@ -79,12 +79,15 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateS
 -- comes back, the plates closed with ✕ too.
 local hudHidden = false
 local function setWorldLabels(visible)
-	local plots = workspace:FindFirstChild("Plots")
-	for _, item in ipairs(plots and plots:GetDescendants() or {}) do
-		if item.Name == "InfoGui" and item:IsA("BillboardGui") and item.Enabled ~= visible then
-			item.Enabled = visible
+	-- Once a second in a loop that also runs the steal status: a broken base must not stop it (lesson 5).
+	pcall(function()
+		local plots = workspace:FindFirstChild("Plots")
+		for _, item in ipairs(plots and plots:GetDescendants() or {}) do
+			if item.Name == "InfoGui" and item:IsA("BillboardGui") and item.Enabled ~= visible then
+				item.Enabled = visible
+			end
 		end
-	end
+	end)
 end
 local eyeButton
 eyeButton = Hud.sideButton({ Name = "EyeButton", Text = "👁", Parent = eyeGui }, 2, function()
@@ -97,6 +100,7 @@ eyeButton = Hud.sideButton({ Name = "EyeButton", Text = "👁", Parent = eyeGui 
 	end
 	setWorldLabels(not hudHidden)
 end)
+hud:setEye(eyeButton)
 
 local renameDialog = RenameDialog.new(screenGui)
 Panels.onRename = function(uid, currentName)
@@ -214,8 +218,9 @@ Remotes.Knockback.OnClientEvent:Connect(function(velocity)
 end)
 
 -- Steal and lock status.
-local status = StealStatus.new(hud.side)
-local eventBanner = EventBanner.new(hud.side)
+local status = StealStatus.new(hud)
+local eventBanner = EventBanner.new(hud)
+hud:applyLayout(hud.size, hud.touch, hud.scale) -- the new plates take their places
 task.spawn(function()
 	local ticks = 0
 	while true do

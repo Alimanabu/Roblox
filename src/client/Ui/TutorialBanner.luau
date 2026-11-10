@@ -96,6 +96,7 @@ function TutorialBanner.new(screenGui, hud, panels, getScale)
 		Parent = self.frame,
 	})
 	Theme.closable(self.frame)
+	hud:addPlate(self.frame, { self.step, self.text }, { dock = "bottom" })
 	-- The arrow is drawn over everything, windows included.
 	self.arrow = Theme.label({
 		Name = "TutorialArrow",
@@ -121,7 +122,8 @@ end
 -- (opening the menu or a window changes the target without new state).
 function TutorialBanner:refresh()
 	local tutorial = self.tutorial
-	Theme.show(self.frame, tutorial ~= nil)
+	-- ✕ hides the hint only for the step it was pressed on: the next step shows it again.
+	Theme.show(self.frame, tutorial ~= nil, tutorial and tutorial.index)
 	-- While the tutorial leads, nothing else glows: one goal at a time.
 	self.hud.quietGlow = tutorial ~= nil and not self:closed()
 	if not tutorial or self:closed() then

@@ -11,7 +11,8 @@ local C = Theme.Colors
 local StealStatus = {}
 StealStatus.__index = StealStatus
 
-function StealStatus.new(side)
+function StealStatus.new(hud)
+	local side = hud.side
 	local self = setmetatable({}, StealStatus)
 
 	self.carry = create("Frame", {
@@ -30,6 +31,7 @@ function StealStatus.new(side)
 		Parent = self.carry,
 	})
 	Theme.closable(self.carry)
+	hud:addPlate(self.carry, { self.carryLabel }, { land = 44, dock = "carry" })
 
 	self.lock = create("Frame", {
 		Name = "LockStatus",
@@ -48,6 +50,7 @@ function StealStatus.new(side)
 		Parent = self.lock,
 	})
 	Theme.closable(self.lock)
+	hud:addPlate(self.lock, { self.lockLabel }, { land = 40 })
 	return self
 end
 
@@ -55,7 +58,7 @@ function StealStatus:update(player, plots)
 	local serverNow = workspace:GetServerTimeNow()
 
 	local deadline = player:GetAttribute("CarryDeadline")
-	Theme.show(self.carry, deadline ~= nil)
+	Theme.show(self.carry, deadline ~= nil, deadline) -- ✕ stays only for this carry
 	if deadline then
 		self.carryLabel.Text = S.t("status.carry", { time = Format.time(deadline - serverNow) })
 	end
@@ -69,18 +72,23 @@ function StealStatus:update(player, plots)
 			end
 		end
 	end
-	Theme.show(self.lock, myPlot ~= nil)
+	local left = (myPlot and myPlot:GetAttribute("LockedUntil") or 0) - serverNow
+	local readyIn = (myPlot and myPlot:GetAttribute("LockReadyAt") or 0) - serverNow
+	local kind = if left > 0
+		then (if myPlot:GetAttribute("LockKind") == "shield" then "shield" else "locked")
+		elseif readyIn > 0 then "ready"
+		else "open"
+	-- ✕ closes the plate only while the base stays in this lock state: the next state shows it again.
+	Theme.show(self.lock, myPlot ~= nil, kind)
 	if not myPlot then
 		return
 	end
-	local left = (myPlot:GetAttribute("LockedUntil") or 0) - serverNow
 	if left > 0 then
-		local shield = myPlot:GetAttribute("LockKind") == "shield"
-		self.lockLabel.Text = S.t(if shield then "status.shield" else "status.locked", { time = Format.time(left) })
+		self.lockLabel.Text = S.t(if kind == "shield" then "status.shield" else "status.locked", { time = Format.time(left) })
 		self.lockLabel.TextColor3 = C.Good
 		self.lockStroke.Color = C.Good
 	elseif (myPlot:GetAttribute("LockReadyAt") or 0) > serverNow then
-		self.lockLabel.Text = S.t("status.lock_ready", { time = Format.time(myPlot:GetAttribute("LockReadyAt") - serverNow) })
+		self.lockLabel.Text = S.t("status.lock_ready", { time = Format.time(readyIn) })
 		self.lockLabel.TextColor3 = C.Gold
 		self.lockStroke.Color = C.Gold
 	else

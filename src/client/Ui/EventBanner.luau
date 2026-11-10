@@ -12,7 +12,8 @@ local C = Theme.Colors
 local EventBanner = {}
 EventBanner.__index = EventBanner
 
-function EventBanner.new(side)
+function EventBanner.new(hud)
+	local side = hud.side
 	local self = setmetatable({}, EventBanner)
 	self.frame = create("Frame", {
 		Name = "EventBanner",
@@ -33,6 +34,7 @@ function EventBanner.new(side)
 		Parent = self.frame,
 	})
 	Theme.closable(self.frame)
+	hud:addPlate(self.frame, { self.title, self.info }, { land = 56, split = { 0.3, 0.7 } })
 	return self
 end
 
