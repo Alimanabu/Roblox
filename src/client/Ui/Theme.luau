@@ -132,7 +132,20 @@ function Theme.show(frame, visible, key)
 		closed = false
 	end
 	frame:SetAttribute("ShownKey", if visible then key else nil)
-	frame.Visible = visible and not closed
+	frame:SetAttribute("Wanted", visible == true)
+	frame.Visible = visible and not closed and frame:GetAttribute("Quiet") ~= true
+end
+
+-- "Quiet": the plate steps aside for a while (the tutorial hint leads, Hud:placeSide) without losing its reason
+-- to be shown or its ✕ flag; when the quiet ends it comes back exactly as Theme.show left it.
+function Theme.quiet(frame, on)
+	frame:SetAttribute("Quiet", if on then true else nil)
+	local wanted = frame:GetAttribute("Wanted")
+	if on then
+		frame.Visible = false
+	elseif wanted ~= nil then
+		frame.Visible = wanted and frame:GetAttribute("Closed") ~= true
+	end
 end
 
 function Theme.reopenAll()

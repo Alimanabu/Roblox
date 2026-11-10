@@ -71,7 +71,9 @@ end
 -- A plate of the right column or of the top strip (goal, luck, lock, event, carry, the tutorial hint).
 -- labels: the text objects inside (or the plate itself when it is a button with its own text).
 -- spec: land = height in points on a landscape touch screen, split = shares of the height for several labels,
--- own = the plate itself carries the text, dock = "carry" (bottom of a portrait screen) or "top" (the tutorial hint, Hud:layoutHint).
+-- own = the plate itself carries the text, dock = "carry" (bottom of a portrait screen) or "top" (the tutorial hint, Hud:layoutHint),
+-- quiet = the plate steps aside while the tutorial hint leads on a touch screen (goal, luck, event; never the carry
+-- timer or the lock: Hud:placeSide).
 -- The PC look is remembered here and restored by applyLayout.
 function Hud:addPlate(frame, labels, spec)
 	local plate = { frame = frame, labels = labels, spec = spec, pc = {} }
@@ -260,7 +262,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.goalButton.TextWrapped = true
 	self.goalButton:FindFirstChildOfClass("UIPadding").PaddingRight = UDim.new(0, Theme.CLOSE)
 	Theme.closable(self.goalButton)
-	self:addPlate(self.goalButton, { self.goalButton }, { land = 52, own = true })
+	self:addPlate(self.goalButton, { self.goalButton }, { land = 52, own = true, quiet = true })
 
 	-- Luck.
 	local luckFrame = create("Frame", {
@@ -285,9 +287,9 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		TextColor3 = C.Muted,
 		Parent = luckFrame,
 	})
-	Theme.closable(luckFrame)
 	self.luckFrame = luckFrame
-	self:addPlate(luckFrame, { self.luckLabel, self.boostLabel }, { land = 40 })
+	Theme.closable(self.luckFrame)
+	self:addPlate(luckFrame, { self.luckLabel, self.boostLabel }, { land = 40, quiet = true })
 
 	-- Notifications: at the bottom, above the tutorial hint (see applyLayout for the places).
 	self.notifyFrame = create("Frame", {
@@ -330,9 +332,16 @@ local function plateText(label, touch, u, font, pc)
 	end
 end
 
+-- Height of the tutorial hint in points on a touch screen (frame of Hud:layoutHint).
+function Hud.hintPoints(portrait)
+	local PT = Layout.PT
+	local lines = if portrait then Layout.HINT_LINES.portrait else Layout.HINT_LINES.landscape
+	return PT.CLOSE + 4 + lines * PT.HINT * Layout.LINE + 6
+end
+
 -- The tutorial hint, at the top edge with big text (Layout.PT.HINT points on a touch screen).
 -- Portrait: the strip under the coins, full width. Landscape: the top of the right column; the plates
--- give it their place while the tutorial runs (Hud:setTutorialFocus). PC: under the level, in the middle.
+-- move under it while the tutorial runs (Hud:placeSide). PC: under the level, in the middle.
 -- Row 1: progress dots and ✕; below: the hint, wrapped, the whole width.
 function Hud:layoutHint(plate, size, touch, portrait, u)
 	local PT = Layout.PT
@@ -359,7 +368,8 @@ function Hud:layoutHint(plate, size, touch, portrait, u)
 		font, stepFont, c = Layout.HINT_PC.FONT, Layout.HINT_PC.STEP, Theme.CLOSE
 	end
 	frame.Parent = self.screenGui
-	frame.Size = UDim2.fromOffset(k * width, k * (c + 4 + lines * font * Layout.LINE + 6))
+	local height = if touch then Hud.hintPoints(portrait) else c + 4 + lines * font * Layout.LINE + 6
+	frame.Size = UDim2.fromOffset(k * width, k * height)
 	if close then
 		close.AnchorPoint = Vector2.new(1, 0)
 		close.Position = UDim2.new(1, -k * 2, 0, k * 2)
@@ -379,11 +389,62 @@ function Hud:layoutHint(plate, size, touch, portrait, u)
 	text.TextYAlignment = Enum.TextYAlignment.Top
 end
 
--- While the tutorial hint leads on a touch screen, the plates (goal, luck, lock, event) step aside:
--- there is no room for both at the top, and the newbie gets one thing to read. ✕ on the hint brings them back.
+-- While the tutorial hint leads on a touch screen it takes the place of the plates at the top.
+-- The goal, luck and event plates step aside one by one (spec.quiet): one thing to read for a newbie.
+-- The carry timer and the lock never hide (a newbie can be robbed, step 4 is the lock): the column moves
+-- under the hint on a landscape screen, the row goes to the bottom (above the carry plate) on a portrait one.
+-- ✕ on the hint ends the focus and puts everything back.
 function Hud:setTutorialFocus(on)
 	self.tutorialFocus = on
-	self.side.Visible = not (on and self.touch)
+	self:placeSide(self.size, self.touch == true, self.scale)
+end
+
+-- Places the plate column (or the portrait row) and the notifications; switches the quiet plates.
+function Hud:placeSide(size, touch, scale)
+	local u = 1 / scale
+	local function pt(n)
+		return n * u
+	end
+	local PT = Layout.PT
+	local portrait = Layout.isPortrait(size)
+	local focus = touch and self.tutorialFocus == true
+	local plateWidth = math.min(190, size.X * Layout.EDGE - 10)
+	local gridMode = touch and portrait
+	if touch then
+		if portrait and focus then
+			self.side.AnchorPoint = Vector2.new(0.5, 1)
+			self.side.Position = UDim2.new(0.5, 0, 1, -pt(6 + 44 + 4))
+			self.side.Size = UDim2.fromOffset(pt(size.X - 16), pt(44))
+		elseif portrait then
+			self.side.AnchorPoint = Vector2.new(0.5, 0)
+			self.side.Position = UDim2.new(0.5, 0, 0, pt(PT.TOP + 50 + 4))
+			self.side.Size = UDim2.fromOffset(pt(size.X - 16), pt(100))
+		else
+			local top = PT.ROBLOX_BAR - 48 + (if focus then Hud.hintPoints(false) + PT.GAP else 0)
+			self.side.AnchorPoint = Vector2.new(1, 0)
+			self.side.Position = UDim2.new(1, -pt(PT.LEFT), 0, pt(top))
+			self.side.Size = UDim2.fromOffset(pt(plateWidth), pt(size.Y - top - PT.LEFT))
+		end
+		if portrait then
+			self.sideGrid.CellSize = UDim2.new(0.5, -pt(3), 0, pt(44))
+			self.sideGrid.CellPadding = UDim2.fromOffset(pt(6), pt(4))
+		end
+		-- Notifications: one line at the bottom, above the carry plate and the plate row on a portrait screen.
+		local above = 6 + (if portrait then 44 + 4 else 0) + (if portrait and focus then 44 + 4 else 0)
+		self.notifyFrame.Position = UDim2.new(0.5, 0, 1, -pt(above))
+	else
+		self.side.AnchorPoint = Vector2.new(1, 0)
+		self.side.Position = UDim2.new(1, -10, Hud.COLUMN_Y, 0)
+		self.side.Size = UDim2.fromOffset(Hud.PLATE_WIDTH, 360)
+		self.notifyFrame.Position = UDim2.new(0.5, 0, 1, -66)
+	end
+	self.sideList.Parent = if gridMode then nil else self.side
+	self.sideGrid.Parent = if gridMode then self.side else nil
+	for _, plate in ipairs(self.plates) do
+		if plate.spec.quiet then
+			Theme.quiet(plate.frame, focus)
+		end
+	end
 end
 
 -- Puts everything in place for the screen size. size: the screen in points, scale: the UIScale of the screen gui.
@@ -465,27 +526,7 @@ function Hud:applyLayout(size, touch, scale)
 	end
 
 	-- Plates.
-	local plateWidth = math.min(190, size.X * Layout.EDGE - 10)
-	local gridMode = touch and portrait
-	if touch then
-		if portrait then
-			self.side.AnchorPoint = Vector2.new(0.5, 0)
-			self.side.Position = UDim2.new(0.5, 0, 0, pt(PT.TOP + 50 + 4))
-			self.side.Size = UDim2.fromOffset(pt(size.X - 16), pt(100))
-			self.sideGrid.CellSize = UDim2.new(0.5, -pt(3), 0, pt(44))
-			self.sideGrid.CellPadding = UDim2.fromOffset(pt(6), pt(4))
-		else
-			self.side.AnchorPoint = Vector2.new(1, 0)
-			self.side.Position = UDim2.new(1, -pt(PT.LEFT), 0, pt(PT.ROBLOX_BAR - 48))
-			self.side.Size = UDim2.fromOffset(pt(plateWidth), pt(size.Y - (PT.ROBLOX_BAR - 48) - PT.LEFT))
-		end
-	else
-		self.side.AnchorPoint = Vector2.new(1, 0)
-		self.side.Position = UDim2.new(1, -10, Hud.COLUMN_Y, 0)
-		self.side.Size = UDim2.fromOffset(Hud.PLATE_WIDTH, 360)
-	end
-	self.sideList.Parent = if gridMode then nil else self.side
-	self.sideGrid.Parent = if gridMode then self.side else nil
+	self:placeSide(size, touch, scale)
 
 	for _, plate in ipairs(self.plates) do
 		local frame, spec = plate.frame, plate.spec
@@ -550,19 +591,16 @@ function Hud:applyLayout(size, touch, scale)
 		end
 	end
 
-	-- Notifications: one line at the bottom (above the carry plate on a portrait screen); two on PC.
+	-- Notifications: one line at the bottom on a touch screen (the place: Hud:placeSide); two on PC.
 	if touch then
-		local above = 6 + (if portrait then 44 + 4 else 0)
 		self.notifyMax = 1
 		self.notifyHeight = pt(if portrait then 36 else 28)
 		self.notifyWidth = pt(math.min(size.X * 0.7, 420))
 		self.notifyFont = pt(13)
-		self.notifyFrame.Position = UDim2.new(0.5, 0, 1, -pt(above))
 		self.notifyFrame.Size = UDim2.fromOffset(self.notifyWidth, self.notifyHeight)
 	else
 		self.notifyMax = Hud.NOTIFY_MAX
 		self.notifyHeight, self.notifyWidth, self.notifyFont = 36, 560, nil
-		self.notifyFrame.Position = UDim2.new(0.5, 0, 1, -66)
 		self.notifyFrame.Size = UDim2.fromOffset(560, Hud.NOTIFY_MAX * 42)
 	end
 
@@ -574,7 +612,6 @@ function Hud:applyLayout(size, touch, scale)
 		self.touch = touch
 		self:setMenuOpen(Layout.menuOpenAtStart(touch))
 	end
-	self:setTutorialFocus(self.tutorialFocus == true)
 end
 
 function Hud:setMenuOpen(open)
@@ -664,7 +701,7 @@ function Hud:refreshGoal(state)
 	local button = self.goalButton
 	if button.GetAttribute then
 		-- ✕ holds only for this kind of goal: "quest done" or tomorrow's reward shows the plate again (lesson 7).
-		Theme.show(button, good, kind)
+		Theme.show(self.goalButton, good, kind)
 	else
 		button.Visible = good -- a bare table in the tests (tests/retention.spec.luau)
 	end

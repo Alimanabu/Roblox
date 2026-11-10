@@ -34,7 +34,7 @@ function EventBanner.new(hud)
 		Parent = self.frame,
 	})
 	Theme.closable(self.frame)
-	hud:addPlate(self.frame, { self.title, self.info }, { land = 56, split = { 0.3, 0.7 } })
+	hud:addPlate(self.frame, { self.title, self.info }, { land = 56, split = { 0.3, 0.7 }, quiet = true })
 	return self
 end
 

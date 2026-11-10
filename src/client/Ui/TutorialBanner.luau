@@ -1,7 +1,8 @@
 -- Tutorial: one short action at a time, an arrow and a glow right on the thing to tap.
 -- The server counts the steps (Config/Tutorial, TutorialService); here each step is split into taps:
 -- ☰ -> menu button -> the button inside the window (Craft, Buy, Claim). A big hint at the top edge
--- (18+ pt on a touch screen, Hud:layoutHint) says the same in 3-6 words; while it leads, the plates step aside.
+-- (18+ pt on a touch screen, Hud:layoutHint) says the same in 3-6 words; while it leads, the goal, luck and
+-- event plates step aside (Hud:placeSide), the carry timer and the lock stay.
 -- ✕ hides the hint and the arrow for this step: the next step shows them again.
 
 local Players = game:GetService("Players")
@@ -128,7 +129,7 @@ function TutorialBanner:refresh()
 	local tutorial = self.tutorial
 	-- ✕ hides the hint only for the step it was pressed on: the next step shows it again.
 	Theme.show(self.frame, tutorial ~= nil, tutorial and tutorial.index)
-	-- While the tutorial leads, nothing else glows and the plates step aside: one goal at a time.
+	-- While the tutorial leads, nothing else glows and the quiet plates step aside: one goal at a time.
 	local leading = tutorial ~= nil and not self:closed()
 	self.hud.quietGlow = leading
 	if self.hud.tutorialFocus ~= leading then
