@@ -10,7 +10,7 @@ MODULES = ["Strings", "Config/Rarities", "Config/Creatures", "Config/Mutations",
            "Config/Events", "Config/Daily", "Config/Achievements", "Config/Codes", "Config/Skins", "Config/Battles",
            "Util/Format", "Util/Formulas"]
 # Всё остальное из shared: нужно, только когда запускается вся игра (world).
-WORLD_MODULES = ["Remotes", "Config/Admins", "Config/Music", "Config/Social", "Config/Sounds", "Config/Tutorial",
+WORLD_MODULES = ["Remotes", "Config/Admins", "Config/Music", "Config/Social", "Config/Sounds", "Config/Tutorial", "Config/Funnels",
                  "Util/CreatureModel"]
 
 
@@ -192,10 +192,44 @@ def check_text_assignments(files=None):
     return 1 if problems else 0
 
 
+FUNNEL_CALLS = ("LogFunnelStepEvent", "LogOnboardingFunnelStepEvent")
+FRAME_LOOPS = ("Heartbeat", "RenderStepped", "Stepped", "PreSimulation", "PostSimulation")
+
+
+def check_funnel_calls(files=None):
+    """Вызовы воронок аналитики стоят только в AnalyticsService, а сам он не подписан на кадры
+    (Heartbeat и подобные): шаг воронки шлётся по событию, а не каждый кадр.
+    files: {имя: текст} для отрицательного теста. Печатает таблицу вызовов."""
+    problems, listing = [], []
+    if files is None:
+        files = {}
+        for path, _, names in os.walk(os.path.join(ROOT, "src")):
+            for name in names:
+                if name.endswith(".luau"):
+                    full = os.path.join(path, name)
+                    files[os.path.relpath(full, ROOT).replace(os.sep, "/")] = open(full, encoding="utf-8").read()
+    for name, text in sorted(files.items()):
+        is_service = name.endswith("Services/AnalyticsService.luau")
+        for number, line in enumerate(text.splitlines(), 1):
+            code = line.split("--")[0]
+            if any(call in code for call in FUNNEL_CALLS):
+                listing.append(f"{name}:{number}")
+                if not is_service:
+                    problems.append(f"{name}:{number}: вызов воронки вне AnalyticsService")
+            if is_service and any(loop in code for loop in FRAME_LOOPS):
+                problems.append(f"{name}:{number}: AnalyticsService подписан на кадр")
+    for problem in problems:
+        print("❌ " + problem)
+    if not problems:
+        print(f"✅ Вызовы воронок: {len(listing)} мест ({', '.join(listing)}), все в AnalyticsService, кадровых циклов нет")
+    return 1 if problems else 0
+
+
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
     text_assign = check_text_assignments()
+    funnel_calls = check_funnel_calls()
 
     services = []
     for name in ["DataService", "MonetizationService", "PolicyService"]:
@@ -216,6 +250,7 @@ def main():
     trade_ru = world("trade.spec.luau", "ru-ru")
     trade_kk = world("trade.spec.luau", "kk-kz")
     rejoin = world("rejoin.spec.luau", "en-us")
+    funnel = world("funnel.spec.luau", "en-us")
     frames = world("frames.spec.luau", "en-us")
     loading = world("loading.spec.luau", "en-us")
     retention = world("retention.spec.luau", "en-us")
@@ -225,8 +260,8 @@ def main():
     layout_ru = world("layout.spec.luau", "ru-ru")
     layout_kk = world("layout.spec.luau", "kk-kz")
 
-    return (economy or purchases or dictionary or text_assign or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
-            or rejoin or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk)
+    return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
+            or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk)
 
 
 if __name__ == "__main__":

@@ -785,14 +785,21 @@ local services = {
 	}),
 	LocalizationService = service("LocalizationService"),
 	UserInputService = service("UserInputService", { TouchEnabled = false }),
+	-- Every call is written to World.analytics; World.analyticsDown = true makes the service throw.
 	AnalyticsService = setmetatable({}, {
-		__index = function()
-			return noop
+		__index = function(_, method)
+			return function(_, ...)
+				if World.analyticsDown then
+					error("AnalyticsService is down")
+				end
+				table.insert(World.analytics, { method = method, args = table.pack(...) })
+			end
 		end,
 	}),
 }
 
 World.services = services
+World.analytics = {} -- calls of AnalyticsService: { method, args }
 World.restricted = {} -- [userId] = true: Roblox запрещает игроку платные случайные награды
 
 local translations = Instance_new("LocalizationTable", "Translations")
