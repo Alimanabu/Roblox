@@ -39,6 +39,7 @@ local PolicyService = require(Services.PolicyService)
 
 -- What the client sees: everything the UI needs, already computed by the server.
 DataService.setSnapshotBuilder(function(player, data)
+	TutorialService.settle(player, data) -- an old save may stand on a step it already did today
 	local passes = MonetizationService.passes(player)
 	local now = os.time()
 	local mods = EventService.mods()

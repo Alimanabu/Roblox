@@ -4,6 +4,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
 local Tutorial = require(Shared.Config.Tutorial)
 local Format = require(Shared.Util.Format)
+local Daily = require(Shared.Config.Daily)
 local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
@@ -13,22 +14,9 @@ local TutorialService = {}
 
 local GOLD = Color3.fromRGB(255, 220, 80)
 
-local function onAction(player, kind, amount)
-	local data = DataService.get(player)
-	if not data then
-		return
-	end
+-- The step is done: reward, next step, message.
+local function finishStep(player, data, step)
 	local tutorial = data.tutorial
-	local step = Tutorial.Steps[tutorial.step]
-	if not step or step.action ~= kind then
-		return
-	end
-	tutorial.progress += amount
-	if tutorial.progress < step.count then
-		DataService.markDirty(player)
-		return
-	end
-
 	data.coins += step.reward
 	tutorial.step += 1
 	tutorial.progress = 0
@@ -38,6 +26,42 @@ local function onAction(player, kind, amount)
 		Remotes.Notify:FireClient(player, S.m("tutorial.finished", { coins = Format.coins(step.reward) }), GOLD)
 	end
 	DataService.markDirty(player)
+end
+
+-- A once-a-day step the player has already done today counts at once: the daily reward claimed on
+-- steps 1-4 would otherwise leave "Claim your daily reward" pointing at a dead button until tomorrow.
+function TutorialService.settle(player, data)
+	local tutorial = data.tutorial
+	while true do
+		local step = Tutorial.Steps[tutorial.step]
+		if not step or step.action ~= "daily" or data.daily.lastClaimDay ~= Daily.today() then
+			return
+		end
+		finishStep(player, data, step)
+	end
+end
+
+local function onAction(player, kind, amount)
+	local data = DataService.get(player)
+	if not data then
+		return
+	end
+	local tutorial = data.tutorial
+	local step = Tutorial.Steps[tutorial.step]
+	if not step then
+		return
+	end
+	if step.action == kind then
+		tutorial.progress += amount
+		if tutorial.progress < step.count then
+			DataService.markDirty(player)
+			return
+		end
+		finishStep(player, data, step)
+	elseif kind ~= "daily" then
+		return
+	end
+	TutorialService.settle(player, data)
 end
 
 function TutorialService.snapshot(data)
