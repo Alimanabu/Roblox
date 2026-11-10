@@ -15,6 +15,7 @@ end
 World.studio = false
 
 local ONE, TWO, THREE, FOUR, FIVE, SIX = 9101, 9102, 9103, 9104, 9105, 9106
+local LATE, MIDNIGHT, ADMIN, NEXT = 9107, 9108, 9109, 9110
 local Funnels = shared_require("Config/Funnels")
 local Tutorial = shared_require("Config/Tutorial")
 local Capsules = shared_require("Config/Capsules")
@@ -243,7 +244,7 @@ local data4 = DataService.get(old)
 data4.stats.crafted, data4.stats.sold, data4.stats.fused = 7, 3, 1
 data4.upgrades.speed = 2
 data4.tutorial.step = 3
-data4.funnel = { onboarding = 0, loop = 0, done = {}, session = "" }
+data4.funnel = nil -- a save from before the funnels has no such field at all
 World.removePlayer(old)
 World.advance(3600)
 World.analytics = {}
@@ -252,6 +253,108 @@ World.advance(2)
 check(joined(onboarding(oldBack)) == "1:Joined 2:Step1_craft 3:Step2_craft", "старый игрок, обучение: " .. joined(onboarding(oldBack)))
 check(joined(loop(oldBack)) == "1:FirstCapsule 2:FirstFuse 3:FirstSale 4:FirstUpgrade 5:ProgressSaved", "старый игрок, цикл: " .. joined(loop(oldBack)))
 World.removePlayer(oldBack)
+
+-- «Вернулся на 2-й день»: первый вход + ровно 1 календарный день UTC --------------------------------------
+
+print("— ReturnedDay2: только следующий календарный день после первого входа —")
+local DAY = 86400
+
+-- Шаги 1-5 основной воронки: капсула, скрещивание, продажа, улучшение, сохранение.
+local function playLoop(player)
+	local playerData = DataService.get(player)
+	craft(player, 1)
+	playerData.creatures = {}
+	FactoryService.give(player, NORMIE, "normal")
+	sellAll(player)
+	for _ = 1, 3 do
+		FactoryService.give(player, NORMIE, "normal")
+	end
+	Remotes.Fuse.OnServerEvent:Fire(player, NORMIE_RARITY)
+	playerData.coins = 1e6
+	Remotes.BuyUpgrade.OnServerEvent:Fire(player, "speed")
+	DataService.save(player)
+end
+
+-- Перематывает часы на заданное время суток по UTC (ближайшее будущее).
+local function advanceToUtc(hour, minute)
+	local target = hour * 3600 + minute * 60
+	World.skip((target - os.time() % DAY) % DAY) -- nobody is in the game, so a jump is safe
+end
+
+-- Первый возврат через 5 дней: шага нет, и позже его тоже не будет.
+local late = World.addPlayer(LATE, "Funnel7")
+World.advance(2)
+playLoop(late)
+check(joined(loop(late)) == "1:FirstCapsule 2:FirstFuse 3:FirstSale 4:FirstUpgrade 5:ProgressSaved", "игрок 7, шаги 1-5: " .. joined(loop(late)))
+local firstDay = DataService.get(late).funnel.firstDay
+check(firstDay == math.floor(os.time() / DAY), "firstDay не день первого входа: " .. tostring(firstDay))
+World.removePlayer(late)
+World.skip(5 * DAY)
+local lateBack = World.addPlayer(LATE, "Funnel7")
+World.advance(2)
+check(#loop(lateBack) == 0, "возврат через 5 дней дал шаг: " .. joined(loop(lateBack)))
+check(DataService.get(lateBack).funnel.firstDay == firstDay, "firstDay сменился при перезаходе")
+World.removePlayer(lateBack)
+World.skip(DAY)
+local lateAgain = World.addPlayer(LATE, "Funnel7")
+World.advance(2)
+check(#loop(lateAgain) == 0, "шаг пришёл на 7-й день или позже: " .. joined(loop(lateAgain)))
+World.removePlayer(lateAgain)
+
+-- Сессия через полночь UTC: вошёл 23:50, сохранение после 00:00, вышел, вошёл в тот же (новый) день: шага нет.
+advanceToUtc(23, 50)
+local night = World.addPlayer(MIDNIGHT, "Funnel8")
+World.advance(2)
+playLoop(night)
+local nightDay = DataService.get(night).funnel.firstDay
+World.advance(15 * 60) -- 00:05 следующего дня
+check(math.floor(os.time() / DAY) == nightDay + 1, "часы не перешли за полночь")
+DataService.save(night) -- сохранение уже за полночью: lastOnline = новый день
+World.removePlayer(night)
+World.advance(300)
+local nightBack = World.addPlayer(MIDNIGHT, "Funnel8")
+World.advance(2)
+check(#loop(nightBack) == 0, "сессия через полночь засчитана как возврат: " .. joined(loop(nightBack)))
+World.removePlayer(nightBack)
+
+-- Вошёл 23:50, вышел до полуночи, вернулся в 00:10 следующего дня: это ровно следующий день, шаг есть.
+advanceToUtc(23, 50)
+local evening = World.addPlayer(NEXT, "Funnel10")
+World.advance(2)
+playLoop(evening)
+World.advance(120)
+World.removePlayer(evening)
+advanceToUtc(0, 10)
+local morning = World.addPlayer(NEXT, "Funnel10")
+World.advance(2)
+check(joined(loop(morning)) == "6:ReturnedDay2", "ровно на следующий день: " .. joined(loop(morning)))
+World.removePlayer(morning)
+
+-- Админ-команды: профиль перестаёт быть игроком, шаги воронок не уходят ------------------------------
+
+print("— Админ-команды выключают воронки профиля —")
+local Admins = shared_require("Config/Admins")
+table.insert(Admins.UserIds, ADMIN)
+local admin = World.addPlayer(ADMIN, "Funnel9")
+World.advance(2)
+check(joined(onboarding(admin)) == "1:Joined", "админ при входе: " .. joined(onboarding(admin)))
+Remotes.Admin.OnServerEvent:Fire(admin, "skipTutorial")
+local adminData = DataService.get(admin)
+check(adminData.tutorial.step == 999, "skipTutorial не сработала")
+check(adminData.funnel.admin == true, "команда не пометила профиль")
+check(joined(onboarding(admin)) == "1:Joined", "skipTutorial отправила шаги обучения: " .. joined(onboarding(admin)))
+craft(admin, 1)
+adminData.coins = 1e6
+Remotes.BuyUpgrade.OnServerEvent:Fire(admin, "speed")
+DataService.save(admin)
+check(#loop(admin) == 0, "после админ-команды ушли шаги цикла: " .. joined(loop(admin)))
+Remotes.Admin.OnServerEvent:Fire(admin, "reset")
+local fresh = DataService.get(admin)
+check(fresh ~= adminData and fresh.funnel.admin == true, "сброс прогресса создал профиль без пометки")
+craft(admin, 5)
+check(#loop(admin) == 0 and #onboarding(admin) == 1, "после сброса ушли шаги: " .. joined(loop(admin)))
+World.removePlayer(admin)
+table.remove(Admins.UserIds)
 
 -- AnalyticsService упал: игра идёт дальше ---------------------------------------------------------------
 

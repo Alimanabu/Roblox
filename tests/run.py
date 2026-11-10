@@ -218,6 +218,19 @@ def check_funnel_calls(files=None):
                     problems.append(f"{name}:{number}: вызов воронки вне AnalyticsService")
             if is_service and any(loop in code for loop in FRAME_LOOPS):
                 problems.append(f"{name}:{number}: AnalyticsService подписан на кадр")
+    # Проверка не имеет права пройти на пустом наборе: сервис найден, оба метода воронок в нём есть.
+    service = [name for name in files if name.endswith("Services/AnalyticsService.luau")]
+    if not files:
+        problems.append("набор файлов пуст: проверять нечего")
+    elif not service:
+        problems.append("Services/AnalyticsService.luau не найден")
+    else:
+        in_service = [name for name in listing if name.startswith(service[0] + ":")]
+        if len(in_service) < len(FUNNEL_CALLS):
+            problems.append(f"в AnalyticsService {len(in_service)} вызовов воронок, нужно не меньше {len(FUNNEL_CALLS)}")
+        for call in FUNNEL_CALLS:
+            if not any(call in files[service[0]].splitlines()[int(n.rsplit(":", 1)[1]) - 1] for n in in_service):
+                problems.append(f"в AnalyticsService нет вызова {call}")
     for problem in problems:
         print("❌ " + problem)
     if not problems:
