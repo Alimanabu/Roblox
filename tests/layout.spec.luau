@@ -21,10 +21,13 @@ local SCREENS = {
 	{ id = "ПК", size = Vector2.new(1280, 760), touch = false },
 	{ id = "ПК_большой", size = Vector2.new(1920, 1080), touch = false },
 	{ id = "телефон_360", size = Vector2.new(360, 780), touch = true },
+	{ id = "телефон_800", size = Vector2.new(800, 360), touch = true }, -- самый частый Android в альбоме (reviewer 10.11)
 }
 local MIN_MEASURED = 15 -- меньше измеренных элементов на экране: тест ничего не доказывает
 -- Размеры касания в точках экрана (после UIScale): ☰ ≥ 44, строка меню ≥ 40 с зазором ≥ 6, ✕ ≥ 36, текст ≥ 12.
 local MIN_BUTTON, MIN_ROW, MIN_GAP, MIN_CLOSE, MIN_FONT = 44, 40, 6, 36, 12
+-- Подсказка обучения (отзыв 10.11 «не поняла, как играть»): текст ≥ 18 pt, у верхнего края (верх рамки не ниже 70 pt).
+local MIN_HINT, HINT_TOP = 18, 70
 -- На ПК меряем только то, что вид не сломан (меню открыто, всё на экране): мерило 60 % для телефона и планшета.
 local INSET = 36 -- верхняя полоса Roblox, если ScreenGui её не перекрывает
 local EDGE = 0.2
@@ -74,7 +77,7 @@ local function shown(obj)
 end
 
 -- Все видимые объекты root с местом на экране в точках: { name, x, y, w, h, text, depth, obj }.
-local function collect(root, size)
+local function collect(root, size, withModal)
 	local out, problems = {}, {}
 	if not root or root.Enabled == false then
 		return out, problems
@@ -93,7 +96,7 @@ local function collect(root, size)
 		local layout = layoutOf(obj)
 		local kids = {}
 		for _, child in ipairs(obj:GetChildren()) do
-			if shown(child) and not MODAL[child.Name] then
+			if shown(child) and (withModal or not MODAL[child.Name]) then
 				table.insert(kids, child)
 			end
 		end
@@ -195,13 +198,17 @@ local function middle(size)
 	return bad, measured
 end
 
-local function dump(screen, state)
+local function dump(screen, state, withModal)
 	for _, root in ipairs({ gui, eyeGui }) do
-		local rects = collect(root, screen.size)
+		local rects = collect(root, screen.size, withModal)
+		local scaleObj = root:FindFirstChildOfClass("UIScale")
+		local k = scaleObj and scaleObj.Scale or 1
 		for _, r in ipairs(rects) do
 			if r.solid or r.text ~= "" then
-				print(string.format("RECT|%s|%s|%s|%.1f|%.1f|%.1f|%.1f|%d|%s", screen.id, state, r.name, r.x, r.y, r.w, r.h, r.depth,
-					(string.gsub(r.text, "[|\n]", " "))))
+				-- Размер текста в точках (0 — растягивается по рамке): схемы рисуют настоящий размер шрифта.
+				local font = if r.obj.TextScaled == false and type(r.obj.TextSize) == "number" then r.obj.TextSize * k else 0
+				print(string.format("RECT|%s|%s|%s|%.1f|%.1f|%.1f|%.1f|%d|%.1f|%s", screen.id, state, r.name, r.x, r.y, r.w, r.h, r.depth,
+					font, (string.gsub(r.text, "[|\n]", " "))))
 				if r.name == "MenuButton" or r.name == "Close" or r.name == "Factory" then
 					print(string.format("TOUCH|%s|%s|%.1f|%.1f", screen.id, r.name, r.fullW, r.fullH))
 				end
@@ -243,8 +250,41 @@ if DUMP_ONLY then
 			World.click(menuButton)
 			frames()
 			dump(screen, "меню")
-			World.click(menuButton)
-			frames()
+			-- Окно фабрики открыто: ✕ окна на картинке (окна в мерке середины не участвуют).
+			local factory = findNamed(menu, "Factory")
+			if factory then
+				World.click(factory)
+				frames()
+				dump(screen, "окно", true)
+				local closeWindow = findNamed(gui, "CloseWindow")
+				if closeWindow then
+					World.click(closeWindow)
+					frames()
+				end
+			end
+			if menu.Visible then
+				World.click(menuButton)
+				frames()
+			end
+			-- Подсказку закрыли ✕: плашки на месте.
+			local hintPlate = findNamed(gui, "Tutorial")
+			if hintPlate and hintPlate:FindFirstChild("Close") then
+				World.click(hintPlate.Close)
+				frames()
+				dump(screen, "без_подсказки")
+				World.click(eye)
+				frames()
+				World.click(eye)
+				frames()
+			end
+			-- Окно «С возвращением» (его нет в старом коде: картинки не будет).
+			if findNamed(gui, "WelcomeBack") then
+				shared_require("Remotes").WelcomeBack:FireClient(player, 10800)
+				frames()
+				dump(screen, "с_возвращением")
+				World.click(findNamed(gui, "WelcomeBack"))
+				frames()
+			end
 		end
 	end
 	return
@@ -254,6 +294,141 @@ check(gui ~= nil and eyeGui ~= nil, "нет экранов BrainrotFactoryUI и 
 check(menuButton ~= nil and menu ~= nil and eye ~= nil, "нет кнопки ☰, меню или глаза")
 
 -- 1. Раскладка ------------------------------------------------------------------------------
+
+-- Середина свободна, измерено ≥ 15, размеры касания в точках, текст ≥ 12 pt; крестиков на экране не меньше closes.
+local function measureTouch(screen, phase, closes)
+	local where = screen.id .. " (" .. phase .. ")"
+	local bad, measured = middle(screen.size)
+	check(#bad == 0, where .. ": в середине экрана " .. table.concat(bad, "; "))
+	check(measured >= MIN_MEASURED, where .. ": измерено элементов " .. measured .. ", нужно не меньше " .. MIN_MEASURED)
+	local rects = collect(gui, screen.size)
+	for _, r in ipairs(collect(eyeGui, screen.size)) do
+		table.insert(rects, r)
+	end
+	-- Окна и панели (они остались в единицах UIScale) не мельче, чем было: масштаб не ниже 0,5.
+	check(gui:FindFirstChildOfClass("UIScale").Scale >= 0.5 - 0.001, where .. ": масштаб окон ниже 0,5")
+	local seen = {}
+	for _, r in ipairs(rects) do
+		seen[r.name] = (seen[r.name] or 0) + 1
+		local need = (r.name == "MenuButton" or r.name == "RewardsButton" or r.name == "EyeButton" or r.name == "SettingsButton") and MIN_BUTTON
+			or r.name == "Close" and MIN_CLOSE
+		if need and r.obj.ClassName == "TextButton" then
+			check(r.fullW >= need - 0.5 and r.fullH >= need - 0.5,
+				string.format("%s: %s %.1fx%.1f pt, нужно не меньше %d", where, r.name, r.fullW, r.fullH, need))
+		end
+		-- Текст фиксированного размера читается: не меньше 12 pt.
+		if r.obj.TextScaled == false and type(r.obj.TextSize) == "number" and r.text ~= "" then
+			local k = gui:FindFirstChildOfClass("UIScale").Scale
+			check(r.obj.TextSize * k >= MIN_FONT - 0.01,
+				string.format("%s: %s «%s» %.1f pt, нужно не меньше %d", where, r.name, r.text, r.obj.TextSize * k, MIN_FONT))
+		end
+	end
+	check((seen.MenuButton or 0) == 1 and (seen.Close or 0) >= closes,
+		string.format("%s: не нашёл ☰ или крестики для замера (крестиков %d, нужно %d)", where, seen.Close or 0, closes))
+	print(string.format("MEASURE|%s|%s|измерено %d|крестиков %d", screen.id, phase, measured, seen.Close or 0))
+end
+
+-- Ширина строки в точках: буква 0,6 размера шрифта, значки и эмодзи 1,2, невидимые знаки 0 (оценка с запасом для FredokaOne).
+local function textWidth(text, font)
+	local width = 0
+	for _, code in utf8.codes(text) do
+		if code == 0xFE0F or code == 0x200D then
+			width += 0
+		elseif code >= 0x2190 then
+			width += 1.2 * font
+		else
+			width += 0.6 * font
+		end
+	end
+	return width
+end
+-- Сколько строк займёт текст при переносе по словам.
+local function wrappedLines(text, font, width)
+	local lines, current = 1, 0
+	local space = textWidth(" ", font)
+	for word in string.gmatch(text, "%S+") do
+		local w = textWidth(word, font)
+		if current == 0 then
+			current = w
+		elseif current + space + w <= width then
+			current += space + w
+		else
+			lines += 1
+			current = w
+		end
+		while current > width do -- слово длиннее строки
+			lines += 1
+			current -= width
+		end
+	end
+	return lines
+end
+
+-- Подсказка обучения: у верхнего края, текст ≥ 18 pt, любая фраза обучения на языке игрока помещается в рамку.
+local HINT_KEYS = { "tutorial.do.menu", "tutorial.do.factory", "tutorial.do.craft", "tutorial.do.upgrades", "tutorial.do.buy",
+	"tutorial.do.lock", "tutorial.do.rewards", "tutorial.do.claim", "tutorial.do.close" }
+local hintChecked = 0
+local function checkHint(screen)
+	local k = gui:FindFirstChildOfClass("UIScale").Scale
+	local frame, label = findNamed(gui, "Tutorial"), findNamed(gui, "Hint")
+	local r, lr
+	for _, item in ipairs(collect(gui, screen.size)) do
+		if item.obj == frame then
+			r = item
+		elseif item.obj == label then
+			lr = item
+		end
+	end
+	check(r ~= nil and lr ~= nil, screen.id .. ": подсказка обучения не на экране")
+	if not r or not lr then
+		return
+	end
+	check(r.y <= HINT_TOP, string.format("%s: подсказка не у верхнего края: верх на %.0f pt", screen.id, r.y))
+	local font = label.TextSize * k
+	check(label.TextScaled == false and font >= MIN_HINT - 0.01, string.format("%s: текст подсказки %.1f pt, нужно не меньше %d", screen.id, font, MIN_HINT))
+	check(lr.y + lr.fullH <= r.y + r.fullH + 0.5, screen.id .. ": текст подсказки ниже её рамки")
+	local fits = math.floor((lr.fullH + 0.01) / (font * 1.2))
+	for _, key in ipairs(HINT_KEYS) do
+		for _, suffix in ipairs({ "", "  (4/4)" }) do
+			local text = S.t(key) .. suffix
+			local lines = wrappedLines(text, font, lr.fullW)
+			hintChecked += 1
+			check(lines <= fits, string.format("%s: «%s» в %d строк, в рамку влезает %d (ширина %.0f pt)", screen.id, text, lines, fits, lr.fullW))
+		end
+	end
+	print(string.format("HINT|%s|шрифт %.1f pt|верх %.0f pt|рамка %.0fx%.0f pt|строк влезает %d", screen.id, font, r.y, r.fullW, r.fullH, fits))
+end
+
+-- ✕ окон игры и битвы: на сенсорном экране не меньше 36 pt, окно не шире экрана, список окна начинается под ✕.
+local function checkWindowClose(screen)
+	local k = gui:FindFirstChildOfClass("UIScale").Scale
+	local window = findNamed(gui, "Window")
+	local close = findNamed(gui, "CloseWindow")
+	local _, cw, _, ch = parts(close.Size)
+	check(cw * k >= MIN_CLOSE - 0.01 and ch * k >= MIN_CLOSE - 0.01,
+		string.format("%s: ✕ окна %.1fx%.1f pt, нужно не меньше %d", screen.id, cw * k, ch * k, MIN_CLOSE))
+	local _, ww, _, wh = parts(window.Size)
+	local _, _, _, cy = parts(close.Position)
+	check(ww * k <= screen.size.X + 0.5, string.format("%s: окно %.0f pt шире экрана", screen.id, ww * k))
+	local content
+	for _, child in ipairs(window:GetChildren()) do
+		if child.ClassName == "ScrollingFrame" then
+			content = child
+		end
+	end
+	local _, _, _, top = parts(content.Position)
+	check(top >= cy + ch - 0.5, string.format("%s: список окна начинается на %.0f, ✕ кончается на %.0f", screen.id, top, cy + ch))
+	check(wh > top, screen.id .. ": окно ниже ✕ пустое")
+	local battleClose = findNamed(gui, "CloseBattle")
+	check(battleClose ~= nil, "нет ✕ у окна битвы")
+	local bw, bh = 0, 0
+	if battleClose then
+		_, bw, _, bh = parts(battleClose.Size)
+		check(bw * k >= MIN_CLOSE - 0.01 and bh * k >= MIN_CLOSE - 0.01,
+			string.format("%s: ✕ битвы %.1fx%.1f pt, нужно не меньше %d", screen.id, bw * k, bh * k, MIN_CLOSE))
+	end
+	print(string.format("WINCLOSE|%s|окно %.1fx%.1f pt|битва %.1fx%.1f pt", screen.id, cw * k, ch * k, bw * k, bh * k))
+end
 
 frames()
 check(menu.Visible == false, "на телефоне меню не свёрнуто при входе")
@@ -266,33 +441,22 @@ for _, screen in ipairs(SCREENS) do
 		check(false, screen.id .. ": " .. problem)
 	end
 	if screen.touch then
-		local bad, measured = middle(screen.size)
-		check(#bad == 0, screen.id .. ": в середине экрана " .. table.concat(bad, "; "))
-		check(measured >= MIN_MEASURED, screen.id .. ": измерено элементов " .. measured .. ", нужно не меньше " .. MIN_MEASURED)
-		-- Размеры касания в точках экрана (после UIScale), все видимые кнопки HUD.
-		local rects = collect(gui, screen.size)
-		for _, r in ipairs(collect(eyeGui, screen.size)) do
-			table.insert(rects, r)
-		end
-		-- Окна и панели (они остались в единицах UIScale) не мельче, чем было: масштаб не ниже 0,5.
-		check(gui:FindFirstChildOfClass("UIScale").Scale >= 0.5 - 0.001, screen.id .. ": масштаб окон ниже 0,5")
-		local seen = {}
-		for _, r in ipairs(rects) do
-			seen[r.name] = (seen[r.name] or 0) + 1
-			local need = (r.name == "MenuButton" or r.name == "RewardsButton" or r.name == "EyeButton" or r.name == "SettingsButton") and MIN_BUTTON
-				or r.name == "Close" and MIN_CLOSE
-			if need and r.obj.ClassName == "TextButton" then
-				check(r.fullW >= need - 0.5 and r.fullH >= need - 0.5,
-					string.format("%s: %s %.1fx%.1f pt, нужно не меньше %d", screen.id, r.name, r.fullW, r.fullH, need))
-			end
-			-- Текст фиксированного размера читается: не меньше 12 pt.
-			if r.obj.TextScaled == false and type(r.obj.TextSize) == "number" and r.text ~= "" then
-				local k = gui:FindFirstChildOfClass("UIScale").Scale
-				check(r.obj.TextSize * k >= MIN_FONT - 0.01,
-					string.format("%s: %s «%s» %.1f pt, нужно не меньше %d", screen.id, r.name, r.text, r.obj.TextSize * k, MIN_FONT))
-			end
-		end
-		check((seen.MenuButton or 0) == 1 and (seen.Close or 0) >= 3, screen.id .. ": не нашёл ☰ или крестики для замера")
+		-- Состояние А: обучение ведёт — подсказка сверху, плашки уступили ей место.
+		-- Состояние Б: подсказку закрыли ✕ — плашки на месте; мерки те же, крестиков не меньше 3, как до этого круга.
+		local hintPlate = findNamed(gui, "Tutorial")
+		check(hintPlate and hintPlate.Visible == true, screen.id .. ": новичок не видит подсказку обучения")
+		measureTouch(screen, "обучение", 1)
+		checkHint(screen)
+		check(findNamed(gui, "Side").Visible == false, screen.id .. ": во время обучения плашки остались рядом с подсказкой")
+		World.click(hintPlate:FindFirstChild("Close"))
+		frames()
+		check(hintPlate.Visible == false and findNamed(gui, "Side").Visible ~= false, screen.id .. ": ✕ подсказки не вернул плашки")
+		measureTouch(screen, "без подсказки", 3)
+		World.click(eye) -- глаз дважды: всё закрытое снова на экране, подсказка тоже
+		frames()
+		World.click(eye)
+		frames()
+		check(hintPlate.Visible == true, screen.id .. ": глаз не вернул подсказку")
 		-- Меню, открытое ☰: строки ≥ 40 pt с зазором ≥ 6 pt, текст ≥ 12 pt, всё в границах экрана.
 		World.click(menuButton)
 		frames()
@@ -324,11 +488,12 @@ for _, screen in ipairs(SCREENS) do
 		Remotes.Notify:FireClient(player, "Test notification two", nil)
 		Remotes.Notify:FireClient(player, "Test notification three", nil)
 		frames(2)
-		bad = middle(screen.size)
+		local bad = middle(screen.size)
 		check(#bad == 0, screen.id .. ": уведомления в середине: " .. table.concat(bad, "; "))
 		World.click(menuButton)
 		frames()
 		check(menu.Visible == false, screen.id .. ": ☰ не закрыл меню")
+		checkWindowClose(screen)
 	else
 		-- ПК: прежний вид: меню открыто в две колонки, всё на экране.
 		local rects = collect(gui, screen.size)
@@ -528,6 +693,84 @@ if lockButton then
 	World.advance(StealService0.LOCK_COOLDOWN + 2) -- перезарядка кончилась: снова «открыта»
 	frames()
 	check(lockPlate.Visible == true, "замок снова открыт, а плашка осталась закрытой")
+end
+
+-- 2в. Урок 7 для цели, удачи и события: ✕ держится, пока причина та же, и снимается, когда она сменилась ---------------
+
+do
+	local ClientState = shared_require("client/State")
+	local Events = shared_require("Config/Events")
+	local function copy(value)
+		if type(value) ~= "table" then
+			return value
+		end
+		local out = {}
+		for key, item in pairs(value) do
+			out[key] = copy(item)
+		end
+		return out
+	end
+	-- Состояние «как с сервера», но с подменённой частью: клиент перерисует экран, как при настоящем ответе.
+	local function setState(change)
+		local state = copy(ClientState.current)
+		change(state)
+		ClientState.set(state)
+		frames()
+		World.advance(1.2) -- цель и удача пересчитываются раз в секунду
+		frames()
+	end
+	local real = copy(ClientState.current)
+
+	-- Цель: «забери награду дня» -> ✕ -> та же цель -> закрыта; цель сменилась («задание выполнено») -> видна.
+	local goal = plateOf("Goal")
+	setState(function(state)
+		state.rewards.canClaim = true
+	end)
+	check(goal.Visible == true, "цель «награда дня» не видна")
+	World.click(closeOf(goal))
+	frames()
+	World.advance(3)
+	frames()
+	check(goal.Visible == false, "закрытая цель вернулась без смены цели")
+	setState(function(state)
+		state.rewards.canClaim = false
+		local quest = state.rewards.quests[1]
+		if quest then
+			quest.progress, quest.claimed = quest.target, false
+		end
+	end)
+	check(goal.Visible == true, "цель сменилась (задание выполнено), а плашка осталась закрытой навсегда")
+
+	-- Удача: ✕ -> та же удача -> закрыта; начался буст удачи -> видна.
+	local luck = plateOf("Luck")
+	World.click(closeOf(luck))
+	frames()
+	World.advance(3)
+	frames()
+	check(luck.Visible == false, "закрытая удача вернулась без смены удачи")
+	setState(function(state)
+		state.luckBoostLeft = 900
+		state.luck = (state.luck or 1) * 2
+	end)
+	check(luck.Visible == true, "начался буст удачи, а плашка удачи осталась закрытой навсегда")
+
+	-- Событие: ✕ на «следующее событие» -> ждём -> закрыто; событие началось -> плашка видна.
+	local event = plateOf("EventBanner")
+	World.click(closeOf(event))
+	frames()
+	World.advance(3)
+	frames()
+	check(event.Visible == false, "закрытое событие вернулось само до начала события")
+	local now = workspace:GetServerTimeNow()
+	local _, startsAt = Events.nextEvent(now)
+	World.skip(startsAt - now + 1) -- до начала следующего события
+	frames()
+	check(#Events.active(workspace:GetServerTimeNow()) > 0, "событие не началось (сломан сам тест)")
+	check(event.Visible == true, "событие началось, а плашка события осталась закрытой навсегда")
+
+	ClientState.set(real)
+	shared_require("Services/DataService").sendNow(player)
+	frames()
 end
 
 -- 3. Обучение -------------------------------------------------------------------------------
