@@ -189,12 +189,36 @@ scenario("1 час: доход за час и окно; 5 минут: уведо
 		notified = notified or string.find(S.text(args[1]), "💤", 1, true) ~= nil
 	end
 	check(notified, "после 5 минут нет уведомления о доходе")
+	check(customEvents(player, "OfflineIncomeReturn") == 0, "5 минут дали событие возвращения (оно только при окне, от 10 минут)")
 	World.skip(30)
 	player, _, mark = rejoin("Returner")
 	World.removePlayer(player)
 	World.advance(1)
 	check(offlineLogged(player) == 0 and #sentTo(player, "WelcomeBack", mark) == 0, "смена сервера через 30 с дала доход или окно")
 	check(customEvents(player, "OfflineIncomeReturn") == 0, "смена сервера дала событие возвращения")
+end)
+
+scenario("граница 10 минут: 9 мин 59 с — ни окна, ни события; ровно 10 мин — окно и одно событие", function()
+	local IncomeService = shared_require("Services/IncomeService")
+	for _, case in ipairs({ { id = 9005, away = 10 * 60 - 1, events = 0, windows = 0 }, { id = 9006, away = 10 * 60, events = 1, windows = 1 } }) do
+		local player = World.addPlayer(case.id, "Edge" .. case.id)
+		World.advance(3) -- первый вход: дохода за отсутствие нет
+		local data = DataService.get(player)
+		FactoryService.give(player, "bananito_ninjini", "normal")
+		World.advance(0.5)
+		local mark = #World.sent
+		data.lastOnline = os.time() - case.away -- отсутствие ровно case.away секунд
+		local amount = IncomeService.giveOfflineIncome(player)
+		World.advance(3)
+		check(amount > 0, case.away .. " с: дохода за отсутствие нет")
+		local windows = #sentTo(player, "WelcomeBack", mark)
+		World.removePlayer(player) -- выход сбрасывает события аналитики
+		World.advance(1)
+		local events = customEvents(player, "OfflineIncomeReturn")
+		check(windows == case.windows, string.format("%d с: окон %d, нужно %d", case.away, windows, case.windows))
+		check(events == case.events, string.format("%d с: событий OfflineIncomeReturn %d, нужно %d", case.away, events, case.events))
+		print(string.format("EDGE|%d с|окон %d|событий %d|монет %d", case.away, windows, events, amount))
+	end
 end)
 
 scenario("новичок (первый вход) и игрок без брейнротов: окна нет", function()

@@ -399,6 +399,78 @@ local function checkHint(screen)
 	print(string.format("HINT|%s|шрифт %.1f pt|верх %.0f pt|рамка %.0fx%.0f pt|строк влезает %d", screen.id, font, r.y, r.fullW, r.fullH, fits))
 end
 
+-- Опись плашек правой колонки и нижней строки (урок 15): у каждой плашки решение, что с ней во время обучения.
+-- "тихая" — уступает место подсказке; "видна" — видна всегда, когда есть причина (кража, замок).
+-- Плашка, которой нет в описи, роняет тест: новая плашка без решения не должна молча пропасть с экрана.
+local DURING_TUTORIAL = { Goal = "тихая", Luck = "тихая", EventBanner = "тихая", LockStatus = "видна", CarryStatus = "видна" }
+local function rectOf(obj, size)
+	for _, r in ipairs(collect(gui, size)) do
+		if r.obj == obj then
+			return r
+		end
+	end
+	return nil
+end
+local function overlaps(a, b)
+	return math.min(a.x + a.w, b.x + b.w) - math.max(a.x, b.x) > 0.5 and math.min(a.y + a.h, b.y + b.h) - math.max(a.y, b.y) > 0.5
+end
+-- Плашка видна целиком: на экране, вне середины, не под подсказкой обучения.
+local function plainlyVisible(plate, screen, where)
+	local r = rectOf(plate, screen.size)
+	check(plate.Visible == true and r ~= nil, where .. ": плашка " .. plate.Name .. " не видна")
+	if not r then
+		return
+	end
+	check(r.x >= -0.5 and r.y >= -0.5 and r.x + r.w <= screen.size.X + 0.5 and r.y + r.h <= screen.size.Y + 0.5,
+		string.format("%s: %s за краем экрана %.0f,%.0f %.0fx%.0f", where, plate.Name, r.x, r.y, r.w, r.h))
+	check(not overlap(r, screen.size), string.format("%s: %s в середине экрана %.0f,%.0f", where, plate.Name, r.x, r.y))
+	local hint = findNamed(gui, "Tutorial")
+	local h = hint.Visible and rectOf(hint, screen.size)
+	check(not (h and overlaps(r, h)), string.format("%s: %s под подсказкой обучения", where, plate.Name))
+	print(string.format("PLATE|%s|%s|%.0f,%.0f %.0fx%.0f", where, plate.Name, r.x, r.y, r.w, r.h))
+end
+local function inventory(screen)
+	local found = {}
+	for _, child in ipairs(findNamed(gui, "Side"):GetChildren()) do
+		if child.ClassName == "Frame" or child.ClassName == "TextButton" then
+			found[child.Name] = true
+		end
+	end
+	found.CarryStatus = findNamed(gui, "CarryStatus") ~= nil or nil
+	local count = 0
+	for name in pairs(found) do
+		count += 1
+		check(DURING_TUTORIAL[name] ~= nil, screen.id .. ": плашка " .. name .. " без решения на время обучения (урок 15)")
+	end
+	for name in pairs(DURING_TUTORIAL) do
+		check(found[name], screen.id .. ": в описи плашка " .. name .. ", а в интерфейсе её нет")
+	end
+	return count
+end
+local platesChecked = 0
+-- Обучение ведёт: тихие плашки ушли, замок виден, кража во время обучения показывает таймер.
+local function duringTutorial(screen)
+	local where = screen.id .. " (обучение)"
+	platesChecked += inventory(screen)
+	for name, rule in pairs(DURING_TUTORIAL) do
+		local plate = findNamed(gui, name)
+		if rule == "тихая" then
+			check(plate.Visible == false, where .. ": плашка " .. name .. " не уступила место подсказке")
+		elseif name == "LockStatus" then
+			plainlyVisible(plate, screen, where)
+		end
+	end
+	local carry = findNamed(gui, "CarryStatus")
+	player:SetAttribute("CarryDeadline", workspace:GetServerTimeNow() + 60)
+	frames()
+	plainlyVisible(carry, screen, where .. " + кража")
+	local bad = middle(screen.size)
+	check(#bad == 0, where .. " + кража: в середине экрана " .. table.concat(bad, "; "))
+	player:SetAttribute("CarryDeadline", nil)
+	frames()
+	check(carry.Visible == false, where .. ": плашка «несёшь» осталась после кражи")
+end
+
 -- ✕ окон игры и битвы: на сенсорном экране не меньше 36 pt, окно не шире экрана, список окна начинается под ✕.
 local function checkWindowClose(screen)
 	local k = gui:FindFirstChildOfClass("UIScale").Scale
@@ -445,12 +517,17 @@ for _, screen in ipairs(SCREENS) do
 		-- Состояние Б: подсказку закрыли ✕ — плашки на месте; мерки те же, крестиков не меньше 3, как до этого круга.
 		local hintPlate = findNamed(gui, "Tutorial")
 		check(hintPlate and hintPlate.Visible == true, screen.id .. ": новичок не видит подсказку обучения")
-		measureTouch(screen, "обучение", 1)
+		measureTouch(screen, "обучение", 2)
 		checkHint(screen)
-		check(findNamed(gui, "Side").Visible == false, screen.id .. ": во время обучения плашки остались рядом с подсказкой")
+		duringTutorial(screen)
 		World.click(hintPlate:FindFirstChild("Close"))
 		frames()
-		check(hintPlate.Visible == false and findNamed(gui, "Side").Visible ~= false, screen.id .. ": ✕ подсказки не вернул плашки")
+		check(hintPlate.Visible == false, screen.id .. ": ✕ не закрыл подсказку")
+		for name, rule in pairs(DURING_TUTORIAL) do
+			if rule == "тихая" then
+				check(findNamed(gui, name).Visible == true, screen.id .. ": ✕ подсказки не вернул плашку " .. name)
+			end
+		end
 		measureTouch(screen, "без подсказки", 3)
 		World.click(eye) -- глаз дважды: всё закрытое снова на экране, подсказка тоже
 		frames()
@@ -542,7 +619,14 @@ check(PlotService.INFO_DISTANCE <= 60, "подпись видна дальше 6
 
 setScreen(SCREENS[2])
 frames()
+-- Новичок: сначала ✕ подсказки обучения (тихие плашки уступают ей место и возвращаются после ✕), потом все остальные.
 local closables = {}
+local tutorialPlate = findNamed(gui, "Tutorial")
+if tutorialPlate.Visible and tutorialPlate:FindFirstChild("Close") then
+	table.insert(closables, tutorialPlate.Close)
+	World.click(tutorialPlate.Close)
+	frames()
+end
 for _, item in ipairs(gui:GetDescendants()) do
 	if item.Name == "Close" and item.Parent and item.Parent.Visible ~= false then
 		table.insert(closables, item)
@@ -610,9 +694,13 @@ check(labelsShown() >= 3, "глаз не вернул подписи: " .. label
 shared_require("Services/DataService").get(player).creatures = {}
 shared_require("Services/DataService").markDirty(player)
 World.advance(2)
+-- Глаз вернул всё, подсказку обучения тоже: пока она ведёт, тихие плашки уступают ей место, остальные видны.
+check(findNamed(gui, "Tutorial").Visible == true, "после глаза не вернулась подсказка обучения")
 for _, close in ipairs(closables) do
 	local name = close.Parent.Name
-	if name ~= "CarryStatus" then
+	if DURING_TUTORIAL[name] == "тихая" then
+		check(close.Parent.Visible == false, "после глаза тихая плашка " .. name .. " рядом с подсказкой обучения")
+	elseif name ~= "CarryStatus" then
 		check(close.Parent.Visible == true, "после глаза не вернулась плашка " .. name)
 	end
 end
@@ -720,6 +808,12 @@ do
 		frames()
 	end
 	local real = copy(ClientState.current)
+	-- Подсказка обучения ведёт: цель, удача и событие тихие. Здесь проверяется их ✕: подсказку закрываем.
+	local tutorialHint = findNamed(gui, "Tutorial")
+	if tutorialHint.Visible then
+		World.click(tutorialHint.Close)
+		frames()
+	end
 
 	-- Цель: «забери награду дня» -> ✕ -> та же цель -> закрыта; цель сменилась («задание выполнено») -> видна.
 	local goal = plateOf("Goal")
@@ -769,6 +863,10 @@ do
 	check(event.Visible == true, "событие началось, а плашка события осталась закрытой навсегда")
 
 	ClientState.set(real)
+	World.click(eye) -- глаз дважды: подсказка обучения снова на экране для раздела 3
+	frames()
+	World.click(eye)
+	frames()
 	shared_require("Services/DataService").sendNow(player)
 	frames()
 end
@@ -897,6 +995,16 @@ for _, item in ipairs(workspace.Plots:GetDescendants()) do
 	end
 end
 check(highlights == 1, "на шаге 4 подсвечено замков: " .. highlights)
+-- Шаг 4 — это замок: плашка замка видна целиком на каждом сенсорном экране (решение лида 11.11).
+for _, screen in ipairs(SCREENS) do
+	if screen.touch then
+		setScreen(screen)
+		frames()
+		plainlyVisible(findNamed(gui, "LockStatus"), screen, screen.id .. " (шаг 4)")
+	end
+end
+setScreen(SCREENS[2])
+frames()
 Actions.fire(player, "lock", 1) -- игрок встал на кнопку (сам замок проверяет tests/steal.spec.luau)
 World.advance(1)
 check(stepIndex() == 5, "после замка не шаг 5: " .. stepIndex())
@@ -917,7 +1025,7 @@ for _, err in ipairs(World.errors) do
 end
 
 if failures == 0 then
-	print(string.format("✅ Экран телефона: %d экранов, середина свободна; крестиков %d; обучение: целей проверено %d, шагов 5", #SCREENS, #closables, steps))
+	print(string.format("✅ Экран телефона: %d экранов, середина свободна; крестиков %d; обучение: целей проверено %d, шагов 5; плашек в описи проверено %d", #SCREENS, #closables, steps, platesChecked))
 else
 	print("❌ Экран телефона: провалено проверок " .. failures)
 	error("tests failed")

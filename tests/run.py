@@ -268,10 +268,11 @@ def call_args(text, start):
 
 
 def check_show_keys(files=None):
-    """Урок 7: у каждой плашки с ✕ (Theme.closable) флаг «закрыто» привязан к причине показа, то есть каждый
-    Theme.show(frame, visible, key) в клиенте передаёт третий аргумент, и вызовов show не меньше, чем closable.
-    Проверка не проходит на пустом наборе (урок 11): нужен хотя бы один closable. files: {имя: текст}."""
-    problems, listing, closables = [], [], 0
+    """Урок 7: у каждой плашки с ✕ флаг «закрыто» привязан к причине показа. Сверка по каждой плашке:
+    для каждого Theme.closable(X) в файле есть Theme.show(X, видна, ключ) в том же файле с непустым ключом,
+    и каждый Theme.show передаёт ключ. Общее число вызовов не считается: лишний show в одном файле
+    не прикрывает плашку без show в другом. Пустой набор не проходит (урок 11). files: {имя: текст}."""
+    problems, listing, plates = [], [], 0
     if files is None:
         files = {}
         for path, _, names in os.walk(os.path.join(ROOT, "src", "client")):
@@ -279,28 +280,43 @@ def check_show_keys(files=None):
                 if name.endswith(".luau"):
                     full = os.path.join(path, name)
                     files[os.path.relpath(full, ROOT).replace(os.sep, "/")] = open(full, encoding="utf-8").read()
+
+    def calls(code, call):
+        out, at = [], code.find(call)
+        while at >= 0:
+            out.append((code.count("\n", 0, at) + 1, call_args(code, at + len(call) - 1)))
+            at = code.find(call, at + 1)
+        return out
+
     for name, text in sorted(files.items()):
         if name.endswith("Ui/Theme.luau"):
             continue  # там определения, а не вызовы
         code = "\n".join(line.split("--")[0] for line in text.splitlines())
-        closables += code.count(CLOSABLE_CALL)
-        at = code.find(SHOW_CALL)
-        while at >= 0:
-            number = code.count("\n", 0, at) + 1
-            args = call_args(code, at + len(SHOW_CALL) - 1)
-            listing.append(f"{name}:{number}")
+        keyed = set()
+        for number, args in calls(code, SHOW_CALL):
             if len(args) < 3 or args[2] in ("", "nil"):
                 problems.append(f"{name}:{number}: Theme.show без ключа причины показа (урок 7)")
-            at = code.find(SHOW_CALL, at + 1)
-    if closables == 0:
+            elif args:
+                keyed.add(args[0])
+        for number, args in calls(code, CLOSABLE_CALL):
+            plates += 1
+            frame = args[0] if args else ""
+            if frame in keyed:
+                listing.append(f"{frame} ({name}:{number})")
+            else:
+                problems.append(f"{name}:{number}: плашка {frame} с ✕ без Theme.show({frame}, видна, ключ) в том же файле")
+    if plates == 0:
         problems.append("не найдено ни одной плашки Theme.closable: проверять нечего")
-    elif len(listing) < closables:
-        problems.append(f"плашек с ✕ {closables}, вызовов Theme.show {len(listing)}: у части плашек нет show с ключом")
     for problem in problems:
         print("❌ " + problem)
     if not problems:
-        print(f"✅ Плашки с ✕: {closables}, вызовов Theme.show с ключом {len(listing)} ({', '.join(listing)})")
+        print(f"✅ Плашки с ✕: {plates}, у каждой Theme.show с ключом: {', '.join(listing)}")
     return 1 if problems else 0
+
+
+def negative_show_keys():
+    """Отрицательный тест урока 7 (tests/test_show_keys_negative.py) в общем прогоне."""
+    return subprocess.call([sys.executable, "-X", "utf8", os.path.join(ROOT, "tests", "test_show_keys_negative.py")])
 
 
 def main():
@@ -309,6 +325,7 @@ def main():
     text_assign = check_text_assignments()
     funnel_calls = check_funnel_calls()
     show_keys = check_show_keys()
+    show_keys_negative = negative_show_keys()
 
     services = []
     for name in ["DataService", "MonetizationService", "PolicyService"]:
@@ -344,7 +361,7 @@ def main():
 
     return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
-            or show_keys or onboarding or onboarding_ru or onboarding_kk)
+            or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk)
 
 
 if __name__ == "__main__":

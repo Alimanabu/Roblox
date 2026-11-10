@@ -16,6 +16,12 @@ cases = {
     "пустой набор": {},
     "нет ни одной плашки с ✕": {PLATE: "Theme.show(frame, visible, key)\n"},
     "вызов на нескольких строках без ключа": {PLATE: "Theme.closable(frame)\nTheme.show(\n\tframe,\n\tf(a, b)\n)\n"},
+    # Общее число совпадает (2 closable, 2 show), но у плашки другого файла show нет: лишний show не прикрывает её.
+    "лишний show в одном файле, нет show в другом": {
+        PLATE: OK + "Theme.show(frame, other, key2)\n",
+        "src/client/Ui/Other.luau": "Theme.closable(self.other)\n",
+    },
+    "show с ключом у другой плашки того же файла": {PLATE: "Theme.closable(a)\nTheme.closable(b)\nTheme.show(a, v, k)\nTheme.show(a, w, k2)\n"},
 }
 bad = [name for name, files in cases.items() if run.check_show_keys(files) != 1]
 good = run.check_show_keys({PLATE: OK + "-- Theme.show(frame, true) only in a comment\nTheme.show(x, f(a, b), g(c))\n",
