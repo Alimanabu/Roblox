@@ -64,6 +64,7 @@ local tutorial = TutorialBanner.new(screenGui, hud, panels, function()
 	return uiScale.Scale
 end)
 
+local battleView -- made below; its ✕ is sized here too
 local function updateScale()
 	local camera = workspace.CurrentCamera
 	if not camera then
@@ -73,6 +74,11 @@ local function updateScale()
 	uiScale.Scale = Layout.scale(size)
 	eyeScale.Scale = uiScale.Scale
 	hud:applyLayout(size, Layout.isTouch(), uiScale.Scale)
+	panels:applyLayout(Layout.isTouch(), uiScale.Scale)
+	welcomeBack:applyLayout(size, uiScale.Scale)
+	if battleView then
+		battleView:applyLayout(Layout.isTouch(), uiScale.Scale)
+	end
 end
 updateScale()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
@@ -171,9 +177,10 @@ Remotes.BattleInvite.OnClientEvent:Connect(function(fromUserId, fromName)
 	battleInvite:show(fromUserId, S.t("battle.invite", { name = fromName }))
 	Sfx.play("alarm")
 end)
-local battleView = BattleView.new(screenGui, function(name)
+battleView = BattleView.new(screenGui, function(name)
 	Sfx.play(name)
 end)
+battleView:applyLayout(Layout.isTouch(), uiScale.Scale)
 Remotes.BattleResult.OnClientEvent:Connect(function(result)
 	if panels.openName ~= "Trade" then
 		panels:close()

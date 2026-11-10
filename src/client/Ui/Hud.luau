@@ -610,13 +610,13 @@ function Hud.goal(state, now)
 	local r = state.rewards
 	local total = #r.rewards
 	if r.canClaim then
-		return S.t("hud.goal_daily", { day = r.nextDay, total = total })
+		return S.t("hud.goal_daily", { day = r.nextDay, total = total }), "daily"
 	end
 	local best, bestShare
 	for _, quest in ipairs(r.quests) do
 		if not quest.claimed then
 			if quest.progress >= quest.target then
-				return S.t("hud.goal_quest_done")
+				return S.t("hud.goal_quest_done"), "quest_done"
 			end
 			local share = quest.progress / math.max(1, quest.target)
 			if not best or share > bestShare then
@@ -629,35 +629,42 @@ function Hud.goal(state, now)
 	for _, gift in ipairs(state.playtime.gifts) do
 		if not gift.claimed then
 			if minutes >= gift.minutes then
-				return S.t("hud.goal_gift")
+				return S.t("hud.goal_gift"), "gift"
 			end
 			nextGift = nextGift or gift -- gifts go from the shortest time to the longest
 		end
 	end
 	if best then
-		return S.t("hud.goal_quest", { quest = S.text(best.text), progress = best.progress, target = best.target })
+		return S.t("hud.goal_quest", { quest = S.text(best.text), progress = best.progress, target = best.target }), "quest"
 	end
 	if nextGift then
-		return S.t("hud.goal_next_gift", { minutes = math.max(1, math.ceil(nextGift.minutes - minutes)) })
+		return S.t("hud.goal_next_gift", { minutes = math.max(1, math.ceil(nextGift.minutes - minutes)) }), "next_gift"
 	end
 	local tomorrow = r.streak % total + 1
 	-- The day changes at midnight UTC (Daily.today). Counted here: the state comes only on changes.
 	local time = Format.time(86400 - math.floor(now) % 86400)
 	if tomorrow == total then
-		return S.t("hud.goal_mega", { time = time, day = tomorrow })
+		return S.t("hud.goal_mega", { time = time, day = tomorrow }), "tomorrow"
 	end
-	return S.t("hud.goal_tomorrow", { time = time, day = tomorrow, total = total })
+	return S.t("hud.goal_tomorrow", { time = time, day = tomorrow, total = total }), "tomorrow"
+end
+
+-- The key of the luck plate's ✕: the luck value and whether a boost runs (not the boost timer itself).
+function Hud.luckKey(state)
+	local boost = type(state.luckBoostLeft) == "number" and state.luckBoostLeft > 0
+	return string.format("%.2f|%s", tonumber(state.luck) or 0, tostring(boost))
 end
 
 -- Called on every state change and once a second: the timers in the goal run without new state.
 -- A broken state hides the line instead of stopping the loop that also runs the steal status and events.
 -- A plate closed with ✕ stays hidden (Theme.closable).
 function Hud:refreshGoal(state)
-	local ok, text = pcall(Hud.goal, state)
+	local ok, text, kind = pcall(Hud.goal, state)
 	local good = ok and type(text) == "string"
 	local button = self.goalButton
 	if button.GetAttribute then
-		Theme.show(button, good) -- a plate closed with ✕ stays closed until the eye shows the HUD again
+		-- ✕ holds only for this kind of goal: "quest done" or tomorrow's reward shows the plate again (lesson 7).
+		Theme.show(button, good, kind)
 	else
 		button.Visible = good -- a bare table in the tests (tests/retention.spec.luau)
 	end
@@ -665,7 +672,8 @@ function Hud:refreshGoal(state)
 		button.Text = text
 	end
 	if self.luckFrame then
-		Theme.show(self.luckFrame, true)
+		-- ✕ holds while the luck stays the same: a new luck boost or a luck upgrade shows the plate again.
+		Theme.show(self.luckFrame, true, Hud.luckKey(state))
 	end
 end
 

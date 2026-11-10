@@ -6,6 +6,7 @@ local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 
 local Theme = require(script.Parent.Theme)
+local Layout = require(script.Parent.Layout)
 local Viewport = require(script.Parent.Viewport)
 local create = Theme.create
 local C = Theme.Colors
@@ -14,6 +15,19 @@ local BattleView = {}
 BattleView.__index = BattleView
 
 local ROUND_DELAY = 1.3
+
+BattleView.PC_CLOSE = Vector2.new(40, 36) -- the ✕ on PC, in units of the UIScale
+
+-- On a touch screen the ✕ is at least Layout.PT.CLOSE points (36), whatever the UIScale (see Panels:applyLayout).
+function BattleView:applyLayout(touch, scale)
+	local close = BattleView.PC_CLOSE
+	if touch then
+		local side = math.max(close.X, Layout.PT.CLOSE / scale)
+		close = Vector2.new(side, side)
+	end
+	self.closeButton.Size = UDim2.fromOffset(close.X, close.Y)
+	self.title.Size = UDim2.new(1, -(close.X + 8), 0, 40)
+end
 
 function BattleView.new(screenGui, onSfx)
 	local self = setmetatable({}, BattleView)
@@ -38,10 +52,11 @@ function BattleView.new(screenGui, onSfx)
 	}, { create("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }) })
 	self.result = Theme.label({ Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 322), Text = "", ZIndex = 41, Parent = self.frame })
 	self.footer = Theme.label({ Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 368), Text = "", TextColor3 = C.Muted, ZIndex = 41, Parent = self.frame })
-	Theme.button({
+	self.closeButton = Theme.button({
+		Name = "CloseBattle",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 0, 0),
-		Size = UDim2.fromOffset(40, 36),
+		Size = UDim2.fromOffset(BattleView.PC_CLOSE.X, BattleView.PC_CLOSE.Y),
 		Text = "✕",
 		Color = C.Bad,
 		ZIndex = 42,

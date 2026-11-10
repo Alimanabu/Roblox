@@ -23,6 +23,7 @@ local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
 
 local Theme = require(script.Parent.Theme)
+local Layout = require(script.Parent.Layout)
 local Viewport = require(script.Parent.Viewport)
 local create = Theme.create
 local C = Theme.Colors
@@ -1927,6 +1928,8 @@ local DEFINITIONS = {
 	Odds = OddsPanel,
 }
 
+Panels.PC_CLOSE = Vector2.new(44, 40) -- the ✕ of a window on PC, in units of the UIScale
+
 function Panels.new(screenGui)
 	local self = setmetatable({}, Panels)
 	self.openName = nil
@@ -1954,7 +1957,7 @@ function Panels.new(screenGui)
 		Name = "CloseWindow",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -10, 0, 10),
-		Size = UDim2.fromOffset(44, 40),
+		Size = UDim2.fromOffset(Panels.PC_CLOSE.X, Panels.PC_CLOSE.Y),
 		Text = "✕",
 		Color = C.Bad,
 		Parent = self.window,
@@ -1974,6 +1977,21 @@ function Panels.new(screenGui)
 	})
 
 	return self
+end
+
+-- The window stays in units of the UIScale (Main.updateScale), its ✕ does not: on a touch screen it is at least
+-- Layout.PT.CLOSE points (36), otherwise a phone (scale 0.5) shrinks it to 22x20. The list moves down under it.
+function Panels:applyLayout(touch, scale)
+	local close = Panels.PC_CLOSE
+	if touch then
+		local side = math.max(close.X, Layout.PT.CLOSE / scale)
+		close = Vector2.new(side, side)
+	end
+	self.closeButton.Size = UDim2.fromOffset(close.X, close.Y)
+	self.titleLabel.Size = UDim2.new(1, -(close.X + 36), 0, 44)
+	local top = math.max(60, 10 + close.Y + 6)
+	self.content.Position = UDim2.fromOffset(10, top)
+	self.content.Size = UDim2.new(1, -20, 1, -(top + 10))
 end
 
 function Panels:rebuild()

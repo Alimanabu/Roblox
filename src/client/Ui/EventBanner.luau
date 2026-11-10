@@ -38,9 +38,21 @@ function EventBanner.new(hud)
 	return self
 end
 
+-- The key of the ✕: the running event, or the next one while waiting. Closing "next event" does not
+-- hide the start of that event, and closing a running event does not hide the next one (lesson 7).
+function EventBanner.key(now)
+	local active = Events.active(now)
+	if #active > 0 then
+		local current = active[#active]
+		return "on:" .. current.event.id .. ":" .. tostring(current.endsAt)
+	end
+	local nextEvent, startsAt = Events.nextEvent(now)
+	return "next:" .. nextEvent.id .. ":" .. tostring(startsAt)
+end
+
 function EventBanner:update()
-	Theme.show(self.frame, true)
 	local now = workspace:GetServerTimeNow()
+	Theme.show(self.frame, true, EventBanner.key(now))
 	local active = Events.active(now)
 	if #active > 0 then
 		-- If two events run at once, we show the last one (Minute 67 matters more).
