@@ -532,6 +532,15 @@ tutorial.5.text,Claim your daily reward in 🎁 Rewards,,,Забери ежед�
 tutorial.step_done,✅ Nice! +{coins},,,✅ Отлично! +{coins},✅ Жарайсың! +{coins}
 tutorial.finished,🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌,,,🎓 Обучение пройдено! +{coins}. Теперь собери SIX SEVEN 🤌,🎓 Оқу аяқталды! +{coins}. Енді барып SIX SEVEN ал 🤌
 tutorial.step,📚 Tutorial {index}/{total},,,📚 Обучение {index}/{total},📚 Оқу {index}/{total}
+tutorial.do.menu,Tap ☰ to open the menu,,,"Нажми ☰, чтобы открыть меню",Мәзірді ашу үшін ☰ бас
+tutorial.do.factory,Tap 🏭 Factory,,,Нажми 🏭 Фабрика,🏭 Фабрика түймесін бас
+tutorial.do.craft,Tap Craft for a brainrot,,,Нажми «Создать» — получишь брейнрота,Брейнрот алу үшін «Жасау» бас
+tutorial.do.upgrades,Tap ⬆️ Upgrades,,,Нажми ⬆️ Улучшения,⬆️ Жақсартулар түймесін бас
+tutorial.do.buy,Buy the glowing upgrade,,,Купи светящееся улучшение,Жарқыраған жақсартуды сатып ал
+tutorial.do.lock,Step on the blue lock,,,Встань на голубой замок,Көк құлыпқа тұр
+tutorial.do.rewards,Tap 🎁 for rewards,,,Нажми 🎁 — там награды,Сыйлықтар үшін 🎁 бас
+tutorial.do.claim,Claim your daily reward,,,Забери награду дня,Күндік сыйлықты ал
+tutorial.do.close,Close this window,,,Закрой это окно,Бұл терезені жап
 progress.level_up,⭐ New level: {level}!,,,⭐ Новый уровень: {level}!,⭐ Жаңа деңгей: {level}!
 progress.new_title,🏷️ New title: {title},,,🏷️ Новый титул: {title},🏷️ Жаңа атақ: {title}
 progress.capsule_unlocked,🔓 Capsule unlocked: {name},,,🔓 Открыта капсула: {name},🔓 Капсула ашылды: {name}

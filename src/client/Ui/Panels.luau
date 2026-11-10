@@ -266,6 +266,7 @@ function Factory.build(content, state, panels)
 	})
 
 	local serverNow = workspace:GetServerTimeNow()
+	local tutorialTagged = false
 	for _, capsule in ipairs(Capsules.List) do
 		if not Formulas.capsuleInSeason(capsule, serverNow) then
 			continue -- a seasonal capsule is not shown out of season
@@ -308,7 +309,7 @@ function Factory.build(content, state, panels)
 				Parent = box,
 			})
 			local canAfford = randomCoins(state) >= capsule.cost
-			Theme.button({
+			local craftButton = Theme.button({
 				Size = UDim2.new(1, 0, 0, 40),
 				Text = S.t("factory.craft", { cost = Format.coins(capsule.cost) }),
 				Color = canAfford and C.Good or C.Bad,
@@ -317,6 +318,11 @@ function Factory.build(content, state, panels)
 			}, function()
 				Remotes.Craft:FireServer(capsule.id)
 			end)
+			-- The tutorial arrow points at the first ordinary capsule (TutorialBanner).
+			if not tutorialTagged and not capsule.season then
+				tutorialTagged = true
+				craftButton:SetAttribute("TutorialTarget", "craft")
+			end
 			if state.passes.AUTO_CRAFT then
 				local active = state.autoCraft == capsule.id
 				Theme.button({
@@ -602,6 +608,15 @@ function UpgradesPanel.build(content, state)
 	list(content, 10)
 	boughtCoinsNotice(content, boughtCoinsText(state, upgradeCosts(state)))
 	floorCard(content, state, 0)
+	-- The tutorial arrow points at the cheapest upgrade that is not maxed (TutorialBanner).
+	local cheapest, cheapestCost
+	for _, upgrade in ipairs(Upgrades.List) do
+		local level = state.upgrades[upgrade.id] or 0
+		local cost = Upgrades.cost(upgrade.id, level)
+		if level < upgrade.maxLevel and (not cheapest or cost < cheapestCost) then
+			cheapest, cheapestCost = upgrade, cost
+		end
+	end
 	for order, upgrade in ipairs(Upgrades.List) do
 		local level = state.upgrades[upgrade.id] or 0
 		local maxed = level >= upgrade.maxLevel
@@ -621,7 +636,7 @@ function UpgradesPanel.build(content, state)
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = row,
 		})
-		Theme.button({
+		local buyButton = Theme.button({
 			Size = UDim2.new(0.35, -8, 1, 0),
 			Position = UDim2.new(0.65, 8, 0, 0),
 			Text = maxed and S.t("upgrades.max") or Format.coins(cost),
@@ -630,6 +645,9 @@ function UpgradesPanel.build(content, state)
 		}, function()
 			Remotes.BuyUpgrade:FireServer(upgrade.id)
 		end)
+		if upgrade == cheapest then
+			buyButton:SetAttribute("TutorialTarget", "buy")
+		end
 		row.Parent = content
 	end
 end
@@ -1233,7 +1251,7 @@ function Rewards.build(content, state)
 		codeDraft = ""
 	end)
 
-	Theme.button({
+	local claimButton = Theme.button({
 		Size = UDim2.new(0.5, 0, 0, 48),
 		Text = r.canClaim and S.t("rewards.claim_day", { day = r.nextDay })
 			or S.t("rewards.come_back", { time = Format.time(r.secondsToReset) }),
@@ -1243,6 +1261,7 @@ function Rewards.build(content, state)
 	}, function()
 		Remotes.ClaimDaily:FireServer()
 	end)
+	claimButton:SetAttribute("TutorialTarget", "daily")
 
 	Theme.label({
 		Size = UDim2.new(1, -10, 0, 28),
@@ -1929,7 +1948,8 @@ function Panels.new(screenGui)
 		Text = "",
 		Parent = self.window,
 	})
-	Theme.button({
+	self.closeButton = Theme.button({
+		Name = "CloseWindow",
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -10, 0, 10),
 		Size = UDim2.fromOffset(44, 40),

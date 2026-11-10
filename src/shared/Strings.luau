@@ -597,6 +597,15 @@ local Source = {
 	["tutorial.step_done"] = "✅ Nice! +{coins}",
 	["tutorial.finished"] = "🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌",
 	["tutorial.step"] = "📚 Tutorial {index}/{total}",
+	["tutorial.do.menu"] = "Tap ☰ to open the menu",
+	["tutorial.do.factory"] = "Tap 🏭 Factory",
+	["tutorial.do.craft"] = "Tap Craft for a brainrot",
+	["tutorial.do.upgrades"] = "Tap ⬆️ Upgrades",
+	["tutorial.do.buy"] = "Buy the glowing upgrade",
+	["tutorial.do.lock"] = "Step on the blue lock",
+	["tutorial.do.rewards"] = "Tap 🎁 for rewards",
+	["tutorial.do.claim"] = "Claim your daily reward",
+	["tutorial.do.close"] = "Close this window",
 
 	-- Progress
 	["progress.level_up"] = "⭐ New level: {level}!",

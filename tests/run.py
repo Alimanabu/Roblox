@@ -221,9 +221,12 @@ def main():
     retention = world("retention.spec.luau", "en-us")
     retention_ru = world("retention.spec.luau", "ru-ru")
     retention_kk = world("retention.spec.luau", "kk-kz")
+    layout = world("layout.spec.luau", "en-us")
+    layout_ru = world("layout.spec.luau", "ru-ru")
+    layout_kk = world("layout.spec.luau", "kk-kz")
 
     return (economy or purchases or dictionary or text_assign or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
-            or rejoin or frames or loading or retention or retention_ru or retention_kk)
+            or rejoin or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk)
 
 
 if __name__ == "__main__":
