@@ -704,6 +704,19 @@ for _, close in ipairs(closables) do
 		check(close.Parent.Visible == true, "после глаза не вернулась плашка " .. name)
 	end
 end
+-- Исходное свойство «глаз снимает ✕» для тихих плашек проверяется без подсказки (урок 18): все три закрывали ✕ выше,
+-- подсказку закрыли ✕ — цель, удача и событие должны быть на экране. Не видны — глаз не снял с них флаг «закрыто».
+World.click(findNamed(gui, "Tutorial").Close)
+frames()
+World.advance(1.2) -- цель и удача пересчитываются раз в секунду
+frames()
+for name, rule in pairs(DURING_TUTORIAL) do
+	if rule == "тихая" then
+		local plate = findNamed(gui, name)
+		check(plate:GetAttribute("Closed") ~= true, "глаз не снял флаг «закрыто» с плашки " .. name)
+		check(plate.Visible == true, "после глаза и ✕ подсказки не вернулась плашка " .. name)
+	end
+end
 
 -- 2б. ✕ привязан к условию показа: плашка «несёшь брейнрота» и замок базы возвращаются в следующий раз ---------------
 
@@ -837,6 +850,7 @@ do
 
 	-- Удача: ✕ -> та же удача -> закрыта; начался буст удачи -> видна.
 	local luck = plateOf("Luck")
+	check(luck.Visible == true, "удача не видна до ✕: проверка ✕ ничего не докажет")
 	World.click(closeOf(luck))
 	frames()
 	World.advance(3)
@@ -850,6 +864,7 @@ do
 
 	-- Событие: ✕ на «следующее событие» -> ждём -> закрыто; событие началось -> плашка видна.
 	local event = plateOf("EventBanner")
+	check(event.Visible == true, "событие не видно до ✕: проверка ✕ ничего не докажет")
 	World.click(closeOf(event))
 	frames()
 	World.advance(3)
@@ -1017,6 +1032,15 @@ World.advance(1)
 frames()
 check(stepIndex() == 6, "обучение не закончилось: шаг " .. stepIndex())
 check(findNamed(gui, "Tutorial").Visible == false, "после обучения подсказка видна")
+-- Конец обучения — второй путь выхода из «тихого» режима (первый — ✕ подсказки, третий — глаз, урок 19):
+-- цель, удача и событие возвращаются сами, без ✕ и без глаза.
+World.advance(1.2)
+frames()
+for name, rule in pairs(DURING_TUTORIAL) do
+	if rule == "тихая" then
+		check(findNamed(gui, name).Visible == true, "после конца обучения не вернулась плашка " .. name)
+	end
+end
 check(#focused() == 0, "после обучения осталась цель")
 
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)
