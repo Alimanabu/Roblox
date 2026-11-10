@@ -864,6 +864,8 @@ scenario("сбой Roblox: сервер говорит «проверяем», �
 	check(player:GetAttribute("PolicyUnknown") == true, "сбой: не отмечено, что ответа нет")
 	check(player:GetAttribute("PaidItemTradingAllowed") == false, "сбой: обмен не закрыт")
 	local data = DataService.get(player)
+	-- Первая капсула новичка бесплатна (Formulas.isFreeCraft): здесь проверяется платная, игрок уже открывал капсулы.
+	data.stats.crafted = 1
 	data.boughtCoins = CAPSULE.cost
 	World.advance(10)
 	data.coins = CAPSULE.cost
