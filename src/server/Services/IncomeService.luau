@@ -16,26 +16,33 @@ local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local IncomeService = {}
 
-local function giveOfflineIncome(player)
+-- Custom event in Creator Hub -> Analytics: a return that brought offline income (not a funnel step).
+IncomeService.RETURN_EVENT = "OfflineIncomeReturn"
+
+-- Income while away (Formulas.offlineIncome). Away 10+ minutes: the "Welcome back" window with the sum,
+-- closed with one tap (client/Ui/WelcomeBack); a shorter break: a notification. No Robux, no timers.
+function IncomeService.giveOfflineIncome(player)
 	local data = DataService.get(player)
 	if not data or (data.lastOnline or 0) <= 0 then
-		return
+		return 0
 	end
-	local seconds = math.min(os.time() - data.lastOnline, Formulas.OFFLINE_MAX_SECONDS)
-	if seconds < 60 then
-		return
-	end
-	local income = Formulas.totalIncome(data, MonetizationService.passes(player))
-	local amount = math.floor(income * seconds * Formulas.OFFLINE_RATE)
+	local away = os.time() - data.lastOnline
+	local amount = Formulas.offlineIncome(Formulas.totalIncome(data, MonetizationService.passes(player)), away)
 	if amount <= 0 then
-		return
+		return 0
 	end
 	data.coins += amount
 	AnalyticsService.coins(player, true, amount, "Offline")
+	AnalyticsService.event(player, IncomeService.RETURN_EVENT, 1)
 	data.totalEarned += amount
 	DataService.markDirty(player)
 	task.delay(2, function()
-		if player.Parent then
+		if not player.Parent then
+			return
+		end
+		if away >= Formulas.WELCOME_MIN_SECONDS then
+			Remotes.WelcomeBack:FireClient(player, amount)
+		else
 			Remotes.Notify:FireClient(
 				player,
 				S.m("income.offline", { coins = Format.coins(amount) }),
@@ -43,12 +50,13 @@ local function giveOfflineIncome(player)
 			)
 		end
 	end)
+	return amount
 end
 
 function IncomeService.init()
 	DataService.Loaded.Event:Connect(function(player)
 		-- We let game passes load so that VIP is counted too.
-		task.delay(1, giveOfflineIncome, player)
+		task.delay(1, IncomeService.giveOfflineIncome, player)
 	end)
 
 	task.spawn(function()

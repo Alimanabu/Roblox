@@ -625,6 +625,9 @@ local Source = {
 
 	-- Income
 	["income.offline"] = "💤 While you were away, your brainrots earned {coins}",
+	["welcome.title"] = "👋 Welcome back!",
+	["welcome.text"] = "While you were away, your factory made {coins}",
+	["welcome.ok"] = "Nice!",
 
 	-- Pet
 	["pet.following"] = "🐾 This brainrot now follows you around!",

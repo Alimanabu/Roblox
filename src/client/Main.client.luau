@@ -29,6 +29,7 @@ local TutorialBanner = require(script.Parent.Ui.TutorialBanner)
 local TradeInvite = require(script.Parent.Ui.TradeInvite)
 local WheelSpin = require(script.Parent.Ui.WheelSpin)
 local BattleView = require(script.Parent.Ui.BattleView)
+local WelcomeBack = require(script.Parent.Ui.WelcomeBack)
 
 local player = Players.LocalPlayer
 
@@ -58,6 +59,7 @@ local hud = Hud.new(screenGui, function(name)
 	panels:open(name)
 end, Panels.giftsReady)
 local reveal = Reveal.new(screenGui)
+local welcomeBack = WelcomeBack.new(screenGui)
 local tutorial = TutorialBanner.new(screenGui, hud, panels, function()
 	return uiScale.Scale
 end)
@@ -139,6 +141,10 @@ Remotes.CraftResult.OnClientEvent:Connect(function(result)
 	else
 		Sfx.play("craft", 1 + (rarity and rarity.rank or 1) * 0.06)
 	end
+end)
+Remotes.WelcomeBack.OnClientEvent:Connect(function(coins)
+	welcomeBack:show(coins)
+	Sfx.play("coins")
 end)
 Remotes.Sfx.OnClientEvent:Connect(function(name)
 	Sfx.play(name)

@@ -559,6 +559,9 @@ progress.overhead,"[{rebirth}]
 {title}","[{rebirth}]
 {title}"
 income.offline,"💤 While you were away, your brainrots earned {coins}",,,"💤 Пока тебя не было, брейнроты заработали {coins}",💤 Сен жоқта брейнроттарың {coins} тапты
+welcome.title,👋 Welcome back!,,,👋 С возвращением!,👋 Қайта қош келдің!
+welcome.text,"While you were away, your factory made {coins}",,,"Пока тебя не было, фабрика заработала {coins}",Сен жоқта фабрикаң {coins} тапты
+welcome.ok,Nice!,,,Класс!,Керемет!
 pet.following,🐾 This brainrot now follows you around!,,,🐾 Теперь этот брейнрот ходит за тобой!,🐾 Бұл брейнрот енді сенімен бірге жүреді!
 leaderboard.top_earned,💰 Top Earners,,,💰 Топ по заработку,💰 Үздік табыс табушылар
 leaderboard.top_rebirths,♻️ Top Rebirths,,,♻️ Топ по перерождениям,♻️ Үздік қайта туылғандар

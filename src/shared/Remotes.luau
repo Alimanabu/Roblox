@@ -44,6 +44,7 @@ local EVENTS = {
 	"BattleInvite", -- (fromUserId, fromName) you were challenged to a battle
 	"BattleResult", -- (result) rounds and battle outcome
 	"LegendaryDrop", -- ({ userId, name, creatureId, mut }) someone got a legendary drop: a show for everyone
+	"WelcomeBack", -- (coins) the player came back after a break: the "Welcome back" window with the offline income
 }
 
 local Remotes = {}

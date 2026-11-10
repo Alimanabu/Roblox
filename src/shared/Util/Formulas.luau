@@ -24,7 +24,21 @@ Formulas.MIN_CRAFT_TIME = 0.3
 Formulas.SELL_SECONDS = 20 -- a brainrot sells for 20 seconds of its income
 Formulas.FUSE_COUNT = 3 -- how many of the same rarity are needed for fusing
 Formulas.OFFLINE_RATE = 0.5 -- 50% of income while the player is away
-Formulas.OFFLINE_MAX_SECONDS = 3 * 60 * 60
+Formulas.OFFLINE_MAX_SECONDS = 3 * 60 * 60 -- the game description promises "up to 3 hours" (docs/LAUNCH.md)
+Formulas.OFFLINE_MIN_SECONDS = 60 -- a shorter break (a server hop) brings nothing
+Formulas.WELCOME_MIN_SECONDS = 10 * 60 -- away at least this long: the "Welcome back" window instead of a notification
+
+-- Coins earned while away: half of the income per second, for at most OFFLINE_MAX_SECONDS.
+-- income: coins per second when the player left the game, away: seconds since the last save.
+function Formulas.offlineIncome(income, away)
+	if type(income) ~= "number" or type(away) ~= "number" or income ~= income or away ~= away then
+		return 0
+	end
+	if away < Formulas.OFFLINE_MIN_SECONDS or income <= 0 then
+		return 0
+	end
+	return math.floor(income * math.min(away, Formulas.OFFLINE_MAX_SECONDS) * Formulas.OFFLINE_RATE)
+end
 
 -- Base floors. First brainrots stand right on the ground, then floors are bought.
 -- The strongest brainrots stand on top: more income there and they are harder to steal.
