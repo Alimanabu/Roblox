@@ -280,8 +280,14 @@ NumberRange = plain("NumberRange")
 NumberSequence = plain("NumberSequence")
 ColorSequence = plain("ColorSequence")
 UDim2 = plain("UDim2")
-UDim2.fromOffset = UDim2.new
-UDim2.fromScale = UDim2.new
+-- Как в Roblox: fromOffset и fromScale дают полные четыре числа (xScale, xOffset, yScale, yOffset),
+-- по ним tests/layout.spec.luau считает место плашки на экране.
+UDim2.fromOffset = function(x, y)
+	return UDim2.new(0, x or 0, 0, y or 0)
+end
+UDim2.fromScale = function(x, y)
+	return UDim2.new(x or 0, 0, y or 0, 0)
+end
 
 local function enumGroup(group)
 	return setmetatable({}, {
@@ -778,6 +784,7 @@ local services = {
 		end,
 	}),
 	LocalizationService = service("LocalizationService"),
+	UserInputService = service("UserInputService", { TouchEnabled = false }),
 	AnalyticsService = setmetatable({}, {
 		__index = function()
 			return noop
