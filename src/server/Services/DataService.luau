@@ -32,6 +32,7 @@ local profiles = {} -- [player] = data
 local dirty = {} -- [player] = true if the state must be sent to the client
 local snapshotBuilder = nil -- function(player, data) -> snapshot, set from Main
 local saveExtras = {} -- functions that add "temporarily absent" brainrots to the save
+local savedCallbacks = {} -- functions(player, data): called after a regular write went through
 local closeCallbacks = {} -- called when the server shuts down, before the final save
 local beforeSave = {} -- functions(player, data): bring computed fields up to date right before a write
 -- [player] = true: the player is leaving, regular saves are no longer needed. Weak keys:
@@ -60,6 +61,10 @@ local function defaultData()
 		daily = { streak = 0, lastClaimDay = 0 },
 		quests = { day = 0, list = {} },
 		tutorial = { step = 1, progress = 0 },
+		-- Analytics funnels (AnalyticsService): what has been sent, so every step goes out once per life.
+		-- onboarding: the last tutorial funnel step sent; loop: the last main funnel step sent;
+		-- done: facts of the main funnel ["capsule"] = true; session: funnelSessionId of the player.
+		funnel = { onboarding = 0, loop = 0, done = {}, session = "" },
 		codes = {}, -- [CODE] = true: promo codes entered
 		-- Time in the game today (UTC day), summed over all sessions: the gifts for time are counted from it.
 		-- claimed: ["1"] = true by gift number (string keys, so that the DataStore keeps them).
@@ -127,6 +132,11 @@ end
 -- even though they are not in data.creatures right now (for example, a thief is carrying them).
 function DataService.addSaveExtra(callback)
 	table.insert(saveExtras, callback)
+end
+
+-- callback(player, data) runs after a regular (not final) save has really been written to the DataStore.
+function DataService.onSaved(callback)
+	table.insert(savedCallbacks, callback)
 end
 
 -- Full progress reset (test command). Robux purchases are not touched.
@@ -235,6 +245,14 @@ function DataService.save(player, release)
 		return false
 	elseif skipped then
 		return false
+	end
+	if not release then
+		for _, callback in ipairs(savedCallbacks) do
+			local called, callbackErr = pcall(callback, player, data)
+			if not called then
+				warn("[DataService] onSaved:", callbackErr)
+			end
+		end
 	end
 	return true
 end

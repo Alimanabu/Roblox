@@ -9,6 +9,7 @@ local Remotes = require(Shared.Remotes)
 
 local DataService = require(script.Parent.DataService)
 local Actions = require(script.Parent.Actions)
+local AnalyticsService = require(script.Parent.AnalyticsService)
 
 local TutorialService = {}
 
@@ -25,6 +26,8 @@ local function finishStep(player, data, step)
 	else
 		Remotes.Notify:FireClient(player, S.m("tutorial.finished", { coins = Format.coins(step.reward) }), GOLD)
 	end
+	-- Every finished step goes to the funnel on its own, even when settle closes the next one at once.
+	AnalyticsService.onboardingTo(player, data, tutorial.step)
 	DataService.markDirty(player)
 end
 

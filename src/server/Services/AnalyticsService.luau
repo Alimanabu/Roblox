@@ -1,10 +1,10 @@
--- Roblox analytics (Creator Dashboard -> Analytics): tutorial funnel, economy,
+-- Roblox analytics (Creator Hub -> Analytics): tutorial and main loop funnels, economy,
 -- key player actions. All calls are in pcall: analytics must not break the game.
 
 local Analytics = game:GetService("AnalyticsService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
-local Tutorial = require(Shared.Config.Tutorial)
+local Funnels = require(Shared.Config.Funnels)
 
 local DataService = require(script.Parent.DataService)
 local Actions = require(script.Parent.Actions)
@@ -20,12 +20,43 @@ local function safe(method, ...)
 	return true
 end
 
--- Tutorial funnel: step 1 = joined the game, then the steps from Config/Tutorial.
-function AnalyticsService.onboardingStep(player, step)
-	-- Roblox accepts step names no longer than 50 characters, so we keep them short.
-	local previous = Tutorial.Steps[step - 1]
-	local name = step == 1 and "Joined" or (previous and ("Step" .. (step - 1) .. "_" .. previous.action) or "TutorialDone")
-	safe(Analytics.LogOnboardingFunnelStepEvent, player, step, name)
+-- Tutorial funnel: step 1 = joined the game, then one step per finished step of Config/Tutorial.
+-- Sends the steps funnel.onboarding + 1 .. target in order, each once per player for life:
+-- the last sent step lives in the profile, so a rejoin or a second call never repeats a step
+-- and a jump over several steps (the daily reward was already claimed) still sends every one of them.
+function AnalyticsService.onboardingTo(player, data, target)
+	local funnel = data.funnel
+	target = math.min(target, #Funnels.ONBOARDING)
+	while funnel.onboarding < target do
+		local step = funnel.onboarding + 1
+		funnel.onboarding = step
+		safe(Analytics.LogOnboardingFunnelStepEvent, player, step, Funnels.ONBOARDING[step])
+	end
+end
+
+-- Main loop funnel: a step goes out once per life and only after all the previous ones.
+-- The fact "done" may come earlier than its turn (sold before the first fuse): it waits in the profile.
+local function loopFlush(player, data)
+	local funnel = data.funnel
+	while funnel.loop < #Funnels.LOOP do
+		local step = Funnels.LOOP[funnel.loop + 1]
+		if not funnel.done[step.key] then
+			return
+		end
+		funnel.loop += 1
+		if funnel.session == "" then
+			funnel.session = player.UserId .. "-" .. os.time()
+		end
+		safe(Analytics.LogFunnelStepEvent, player, Funnels.LOOP_NAME, funnel.session, funnel.loop, step.name)
+	end
+end
+
+function AnalyticsService.loopFact(player, data, key)
+	if data.funnel.done[key] then
+		return
+	end
+	data.funnel.done[key] = true
+	loopFlush(player, data)
 end
 
 -- We accumulate coins and events and send them once a minute in a batch, so we do not hit the limits of
@@ -81,35 +112,48 @@ local TRACKED = {
 	daily = "DailyReward",
 }
 
+-- Action of the Actions bus -> fact of the main funnel.
+local LOOP_ACTIONS = { craft = "capsule", fuse = "fuse", sell = "sell", upgrade = "upgrade" }
+
+local SECONDS_PER_DAY = 86400
+
 function AnalyticsService.init()
-	local lastStep = {}
 	DataService.Loaded.Event:Connect(function(player)
 		local data = DataService.get(player)
 		if not data then
 			return
 		end
-		lastStep[player] = data.tutorial.step
-		if data.tutorial.step == 1 and data.stats.crafted == 0 then
-			AnalyticsService.onboardingStep(player, 1)
+		AnalyticsService.onboardingTo(player, data, data.tutorial.step)
+		-- Facts the player already has in the save (it was played before the funnels appeared) count at once.
+		local done = data.funnel.done
+		local stats = data.stats
+		done.capsule = done.capsule or stats.crafted > 0 or nil
+		done.fuse = done.fuse or stats.fused > 0 or nil
+		done.sell = done.sell or stats.sold > 0 or nil
+		done.upgrade = done.upgrade or data.upgrades.speed + data.upgrades.luck > 0 or nil
+		-- lastOnline is written by a real save: it exists only if the previous visit saved something.
+		local last = data.lastOnline or 0
+		done.saved = done.saved or last > 0 or nil
+		-- By the UTC day of the last save, not by 24 hours: joined the next calendar day = returned.
+		if last > 0 and math.floor(os.time() / SECONDS_PER_DAY) > math.floor(last / SECONDS_PER_DAY) then
+			done.returned = true
 		end
+		loopFlush(player, data)
+	end)
+	DataService.onSaved(function(player, data)
+		AnalyticsService.loopFact(player, data, "saved")
 	end)
 	Actions.connect(function(player, kind, amount)
 		if TRACKED[kind] then
 			AnalyticsService.event(player, TRACKED[kind], amount)
 		end
-		-- The tutorial step may have changed after this action.
-		task.defer(function()
-			local data = DataService.get(player)
-			if data and lastStep[player] ~= data.tutorial.step then
-				if data.tutorial.step <= #Tutorial.Steps + 1 then
-					AnalyticsService.onboardingStep(player, data.tutorial.step)
-				end
-				lastStep[player] = data.tutorial.step
-			end
-		end)
+		local fact = LOOP_ACTIONS[kind]
+		local data = fact and amount > 0 and DataService.get(player)
+		if data then
+			AnalyticsService.loopFact(player, data, fact)
+		end
 	end)
 	game:GetService("Players").PlayerRemoving:Connect(function(player)
-		lastStep[player] = nil
 		flush(player)
 	end)
 	task.spawn(function()
