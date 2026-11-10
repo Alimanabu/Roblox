@@ -20,7 +20,11 @@ local SCREENS = {
 	{ id = "планшет", size = Vector2.new(1024, 768), touch = true },
 	{ id = "ПК", size = Vector2.new(1280, 760), touch = false },
 	{ id = "ПК_большой", size = Vector2.new(1920, 1080), touch = false },
+	{ id = "телефон_360", size = Vector2.new(360, 780), touch = true },
 }
+local MIN_MEASURED = 15 -- меньше измеренных элементов на экране: тест ничего не доказывает
+-- Размеры касания в точках экрана (после UIScale): ☰ ≥ 44, строка меню ≥ 40 с зазором ≥ 6, ✕ ≥ 36, текст ≥ 12.
+local MIN_BUTTON, MIN_ROW, MIN_GAP, MIN_CLOSE, MIN_FONT = 44, 40, 6, 36, 12
 -- На ПК меряем только то, что вид не сломан (меню открыто, всё на экране): мерило 60 % для телефона и планшета.
 local INSET = 36 -- верхняя полоса Roblox, если ScreenGui её не перекрывает
 local EDGE = 0.2
@@ -85,7 +89,7 @@ local function collect(root, size)
 		local ax, ay = vec(child.AnchorPoint)
 		return px + pxs * pw + pxo * k - ax * w, py + pys * ph + pyo * k - ay * h, w, h
 	end
-	local function walk(obj, px, py, pw, ph, depth)
+	local function walk(obj, px, py, pw, ph, depth, clip, inMenu)
 		local layout = layoutOf(obj)
 		local kids = {}
 		for _, child in ipairs(obj:GetChildren()) do
@@ -105,7 +109,7 @@ local function collect(root, size)
 				rects[index] = { w = w, h = h }
 				total += h + (index > 1 and gap or 0)
 			end
-			if total > ph + 0.5 then
+			if total > ph + 0.5 and obj.ClassName ~= "ScrollingFrame" then
 				table.insert(problems, string.format("%s: содержимое %.0f выше рамки %.0f", obj.Name, total, ph))
 			end
 			local bottom = layout.VerticalAlignment and layout.VerticalAlignment.Name == "Bottom"
@@ -120,13 +124,14 @@ local function collect(root, size)
 			table.sort(kids, function(a, b)
 				return (a.LayoutOrder or 0) < (b.LayoutOrder or 0)
 			end)
-			local _, cw, _, ch = parts(layout.CellSize)
+			local cxs, cw, cys, ch = parts(layout.CellSize)
 			local _, gx, _, gy = parts(layout.CellPadding)
 			local columns = layout.FillDirectionMaxCells or 1
+			local cellW, cellH = cxs * pw + cw * k, cys * ph + ch * k
 			for index in ipairs(kids) do
 				local column, row = (index - 1) % columns, (index - 1) // columns
-				rects[index] = { x = px + column * (cw + gx) * k, y = py + row * (ch + gy) * k, w = cw * k, h = ch * k }
-				if (row + 1) * (ch + gy) * k - gy * k > ph + 0.5 then
+				rects[index] = { x = px + column * (cellW + gx * k), y = py + row * (cellH + gy * k), w = cellW, h = cellH }
+				if (row + 1) * (cellH + gy * k) - gy * k > ph + 0.5 and obj.ClassName ~= "ScrollingFrame" then
 					table.insert(problems, obj.Name .. ": кнопки ниже рамки меню")
 				end
 			end
@@ -140,11 +145,28 @@ local function collect(root, size)
 			local r = rects[index]
 			local text = type(child.Text) == "string" and child.Text or ""
 			local solid = (child.BackgroundTransparency or 0) < 1
-			table.insert(out, { name = child.Name, x = r.x, y = r.y, w = r.w, h = r.h, text = text, solid = solid, depth = depth, obj = child })
-			walk(child, r.x, r.y, r.w, r.h, depth + 1)
+			-- Прокрутка обрезает: что вышло за рамку списка, на экране не видно.
+			local cx0, cy0, cx1, cy1 = r.x, r.y, r.x + r.w, r.y + r.h
+			if clip then
+				cx0, cy0 = math.max(cx0, clip.x), math.max(cy0, clip.y)
+				cx1, cy1 = math.min(cx1, clip.x + clip.w), math.min(cy1, clip.y + clip.h)
+			end
+			local visible = cx1 - cx0 > 0.5 and cy1 - cy0 > 0.5
+			local inside = inMenu or child.Name == "Menu"
+			if visible then
+				table.insert(out, { name = child.Name, x = cx0, y = cy0, w = cx1 - cx0, h = cy1 - cy0, fullW = r.w, fullH = r.h, fullY = r.y,
+					text = text, solid = solid, depth = depth, obj = child, menu = inside })
+			end
+			local childClip = clip
+			if child.ClassName == "ScrollingFrame" then
+				childClip = { x = r.x, y = r.y, w = r.w, h = r.h }
+			end
+			if visible then
+				walk(child, r.x, r.y, r.w, r.h, depth + 1, childClip, inside)
+			end
 		end
 	end
-	walk(root, 0, top, size.X, size.Y - top, 1)
+	walk(root, 0, top, size.X, size.Y - top, 1, nil, false)
 	return out, problems
 end
 
@@ -155,18 +177,22 @@ local function overlap(r, size)
 	return w > 0.5 and h > 0.5
 end
 
--- Что из интерфейса лежит в середине экрана (только то, что видно: фон или надпись).
+-- Что из интерфейса лежит в середине экрана (только то, что видно: фон или надпись) и сколько элементов измерено.
+-- Выдвинутое меню (кнопка ☰) — временная панель, как окно: в середину его не считаем, его размеры проверяются отдельно.
 local function middle(size)
-	local bad = {}
+	local bad, measured = {}, 0
 	for _, root in ipairs({ gui, eyeGui }) do
 		local rects = collect(root, size)
 		for _, r in ipairs(rects) do
-			if (r.solid or r.text ~= "") and overlap(r, size) then
+			if (r.solid or r.text ~= "") and not r.menu then
+				measured += 1
+			end
+			if (r.solid or r.text ~= "") and not r.menu and overlap(r, size) then
 				table.insert(bad, string.format("%s %.0f,%.0f %.0fx%.0f", r.name, r.x, r.y, r.w, r.h))
 			end
 		end
 	end
-	return bad
+	return bad, measured
 end
 
 local function dump(screen, state)
@@ -176,6 +202,9 @@ local function dump(screen, state)
 			if r.solid or r.text ~= "" then
 				print(string.format("RECT|%s|%s|%s|%.1f|%.1f|%.1f|%.1f|%d|%s", screen.id, state, r.name, r.x, r.y, r.w, r.h, r.depth,
 					(string.gsub(r.text, "[|\n]", " "))))
+				if r.name == "MenuButton" or r.name == "Close" or r.name == "Factory" then
+					print(string.format("TOUCH|%s|%s|%.1f|%.1f", screen.id, r.name, r.fullW, r.fullH))
+				end
 			end
 		end
 	end
@@ -207,8 +236,16 @@ if DUMP_ONLY then
 		setScreen(screen)
 		frames()
 		dump(screen, "старт")
-		local bad = middle(screen.size)
+		local bad, measured = middle(screen.size)
 		print(string.format("MIDDLE|%s|%d|%s", screen.id, #bad, table.concat(bad, "; ")))
+		print(string.format("MEASURED|%s|%d", screen.id, measured))
+		if screen.touch then
+			World.click(menuButton)
+			frames()
+			dump(screen, "меню")
+			World.click(menuButton)
+			frames()
+		end
 	end
 	return
 end
@@ -229,14 +266,59 @@ for _, screen in ipairs(SCREENS) do
 		check(false, screen.id .. ": " .. problem)
 	end
 	if screen.touch then
-		local bad = middle(screen.size)
+		local bad, measured = middle(screen.size)
 		check(#bad == 0, screen.id .. ": в середине экрана " .. table.concat(bad, "; "))
-		-- Меню, открытое ☰, тоже остаётся у края.
+		check(measured >= MIN_MEASURED, screen.id .. ": измерено элементов " .. measured .. ", нужно не меньше " .. MIN_MEASURED)
+		-- Размеры касания в точках экрана (после UIScale), все видимые кнопки HUD.
+		local rects = collect(gui, screen.size)
+		for _, r in ipairs(collect(eyeGui, screen.size)) do
+			table.insert(rects, r)
+		end
+		-- Окна и панели (они остались в единицах UIScale) не мельче, чем было: масштаб не ниже 0,5.
+		check(gui:FindFirstChildOfClass("UIScale").Scale >= 0.5 - 0.001, screen.id .. ": масштаб окон ниже 0,5")
+		local seen = {}
+		for _, r in ipairs(rects) do
+			seen[r.name] = (seen[r.name] or 0) + 1
+			local need = (r.name == "MenuButton" or r.name == "RewardsButton" or r.name == "EyeButton" or r.name == "SettingsButton") and MIN_BUTTON
+				or r.name == "Close" and MIN_CLOSE
+			if need and r.obj.ClassName == "TextButton" then
+				check(r.fullW >= need - 0.5 and r.fullH >= need - 0.5,
+					string.format("%s: %s %.1fx%.1f pt, нужно не меньше %d", screen.id, r.name, r.fullW, r.fullH, need))
+			end
+			-- Текст фиксированного размера читается: не меньше 12 pt.
+			if r.obj.TextScaled == false and type(r.obj.TextSize) == "number" and r.text ~= "" then
+				local k = gui:FindFirstChildOfClass("UIScale").Scale
+				check(r.obj.TextSize * k >= MIN_FONT - 0.01,
+					string.format("%s: %s «%s» %.1f pt, нужно не меньше %d", screen.id, r.name, r.text, r.obj.TextSize * k, MIN_FONT))
+			end
+		end
+		check((seen.MenuButton or 0) == 1 and (seen.Close or 0) >= 3, screen.id .. ": не нашёл ☰ или крестики для замера")
+		-- Меню, открытое ☰: строки ≥ 40 pt с зазором ≥ 6 pt, текст ≥ 12 pt, всё в границах экрана.
 		World.click(menuButton)
 		frames()
 		check(menu.Visible == true, screen.id .. ": ☰ не открыл меню")
-		bad = middle(screen.size)
-		check(#bad == 0, screen.id .. ": открытое меню лезет в середину: " .. table.concat(bad, "; "))
+		local rows = {}
+		for _, r in ipairs(collect(gui, screen.size)) do
+			if r.menu and r.obj.ClassName == "TextButton" then
+				table.insert(rows, r)
+			end
+		end
+		check(#rows >= 6, screen.id .. ": в меню видно строк " .. #rows)
+		table.sort(rows, function(a, b)
+			return a.fullY < b.fullY
+		end)
+		local scale = gui:FindFirstChildOfClass("UIScale").Scale
+		for index, r in ipairs(rows) do
+			check(r.fullH >= MIN_ROW - 0.5, string.format("%s: строка меню %s %.1f pt, нужно не меньше %d", screen.id, r.name, r.fullH, MIN_ROW))
+			check(r.obj.TextScaled == false and type(r.obj.TextSize) == "number" and r.obj.TextSize * scale >= MIN_FONT - 0.01,
+			string.format("%s: текст меню %s растягивается или мельче %d pt", screen.id, r.name, MIN_FONT))
+			check(r.x >= -0.5 and r.x + r.w <= screen.size.X + 0.5 and r.y >= -0.5 and r.y + r.h <= screen.size.Y + 0.5,
+				screen.id .. ": меню за краем экрана: " .. r.name)
+			if rows[index + 1] then
+				local gap = rows[index + 1].fullY - (r.fullY + r.fullH)
+				check(gap >= MIN_GAP - 0.5, string.format("%s: зазор между %s и %s %.1f pt, нужно не меньше %d", screen.id, r.name, rows[index + 1].name, gap, MIN_GAP))
+			end
+		end
 		-- Два уведомления подряд: внизу, не в середине.
 		Remotes.Notify:FireClient(player, "Test notification one", nil)
 		Remotes.Notify:FireClient(player, "Test notification two", nil)
@@ -268,7 +350,26 @@ check(menu.Visible == true, "на ПК меню свернулось")
 check(gui.IgnoreGuiInset == true, "интерфейс не занимает полосу Roblox сверху")
 
 -- Подписи над брейнротами: в студах (уменьшаются с расстоянием), видны только рядом.
+-- Смотрим на построенную подпись, а не только на константы: она могла бы вернуться к пикселям.
 local PlotService = shared_require("Services/PlotService")
+local FactoryService0 = shared_require("Services/FactoryService")
+FactoryService0.give(player, "bananito_ninjini", "normal")
+World.advance(2)
+local builtInfo
+for _, item in ipairs(workspace.Plots:GetDescendants()) do
+	if item.Name == "InfoGui" then
+		builtInfo = item
+	end
+end
+check(builtInfo ~= nil, "нет построенной подписи InfoGui")
+if builtInfo then
+	local _, xo, _, yo = parts(builtInfo.Size)
+	check(xo == 0 and yo == 0, "построенная подпись в пикселях: " .. xo .. "x" .. yo)
+	check(builtInfo.MaxDistance <= 60, "построенная подпись видна на " .. builtInfo.MaxDistance .. " студов")
+end
+shared_require("Services/DataService").get(player).creatures = {}
+shared_require("Services/DataService").markDirty(player)
+World.advance(2)
 check(PlotService.INFO_SIZE.args[2] == 0 and PlotService.INFO_SIZE.args[4] == 0, "подпись над брейнротом в пикселях, а не в студах")
 check(PlotService.INFO_DISTANCE <= 60, "подпись видна дальше 60 студов: " .. PlotService.INFO_DISTANCE)
 
@@ -351,6 +452,84 @@ for _, close in ipairs(closables) do
 	end
 end
 
+-- 2б. ✕ привязан к условию показа: плашка «несёшь брейнрота» и замок базы возвращаются в следующий раз ---------------
+
+local function plateOf(name)
+	return findNamed(gui, name)
+end
+local function closeOf(plate)
+	return plate:FindFirstChild("Close")
+end
+local function serverNow()
+	return workspace:GetServerTimeNow()
+end
+
+-- Несёшь брейнрота: ✕ -> таймер сбросили -> снова выставили -> плашка видна.
+local carry = plateOf("CarryStatus")
+player:SetAttribute("CarryDeadline", serverNow() + 60)
+frames()
+check(carry.Visible == true, "плашка «несёшь» не появилась при таймере")
+World.click(closeOf(carry))
+frames()
+check(carry.Visible == false, "✕ не закрыл плашку «несёшь»")
+World.advance(2)
+check(carry.Visible == false, "закрытая плашка «несёшь» вернулась при том же таймере")
+player:SetAttribute("CarryDeadline", nil)
+frames()
+player:SetAttribute("CarryDeadline", serverNow() + 60)
+frames()
+check(carry.Visible == true, "после нового таймера плашка «несёшь» осталась закрытой навсегда")
+-- Другой таймер без паузы (вторая кража сразу за первой) тоже снимает ✕.
+World.click(closeOf(carry))
+frames()
+player:SetAttribute("CarryDeadline", serverNow() + 90)
+frames()
+check(carry.Visible == true, "новая кража без паузы не вернула плашку")
+player:SetAttribute("CarryDeadline", nil)
+frames()
+
+-- Замок базы: настоящий замок (кнопка на базе), состояния «открыта» -> «закрыта» -> «перезарядка» -> «открыта».
+-- ✕ закрывает плашку только на своё состояние: в следующем она снова на экране.
+local lockPlate = plateOf("LockStatus")
+local StealService0 = shared_require("Services/StealService")
+local MoveGuard0 = shared_require("Services/MoveGuardService")
+local lockButton
+for _, plot in ipairs(workspace.Plots:GetChildren()) do
+	if plot:GetAttribute("OwnerUserId") == player.UserId then
+		lockButton = plot:FindFirstChild("LockButton")
+	end
+end
+check(lockButton ~= nil, "нет кнопки замка на своей базе")
+if lockButton then
+	frames()
+	check(lockPlate.Visible == true, "плашка замка не видна в состоянии «открыта»")
+	World.click(closeOf(lockPlate))
+	frames()
+	check(lockPlate.Visible == false, "✕ не закрыл плашку замка")
+	World.advance(2)
+	check(lockPlate.Visible == false, "закрытая плашка замка вернулась без смены состояния")
+	-- Игрок встал на кнопку и нажал замок.
+	local standAt = lockButton.Position + Vector3.new(0, 3, 0)
+	MoveGuard0.teleported(player, standAt)
+	player.Character.HumanoidRootPart.CFrame = CFrame.lookAt(standAt, standAt + Vector3.new(0, 0, 1))
+	World.advance(MoveGuard0.TELEPORT_GRACE + 4)
+	World.prompt(lockButton.LockPrompt, player, 0)
+	frames()
+	check(StealService0.isLocked(player), "замок не закрылся у кнопки (сломан сам тест)")
+	check(lockPlate.Visible == true, "замок закрыли, а плашка осталась закрытой навсегда")
+	World.click(closeOf(lockPlate))
+	frames()
+	check(lockPlate.Visible == false, "✕ не закрыл плашку «замок закрыт»")
+	World.advance(StealService0.LOCK_TIME + 2) -- замок кончился, началась перезарядка
+	frames()
+	check(lockPlate.Visible == true, "перезарядка замка не вернула плашку")
+	World.click(closeOf(lockPlate))
+	frames()
+	World.advance(StealService0.LOCK_COOLDOWN + 2) -- перезарядка кончилась: снова «открыта»
+	frames()
+	check(lockPlate.Visible == true, "замок снова открыт, а плашка осталась закрытой")
+end
+
 -- 3. Обучение -------------------------------------------------------------------------------
 
 local Actions = shared_require("Services/Actions")
@@ -398,6 +577,34 @@ local function stepIndex()
 	return DataService.get(player).tutorial.step
 end
 
+-- Тупик на шаге 5: награду дня забрали на шагах 1–4. Другой игрок: шаги 1–4 пройдены, шаг 5 закрылся сам.
+do
+	local Remotes0 = shared_require("Remotes")
+	local friend = World.addPlayer(1002, "Friend")
+	World.advance(2)
+	local fd = DataService.get(friend)
+	check(fd.tutorial.step == 1, "второй игрок не на шаге 1: " .. fd.tutorial.step)
+	local coinsBefore = fd.coins
+	Remotes0.ClaimDaily.OnServerEvent:Fire(friend) -- награду дня забрали на шаге 1
+	check(fd.tutorial.step == 1, "награда дня сдвинула шаг 1: " .. fd.tutorial.step)
+	for _, action in ipairs({ "craft", "craft", "craft", "craft", "craft", "upgrade", "lock" }) do
+		Actions.fire(friend, action, 1)
+	end
+	check(fd.tutorial.step == 6, "шаг 5 не закрылся сам после шагов 1–4: шаг " .. fd.tutorial.step)
+	local expected = 100 + 200 + 300 + 300 + 500 -- награды шагов 1–5
+	check(fd.coins - coinsBefore >= expected, "за шаг 5 нет награды: " .. (fd.coins - coinsBefore))
+	-- Старое сохранение стоит на шаге 5, а награда дня уже получена: при входе шаг закрывается.
+	fd.tutorial.step, fd.tutorial.progress = 5, 0
+	DataService.sendNow(friend)
+	check(fd.tutorial.step == 6, "старое сохранение осталось на шаге 5: " .. fd.tutorial.step)
+	-- Награда дня не получена: шаг 5 ждёт (тупика нет, кнопка живая).
+	fd.daily.lastClaimDay = nil
+	fd.tutorial.step = 5
+	DataService.sendNow(friend)
+	check(fd.tutorial.step == 5, "шаг 5 закрылся без награды дня: " .. fd.tutorial.step)
+	World.removePlayer(friend)
+end
+
 check(stepIndex() == 1, "новичок не на шаге 1: " .. stepIndex())
 DataService.get(player).coins = 100000 -- хватит на капсулы и улучшение
 DataService.markDirty(player)
@@ -412,11 +619,20 @@ World.click(withAttr("craft"))
 World.advance(6)
 check(stepIndex() == 2, "после первой капсулы не шаг 2: " .. stepIndex())
 -- Шаг 2: ещё 4 капсулы, цель та же кнопка, счётчик растёт.
+-- ✕ на подсказке прячет её только на этом шаге: на шаге 3 она снова на экране.
+local hint = findNamed(gui, "Tutorial")
+expect("tutorial.do.craft", withAttr("craft"), "шаг 2 капсула 1")
+World.click(hint:FindFirstChild("Close"))
+frames()
+check(hint.Visible == false and #focused() == 0, "✕ не спрятал подсказку обучения и стрелку")
+World.advance(3)
+check(hint.Visible == false, "закрытая подсказка вернулась на том же шаге")
 for craft = 1, 4 do
-	expect("tutorial.do.craft", withAttr("craft"), "шаг 2 капсула " .. craft)
 	World.click(withAttr("craft"))
 	World.advance(6)
 end
+frames()
+check(hint.Visible == true, "подсказка осталась закрытой на следующем шаге")
 check(stepIndex() == 3, "после 5 капсул не шаг 3: " .. stepIndex())
 -- Шаг 3: окно фабрики открыто — сначала закрыть, потом ⬆️ Улучшения -> купить.
 local closeWindow = findNamed(gui, "CloseWindow")
