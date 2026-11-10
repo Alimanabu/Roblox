@@ -71,7 +71,7 @@ end
 -- A plate of the right column or of the top strip (goal, luck, lock, event, carry, the tutorial hint).
 -- labels: the text objects inside (or the plate itself when it is a button with its own text).
 -- spec: land = height in points on a landscape touch screen, split = shares of the height for several labels,
--- own = the plate itself carries the text, dock = "carry" (bottom stack on portrait) or "bottom" (the hint).
+-- own = the plate itself carries the text, dock = "carry" (bottom of a portrait screen) or "top" (the tutorial hint, Hud:layoutHint).
 -- The PC look is remembered here and restored by applyLayout.
 function Hud:addPlate(frame, labels, spec)
 	local plate = { frame = frame, labels = labels, spec = spec, pc = {} }
@@ -330,6 +330,62 @@ local function plateText(label, touch, u, font, pc)
 	end
 end
 
+-- The tutorial hint, at the top edge with big text (Layout.PT.HINT points on a touch screen).
+-- Portrait: the strip under the coins, full width. Landscape: the top of the right column; the plates
+-- give it their place while the tutorial runs (Hud:setTutorialFocus). PC: under the level, in the middle.
+-- Row 1: progress dots and ✕; below: the hint, wrapped, the whole width.
+function Hud:layoutHint(plate, size, touch, portrait, u)
+	local PT = Layout.PT
+	local frame, close = plate.frame, plate.close
+	local step, text = plate.labels[1], plate.labels[2]
+	local k = if touch then u else 1
+	local width, lines, font, stepFont, c
+	if touch and portrait then
+		frame.AnchorPoint = Vector2.new(0.5, 0)
+		frame.Position = UDim2.new(0.5, 0, 0, k * (PT.TOP + 50 + 4))
+		width, lines = size.X - 16, Layout.HINT_LINES.portrait
+	elseif touch then
+		frame.AnchorPoint = Vector2.new(1, 0)
+		frame.Position = UDim2.new(1, -k * PT.LEFT, 0, k * (PT.ROBLOX_BAR - 48))
+		width, lines = math.min(190, size.X * Layout.EDGE - 10), Layout.HINT_LINES.landscape
+	else
+		frame.AnchorPoint = Vector2.new(0.5, 0)
+		frame.Position = UDim2.new(0.5, 0, 0, Layout.HINT_PC.Y)
+		width, lines = Layout.HINT_PC.WIDTH, Layout.HINT_LINES.pc
+	end
+	if touch then
+		font, stepFont, c = PT.HINT, PT.HINT_STEP, PT.CLOSE
+	else
+		font, stepFont, c = Layout.HINT_PC.FONT, Layout.HINT_PC.STEP, Theme.CLOSE
+	end
+	frame.Parent = self.screenGui
+	frame.Size = UDim2.fromOffset(k * width, k * (c + 4 + lines * font * Layout.LINE + 6))
+	if close then
+		close.AnchorPoint = Vector2.new(1, 0)
+		close.Position = UDim2.new(1, -k * 2, 0, k * 2)
+		close.Size = UDim2.fromOffset(k * c, k * c)
+	end
+	step.Position = UDim2.fromOffset(k * 8, k * 2)
+	step.Size = UDim2.new(1, -k * (c + 14), 0, k * c)
+	step.TextScaled = false
+	step.TextSize = k * stepFont
+	step.TextXAlignment = Enum.TextXAlignment.Left
+	text.Position = UDim2.fromOffset(k * 6, k * (c + 4))
+	text.Size = UDim2.new(1, -k * 12, 0, k * lines * font * Layout.LINE)
+	text.TextScaled = false
+	text.TextWrapped = true
+	text.TextSize = k * font
+	text.TextXAlignment = Enum.TextXAlignment.Left
+	text.TextYAlignment = Enum.TextYAlignment.Top
+end
+
+-- While the tutorial hint leads on a touch screen, the plates (goal, luck, lock, event) step aside:
+-- there is no room for both at the top, and the newbie gets one thing to read. ✕ on the hint brings them back.
+function Hud:setTutorialFocus(on)
+	self.tutorialFocus = on
+	self.side.Visible = not (on and self.touch)
+end
+
 -- Puts everything in place for the screen size. size: the screen in points, scale: the UIScale of the screen gui.
 -- Touch: sizes in points (n * u, u = 1 / scale), the middle of the screen stays free. PC: as drawn originally.
 function Hud:applyLayout(size, touch, scale)
@@ -421,7 +477,7 @@ function Hud:applyLayout(size, touch, scale)
 		else
 			self.side.AnchorPoint = Vector2.new(1, 0)
 			self.side.Position = UDim2.new(1, -pt(PT.LEFT), 0, pt(PT.ROBLOX_BAR - 48))
-			self.side.Size = UDim2.fromOffset(pt(plateWidth), pt(size.Y - PT.ROBLOX_BAR))
+			self.side.Size = UDim2.fromOffset(pt(plateWidth), pt(size.Y - (PT.ROBLOX_BAR - 48) - PT.LEFT))
 		end
 	else
 		self.side.AnchorPoint = Vector2.new(1, 0)
@@ -431,20 +487,16 @@ function Hud:applyLayout(size, touch, scale)
 	self.sideList.Parent = if gridMode then nil else self.side
 	self.sideGrid.Parent = if gridMode then self.side else nil
 
-	local hintHeight = 40
 	for _, plate in ipairs(self.plates) do
 		local frame, spec = plate.frame, plate.spec
 		local c = pt(PT.CLOSE)
-		if touch then
-			if spec.dock == "bottom" then
+		if spec.dock == "top" then
+			self:layoutHint(plate, size, touch, portrait, u)
+		elseif touch then
+			if spec.dock == "carry" and portrait then
 				frame.Parent = self.screenGui
 				frame.AnchorPoint = Vector2.new(0.5, 1)
 				frame.Position = UDim2.new(0.5, 0, 1, -pt(6))
-				frame.Size = UDim2.fromOffset(pt(math.min(size.X - 16, 460)), pt(hintHeight))
-			elseif spec.dock == "carry" and portrait then
-				frame.Parent = self.screenGui
-				frame.AnchorPoint = Vector2.new(0.5, 1)
-				frame.Position = UDim2.new(0.5, 0, 1, -pt(6 + hintHeight + 4))
 				frame.Size = UDim2.fromOffset(pt(size.X - 16), pt(44))
 			else
 				frame.Parent = self.side
@@ -498,9 +550,9 @@ function Hud:applyLayout(size, touch, scale)
 		end
 	end
 
-	-- Notifications: one line above the hint (and the carry plate on a portrait screen); two on PC.
+	-- Notifications: one line at the bottom (above the carry plate on a portrait screen); two on PC.
 	if touch then
-		local above = 6 + hintHeight + 4 + (if portrait then 44 + 4 else 0)
+		local above = 6 + (if portrait then 44 + 4 else 0)
 		self.notifyMax = 1
 		self.notifyHeight = pt(if portrait then 36 else 28)
 		self.notifyWidth = pt(math.min(size.X * 0.7, 420))
@@ -522,6 +574,7 @@ function Hud:applyLayout(size, touch, scale)
 		self.touch = touch
 		self:setMenuOpen(Layout.menuOpenAtStart(touch))
 	end
+	self:setTutorialFocus(self.tutorialFocus == true)
 end
 
 function Hud:setMenuOpen(open)

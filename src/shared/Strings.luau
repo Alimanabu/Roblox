@@ -79,6 +79,7 @@ local Source = {
 	["factory.secret"] = "??? secret",
 	["factory.pity_left"] = "🎯 {rarity} guaranteed in {left}",
 	["factory.craft"] = "Craft {cost}",
+	["factory.craft_free"] = "Craft FREE 🎁",
 	["factory.auto_on"] = "🤖 Auto: ON",
 	["factory.auto"] = "🤖 Auto",
 	["factory.need_level"] = "🔒 Level {level}",
@@ -480,6 +481,7 @@ local Source = {
 	-- New brainrot reveal
 	["reveal.fused"] = "🧬 FUSED",
 	["reveal.new"] = "✨ NEW!",
+	["reveal.first"] = "🎉 YOUR FIRST BRAINROT!",
 
 	-- Steal and lock status
 	["status.carry"] = "🏃 Carry the brainrot to your base! {time}",
@@ -596,7 +598,6 @@ local Source = {
 	["tutorial.5.text"] = "Claim your daily reward in 🎁 Rewards",
 	["tutorial.step_done"] = "✅ Nice! +{coins}",
 	["tutorial.finished"] = "🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌",
-	["tutorial.step"] = "📚 Tutorial {index}/{total}",
 	["tutorial.do.menu"] = "Tap ☰ to open the menu",
 	["tutorial.do.factory"] = "Tap 🏭 Factory",
 	["tutorial.do.craft"] = "Tap Craft for a brainrot",

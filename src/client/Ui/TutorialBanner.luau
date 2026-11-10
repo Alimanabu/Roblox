@@ -1,7 +1,8 @@
 -- Tutorial: one short action at a time, an arrow and a glow right on the thing to tap.
 -- The server counts the steps (Config/Tutorial, TutorialService); here each step is split into taps:
--- ☰ -> menu button -> the button inside the window (Craft, Buy, Claim). A small hint at the bottom
--- edge says the same in 3-6 words; ✕ hides the hint and the arrow until the eye shows the HUD again.
+-- ☰ -> menu button -> the button inside the window (Craft, Buy, Claim). A big hint at the top edge
+-- (18+ pt on a touch screen, Hud:layoutHint) says the same in 3-6 words; while it leads, the plates step aside.
+-- ✕ hides the hint and the arrow for this step: the next step shows them again.
 
 local Players = game:GetService("Players")
 
@@ -63,6 +64,11 @@ function TutorialBanner.target(tutorial, panels, hud)
 	return "tutorial.do.menu", hud.menuButton
 end
 
+-- Progress as big dots: done ●, now ◉, ahead ○ (short enough for the narrow landscape column).
+function TutorialBanner.dots(index, total)
+	return "📚 " .. string.rep("●", index - 1) .. "◉" .. string.rep("○", math.max(0, total - index))
+end
+
 function TutorialBanner.new(screenGui, hud, panels, getScale)
 	local self = setmetatable({}, TutorialBanner)
 	self.hud = hud
@@ -73,30 +79,28 @@ function TutorialBanner.new(screenGui, hud, panels, getScale)
 	end
 	self.frame = create("Frame", {
 		Name = "Tutorial",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -10),
-		Size = UDim2.fromOffset(460, 50),
 		BackgroundColor3 = C.Background,
-		BackgroundTransparency = 0.1,
+		BackgroundTransparency = 0.05,
 		Visible = false,
+		ZIndex = 20,
 		Parent = screenGui,
 	}, { Theme.corner(14), Theme.stroke(C.Gold, 3) })
+	-- Places and sizes: Hud:layoutHint (screen size, touch or PC).
 	self.step = Theme.label({
-		Size = UDim2.new(1, -Theme.CLOSE - 16, 0, 16),
-		Position = UDim2.fromOffset(10, 2),
+		Name = "Step",
 		Text = "",
 		TextColor3 = C.Gold,
+		ZIndex = 21,
 		Parent = self.frame,
 	})
 	self.text = Theme.label({
 		Name = "Hint",
-		Size = UDim2.new(1, -Theme.CLOSE - 16, 0, 30),
-		Position = UDim2.fromOffset(10, 18),
 		Text = "",
+		ZIndex = 21,
 		Parent = self.frame,
 	})
 	Theme.closable(self.frame)
-	hud:addPlate(self.frame, { self.step, self.text }, { dock = "bottom" })
+	hud:addPlate(self.frame, { self.step, self.text }, { dock = "top" })
 	-- The arrow is drawn over everything, windows included.
 	self.arrow = Theme.label({
 		Name = "TutorialArrow",
@@ -124,8 +128,12 @@ function TutorialBanner:refresh()
 	local tutorial = self.tutorial
 	-- ✕ hides the hint only for the step it was pressed on: the next step shows it again.
 	Theme.show(self.frame, tutorial ~= nil, tutorial and tutorial.index)
-	-- While the tutorial leads, nothing else glows: one goal at a time.
-	self.hud.quietGlow = tutorial ~= nil and not self:closed()
+	-- While the tutorial leads, nothing else glows and the plates step aside: one goal at a time.
+	local leading = tutorial ~= nil and not self:closed()
+	self.hud.quietGlow = leading
+	if self.hud.tutorialFocus ~= leading then
+		self.hud:setTutorialFocus(leading)
+	end
 	if not tutorial or self:closed() then
 		self:setTarget(nil)
 		self:setLockHighlight(false)
@@ -133,7 +141,7 @@ function TutorialBanner:refresh()
 	end
 	local key, target = TutorialBanner.target(tutorial, self.panels, self.hud)
 	self.hintKey = key
-	self.step.Text = S.t("tutorial.step", { index = tutorial.index, total = tutorial.total })
+	self.step.Text = TutorialBanner.dots(tutorial.index, tutorial.total)
 	local text = key and S.t(key) or S.text(tutorial.text)
 	if tutorial.count > 1 then
 		text ..= string.format("  (%d/%d)", tutorial.progress, tutorial.count)

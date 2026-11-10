@@ -422,6 +422,16 @@ function Formulas.isFromPastLife(entry, userId, rebirths)
 	return gen ~= nil and rebirths > gen
 end
 
+-- The very first capsule of a player is free: the first ordinary capsule, before anything was crafted.
+-- Once per life (stats.crafted only grows), a free brainrot sells for 0 (its paid price is 0).
+function Formulas.isFreeCraft(capsule, data)
+	return capsule == Capsules.List[1] and data.stats ~= nil and data.stats.crafted == 0
+end
+
+function Formulas.capsuleCost(capsule, data)
+	return if Formulas.isFreeCraft(capsule, data) then 0 else capsule.cost
+end
+
 function Formulas.capsuleUnlocked(capsule, data)
 	return data.level >= capsule.level and data.rebirths >= capsule.rebirths
 end

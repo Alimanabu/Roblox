@@ -134,7 +134,7 @@ Remotes.CraftResult.OnClientEvent:Connect(function(result)
 	reveal:show(result, State.current)
 	local creature = Creatures.get(result.id)
 	local rarity = creature and Rarities.get(creature.rarity)
-	if rarity and rarity.rank >= 6 then
+	if result.first or rarity and rarity.rank >= 6 then
 		Sfx.play("rare")
 	else
 		Sfx.play("craft", 1 + (rarity and rarity.rank or 1) * 0.06)

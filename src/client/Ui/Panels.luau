@@ -190,7 +190,7 @@ local function capsuleCosts(state)
 	local serverNow = workspace:GetServerTimeNow()
 	for _, capsule in ipairs(Capsules.List) do
 		if Formulas.capsuleInSeason(capsule, serverNow) and Formulas.capsuleUnlocked(capsule, state) then
-			table.insert(costs, capsule.cost)
+			table.insert(costs, Formulas.capsuleCost(capsule, state))
 		end
 	end
 	return costs
@@ -210,7 +210,8 @@ function Factory.signature(state)
 	for _, capsule in ipairs(Capsules.List) do
 		table.insert(
 			parts,
-			(randomCoins(state) >= capsule.cost and "1" or "0")
+			(randomCoins(state) >= Formulas.capsuleCost(capsule, state) and "1" or "0")
+				.. tostring(Formulas.isFreeCraft(capsule, state))
 				.. (state.pity[capsule.id] or 0)
 				.. tostring(Formulas.capsuleInSeason(capsule, serverNow))
 		)
@@ -308,10 +309,11 @@ function Factory.build(content, state, panels)
 				LayoutOrder = 4,
 				Parent = box,
 			})
-			local canAfford = randomCoins(state) >= capsule.cost
+			local cost = Formulas.capsuleCost(capsule, state)
+			local canAfford = randomCoins(state) >= cost
 			local craftButton = Theme.button({
 				Size = UDim2.new(1, 0, 0, 40),
-				Text = S.t("factory.craft", { cost = Format.coins(capsule.cost) }),
+				Text = if cost == 0 then S.t("factory.craft_free") else S.t("factory.craft", { cost = Format.coins(cost) }),
 				Color = canAfford and C.Good or C.Bad,
 				LayoutOrder = 5,
 				Parent = box,

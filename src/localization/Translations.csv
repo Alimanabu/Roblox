@@ -53,6 +53,7 @@ factory.hint,"The more popular the trend, the rarer the drop. Luck boosts your r
 factory.secret,??? secret,,,??? секрет,??? құпия
 factory.pity_left,🎯 {rarity} guaranteed in {left},,,🎯 {rarity} точно через {left},🎯 {rarity} кепілдігі: {left} қалды
 factory.craft,Craft {cost},,,Создать {cost},Жасау {cost}
+factory.craft_free,Craft FREE 🎁,,,Создать БЕСПЛАТНО 🎁,ТЕГІН жасау 🎁
 factory.auto_on,🤖 Auto: ON,,,🤖 Авто: ВКЛ,🤖 Авто: ҚОСУЛЫ
 factory.auto,🤖 Auto,,,🤖 Авто,🤖 Авто
 factory.need_level,🔒 Level {level},,,🔒 Уровень {level},🔒 Деңгей {level}
@@ -414,6 +415,7 @@ name.changed,✏️ Its name is now “{name}”,,,✏️ Теперь его з
 name.removed,Name removed,,,Имя убрано,Ат жойылды
 reveal.fused,🧬 FUSED,,,🧬 СКРЕЩИВАНИЕ,🧬 БІРІКТІРІЛДІ
 reveal.new,✨ NEW!,,,✨ НОВЫЙ!,✨ ЖАҢА!
+reveal.first,🎉 YOUR FIRST BRAINROT!,,,🎉 ТВОЙ ПЕРВЫЙ БРЕЙНРОТ!,🎉 АЛҒАШҚЫ БРЕЙНРОТЫҢ!
 status.carry,🏃 Carry the brainrot to your base! {time},,,🏃 Неси брейнрота на свою базу! {time},🏃 Брейнротты базаңа апар! {time}
 status.shield,🛡️ Shield {time},,,🛡️ Защита {time},🛡️ Қалқан {time}
 status.locked,🔒 Base locked {time},,,🔒 База закрыта {time},🔒 База құлыптаулы {time}
@@ -531,7 +533,6 @@ tutorial.4.text,Thieves never sleep! Stand on the blue 🔓 Lock button at your 
 tutorial.5.text,Claim your daily reward in 🎁 Rewards,,,Забери ежедневную награду в 🎁 Награды,🎁 Сыйлықтардан күндік сыйлығыңды ал
 tutorial.step_done,✅ Nice! +{coins},,,✅ Отлично! +{coins},✅ Жарайсың! +{coins}
 tutorial.finished,🎓 Tutorial complete! +{coins}. Now go get a SIX SEVEN 🤌,,,🎓 Обучение пройдено! +{coins}. Теперь собери SIX SEVEN 🤌,🎓 Оқу аяқталды! +{coins}. Енді барып SIX SEVEN ал 🤌
-tutorial.step,📚 Tutorial {index}/{total},,,📚 Обучение {index}/{total},📚 Оқу {index}/{total}
 tutorial.do.menu,Tap ☰ to open the menu,,,"Нажми ☰, чтобы открыть меню",Мәзірді ашу үшін ☰ бас
 tutorial.do.factory,Tap 🏭 Factory,,,Нажми 🏭 Фабрика,🏭 Фабрика түймесін бас
 tutorial.do.craft,Tap Craft for a brainrot,,,Нажми «Создать» — получишь брейнрота,Брейнрот алу үшін «Жасау» бас

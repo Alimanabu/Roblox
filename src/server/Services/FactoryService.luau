@@ -160,13 +160,16 @@ local function craft(player, capsuleId, silent)
 		fullWarned[player] = true
 		return false
 	end
-	if data.coins < capsule.cost then
-		return fail(S.m("common.not_enough_coins", { cost = Format.coins(capsule.cost) }))
+	-- The first capsule of a newbie is free (Formulas.isFreeCraft): the tutorial starts with a sure win.
+	local cost = Formulas.capsuleCost(capsule, data)
+	local free = cost == 0
+	if data.coins < cost then
+		return fail(S.m("common.not_enough_coins", { cost = Format.coins(cost) }))
 	end
 	local restricted = PolicyService.paidRandomRestricted(player)
 	local earned = Formulas.randomCoins(data, restricted)
-	if earned < capsule.cost then
-		return fail(PolicyService.message(player, "shop.bought_coins", { coins = Format.coins(capsule.cost - earned) }))
+	if earned < cost then
+		return fail(PolicyService.message(player, "shop.bought_coins", { coins = Format.coins(cost - earned) }))
 	end
 
 	lastCraft[player] = now
@@ -174,11 +177,11 @@ local function craft(player, capsuleId, silent)
 	-- The capsule spends bought coins first. When restricted it is paid with earned ones (see above),
 	-- and the bought ones stay on the balance.
 	local bought = if restricted then 0 else math.min(data.boughtCoins, data.coins)
-	data.coins -= capsule.cost
+	data.coins -= cost
 	if not restricted then
-		data.boughtCoins = math.max(bought - capsule.cost, 0)
+		data.boughtCoins = math.max(bought - cost, 0)
 	end
-	AnalyticsService.coins(player, false, capsule.cost, "Capsule")
+	AnalyticsService.coins(player, false, cost, "Capsule")
 	data.stats.crafted += 1
 
 	local luck = MonetizationService.luck(player, data, os.time(), mods)
@@ -200,10 +203,10 @@ local function craft(player, capsuleId, silent)
 	local source = Formulas.SOURCE_FREE
 	if MonetizationService.paidLuck(player, data, os.time()) then
 		source = Formulas.SOURCE_LUCK
-	elseif bought > 0 then
+	elseif bought > 0 and not free then
 		source = Formulas.SOURCE_COINS
 	end
-	local entry, isNew = addCreature(player, data, creature.id, mutationId, capsule.cost, nil, showcase, source)
+	local entry, isNew = addCreature(player, data, creature.id, mutationId, cost, nil, showcase, source)
 	Actions.fire(player, "craft", 1)
 	Remotes.CraftResult:FireClient(player, {
 		uid = entry.uid,
@@ -211,6 +214,7 @@ local function craft(player, capsuleId, silent)
 		mut = mutationId,
 		isNew = isNew,
 		capsule = capsule.id,
+		first = free or nil, -- the free first capsule: the client plays the big reveal
 	})
 	return true
 end

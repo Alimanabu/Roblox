@@ -50,12 +50,17 @@ function Reveal:show(result, state)
 	end
 	local rarity = Rarities.get(creature.rarity)
 	local mutation = Mutations.get(result.mut)
-	local epic = rarity.rank >= 6 or mutation.rank >= 4
+	-- The free first capsule (FactoryService, result.first) plays the big show: larger, rainbow frame, longer.
+	local first = result.first == true
+	local epic = rarity.rank >= 6 or mutation.rank >= 4 or first
 
 	self.token += 1
 	local token = self.token
 
 	local badges = {}
+	if first then
+		table.insert(badges, S.t("reveal.first"))
+	end
 	if result.fused then
 		table.insert(badges, S.t("reveal.fused"))
 	end
@@ -75,6 +80,7 @@ function Reveal:show(result, state)
 	self.rarity.Text = rarity.name
 	self.rarity.TextColor3 = rarity.color
 	self.stroke.Color = rarity.color
+	self.stroke.Thickness = 4
 	local multiplier = state and state.incomeMultiplier or 1
 	self.income.Text = S.t("common.per_second", { coins = "+" .. Format.coins(Formulas.creatureBaseIncome(result) * multiplier) })
 
@@ -94,12 +100,14 @@ function Reveal:show(result, state)
 		Scale = epic and 1.35 or 1,
 	}):Play()
 
-	if rarity.rainbow then
+	self.frame:SetAttribute("Big", epic) -- the tests read the kind of the show
+	if rarity.rainbow or first then
 		task.spawn(function()
 			while self.token == token and self.frame.Visible do
 				local hue = (os.clock() * 0.6) % 1
 				local color = Color3.fromHSV(hue, 0.8, 1)
 				self.stroke.Color = color
+				self.stroke.Thickness = if first then 6 + math.sin(os.clock() * 10) * 2 else 4
 				self.rarity.TextColor3 = color
 				task.wait()
 			end

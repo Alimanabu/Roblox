@@ -23,7 +23,13 @@ Layout.PT = {
 	TOP = 4, -- the top row: coins and level
 	LEFT = 8,
 	ROBLOX_BAR = 108, -- the Roblox menu and chat buttons take the top left corner
+	HINT = 18, -- the tutorial hint text (a newbie must read it at a glance, 10.11 feedback)
+	HINT_STEP = 16, -- the tutorial progress dots
 }
+Layout.LINE = 1.2 -- line height as a share of the font size
+-- Lines of the tutorial hint: the portrait strip under the coins is wide, the landscape column is narrow.
+Layout.HINT_LINES = { portrait = 2, landscape = 5, pc = 2 }
+Layout.HINT_PC = { WIDTH = 520, FONT = 22, STEP = 18, Y = 148 } -- PC: under the level, units of the UIScale
 
 function Layout.isPhone(size)
 	return math.min(size.X, size.Y) < Layout.PHONE_SIDE
