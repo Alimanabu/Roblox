@@ -1,4 +1,4 @@
--- Plates at the bottom of the screen: "carry the brainrot home" and the lock state of your base.
+-- Plates in the right column of the HUD: "carry the brainrot home" and the lock state of your base.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -11,42 +11,43 @@ local C = Theme.Colors
 local StealStatus = {}
 StealStatus.__index = StealStatus
 
-function StealStatus.new(screenGui)
+function StealStatus.new(side)
 	local self = setmetatable({}, StealStatus)
 
 	self.carry = create("Frame", {
 		Name = "CarryStatus",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -166),
-		Size = UDim2.fromOffset(460, 54),
+		Size = UDim2.new(1, 0, 0, 56),
 		BackgroundColor3 = C.Bad,
 		Visible = false,
-		Parent = screenGui,
+		LayoutOrder = 1,
+		Parent = side,
 	}, { Theme.corner(14), Theme.stroke(Color3.new(1, 1, 1), 3) })
 	self.carryLabel = Theme.label({
-		Size = UDim2.new(1, -16, 1, -8),
+		Size = UDim2.new(1, -Theme.CLOSE - 8, 1, -8),
 		Position = UDim2.fromOffset(8, 4),
 		Text = "",
+		TextWrapped = true,
 		Parent = self.carry,
 	})
+	Theme.closable(self.carry)
 
 	self.lock = create("Frame", {
 		Name = "LockStatus",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0.3, 68),
-		Size = UDim2.fromOffset(200, 40),
+		Size = UDim2.new(1, 0, 0, 44),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,
-		Parent = screenGui,
+		LayoutOrder = 4,
+		Parent = side,
 	}, { Theme.corner(12) })
 	self.lockStroke = Theme.stroke(C.Blue, 3)
 	self.lockStroke.Parent = self.lock
 	self.lockLabel = Theme.label({
-		Size = UDim2.new(1, -12, 1, -8),
+		Size = UDim2.new(1, -Theme.CLOSE - 6, 1, -8),
 		Position = UDim2.fromOffset(6, 4),
 		Text = "",
 		Parent = self.lock,
 	})
+	Theme.closable(self.lock)
 	return self
 end
 
@@ -54,11 +55,9 @@ function StealStatus:update(player, plots)
 	local serverNow = workspace:GetServerTimeNow()
 
 	local deadline = player:GetAttribute("CarryDeadline")
+	Theme.show(self.carry, deadline ~= nil)
 	if deadline then
-		self.carry.Visible = true
 		self.carryLabel.Text = S.t("status.carry", { time = Format.time(deadline - serverNow) })
-	else
-		self.carry.Visible = false
 	end
 
 	local myPlot
@@ -70,11 +69,10 @@ function StealStatus:update(player, plots)
 			end
 		end
 	end
+	Theme.show(self.lock, myPlot ~= nil)
 	if not myPlot then
-		self.lock.Visible = false
 		return
 	end
-	self.lock.Visible = true
 	local left = (myPlot:GetAttribute("LockedUntil") or 0) - serverNow
 	if left > 0 then
 		local shield = myPlot:GetAttribute("LockKind") == "shield"

@@ -19,6 +19,7 @@ local RenameDialog = require(script.Parent.Ui.RenameDialog)
 local DiscoFx = require(script.Parent.DiscoFx)
 local Events = require(Shared.Config.Events)
 local Theme = require(script.Parent.Ui.Theme)
+local Layout = require(script.Parent.Ui.Layout)
 local Hud = require(script.Parent.Ui.Hud)
 local Panels = require(script.Parent.Ui.Panels)
 local Reveal = require(script.Parent.Ui.Reveal)
@@ -31,33 +32,71 @@ local BattleView = require(script.Parent.Ui.BattleView)
 
 local player = Players.LocalPlayer
 
+-- The whole screen, the Roblox top bar too: the coins sit in its free middle, the rest stays at the edges.
 local screenGui = Theme.create("ScreenGui", {
 	Name = "BrainrotFactoryUI",
 	ResetOnSpawn = false,
-	IgnoreGuiInset = false,
+	IgnoreGuiInset = true,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+-- The eye lives apart: it stays when the rest of the HUD is hidden.
+local eyeGui = Theme.create("ScreenGui", {
+	Name = "BrainrotEyeUI",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	DisplayOrder = 5,
+	Parent = player.PlayerGui,
+})
 
--- UI scale for the screen size (phones / tablets / PC).
+-- UI scale for the screen size (phones / tablets / PC), see Ui/Layout.
 local uiScale = Theme.create("UIScale", { Parent = screenGui })
-local function updateScale()
-	local camera = workspace.CurrentCamera
-	if not camera then
-		return
-	end
-	local size = camera.ViewportSize
-	uiScale.Scale = math.clamp(math.min(size.X / 1280, size.Y / 760), 0.5, 1.25)
-end
-updateScale()
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+local eyeScale = Theme.create("UIScale", { Parent = eyeGui })
 
 local panels = Panels.new(screenGui)
 local hud = Hud.new(screenGui, function(name)
 	panels:open(name)
 end, Panels.giftsReady)
 local reveal = Reveal.new(screenGui)
-local tutorial = TutorialBanner.new(screenGui, hud)
+local tutorial = TutorialBanner.new(screenGui, hud, panels, function()
+	return uiScale.Scale
+end)
+
+local function updateScale()
+	local camera = workspace.CurrentCamera
+	if not camera then
+		return
+	end
+	local size = camera.ViewportSize
+	uiScale.Scale = Layout.scale(size)
+	eyeScale.Scale = uiScale.Scale
+	hud:applyLayout(size, Layout.isTouch())
+end
+updateScale()
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+
+-- Eye: hides the HUD and the labels over the brainrots, so the whole map is visible. Again: everything
+-- comes back, the plates closed with ✕ too.
+local hudHidden = false
+local function setWorldLabels(visible)
+	local plots = workspace:FindFirstChild("Plots")
+	for _, item in ipairs(plots and plots:GetDescendants() or {}) do
+		if item.Name == "InfoGui" and item:IsA("BillboardGui") and item.Enabled ~= visible then
+			item.Enabled = visible
+		end
+	end
+end
+local eyeButton
+eyeButton = Hud.sideButton({ Name = "EyeButton", Text = "👁", Parent = eyeGui }, 2, function()
+	hudHidden = not hudHidden
+	screenGui.Enabled = not hudHidden
+	eyeButton.Text = if hudHidden then "🙈" else "👁"
+	if not hudHidden then
+		Theme.reopenAll()
+		tutorial:refresh()
+	end
+	setWorldLabels(not hudHidden)
+end)
 
 local renameDialog = RenameDialog.new(screenGui)
 Panels.onRename = function(uid, currentName)
@@ -175,8 +214,8 @@ Remotes.Knockback.OnClientEvent:Connect(function(velocity)
 end)
 
 -- Steal and lock status.
-local status = StealStatus.new(screenGui)
-local eventBanner = EventBanner.new(screenGui)
+local status = StealStatus.new(hud.side)
+local eventBanner = EventBanner.new(hud.side)
 task.spawn(function()
 	local ticks = 0
 	while true do
@@ -187,6 +226,9 @@ task.spawn(function()
 		end
 		status:update(player, workspace:FindFirstChild("Plots"))
 		eventBanner:update()
+		if hudHidden and ticks % 5 == 0 then
+			setWorldLabels(false) -- brainrots that appeared while the HUD is hidden
+		end
 		-- Minute 67: disco!
 		local disco = false
 		for _, activeEvent in ipairs(Events.active(workspace:GetServerTimeNow())) do
@@ -200,6 +242,7 @@ BaseAnimator.start(workspace:WaitForChild("Plots"), player)
 
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
+	hud:animate(t)
 	tutorial:animate(t)
 
 	-- The boss on the plaza sways and turns.

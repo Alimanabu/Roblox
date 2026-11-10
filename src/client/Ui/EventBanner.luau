@@ -1,4 +1,4 @@
--- Plate on the right: which event is running now or which one is next.
+-- Plate in the right column of the HUD: which event is running now or which one is next.
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local S = require(Shared.Strings)
@@ -12,31 +12,32 @@ local C = Theme.Colors
 local EventBanner = {}
 EventBanner.__index = EventBanner
 
-function EventBanner.new(screenGui)
+function EventBanner.new(side)
 	local self = setmetatable({}, EventBanner)
 	self.frame = create("Frame", {
 		Name = "EventBanner",
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -10, 0.3, 116),
-		Size = UDim2.fromOffset(200, 64),
+		Size = UDim2.new(1, 0, 0, 60),
 		BackgroundColor3 = C.Background,
 		BackgroundTransparency = 0.15,
-		Parent = screenGui,
+		LayoutOrder = 5,
+		Parent = side,
 	}, { Theme.corner(12) })
 	self.stroke = Theme.stroke(C.Muted, 3)
 	self.stroke.Parent = self.frame
-	self.title = Theme.label({ Size = UDim2.new(1, -12, 0, 26), Position = UDim2.fromOffset(6, 4), Text = "", Parent = self.frame })
+	self.title = Theme.label({ Size = UDim2.new(1, -Theme.CLOSE - 6, 0, 26), Position = UDim2.fromOffset(6, 4), Text = "", Parent = self.frame })
 	self.info = Theme.label({
-		Size = UDim2.new(1, -12, 0, 28),
+		Size = UDim2.new(1, -12, 0, 24),
 		Position = UDim2.fromOffset(6, 32),
 		Text = "",
 		TextColor3 = C.Muted,
 		Parent = self.frame,
 	})
+	Theme.closable(self.frame)
 	return self
 end
 
 function EventBanner:update()
+	Theme.show(self.frame, true)
 	local now = workspace:GetServerTimeNow()
 	local active = Events.active(now)
 	if #active > 0 then

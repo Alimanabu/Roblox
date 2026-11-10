@@ -99,4 +99,37 @@ function Theme.button(props, onClick)
 	return button
 end
 
+-- ✕ in the corner of a plate: hides the plate until the HUD is shown again with the eye (Theme.reopenAll).
+-- The plate's own code shows it with Theme.show, which keeps a closed plate hidden.
+Theme.CLOSE = 40
+Theme.closables = {}
+
+function Theme.closable(frame)
+	local button = Theme.button({
+		Name = "Close",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 2, 0, -2),
+		Size = UDim2.fromOffset(Theme.CLOSE, Theme.CLOSE),
+		Text = "✕",
+		Color = Theme.Colors.Bad,
+		ZIndex = (frame.ZIndex or 1) + 4,
+		Parent = frame,
+	}, function()
+		frame:SetAttribute("Closed", true)
+		frame.Visible = false
+	end)
+	table.insert(Theme.closables, frame)
+	return button
+end
+
+function Theme.show(frame, visible)
+	frame.Visible = visible and frame:GetAttribute("Closed") ~= true
+end
+
+function Theme.reopenAll()
+	for _, frame in ipairs(Theme.closables) do
+		frame:SetAttribute("Closed", nil)
+	end
+end
+
 return Theme

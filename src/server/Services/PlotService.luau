@@ -52,6 +52,12 @@ local function part(props)
 	return p
 end
 
+-- Label over a brainrot on a base: 5 x 2.8 studs (the old 180 x 100 pixels on PC seen from 20 studs), up to 60 studs away.
+local INFO_SIZE = UDim2.fromScale(5, 2.8)
+local INFO_DISTANCE = 60
+PlotService.INFO_SIZE = INFO_SIZE
+PlotService.INFO_DISTANCE = INFO_DISTANCE
+
 local function billboard(parent, size, offset, text, color)
 	local gui = Instance.new("BillboardGui")
 	gui.Size = size
@@ -491,13 +497,16 @@ local function buildCreature(plot, entry, standCFrame, data, passes, floor)
 	prompt:SetAttribute("Uid", entry.uid)
 	prompt.Parent = body
 
+	-- Label over the brainrot: sized in studs, so it shrinks with distance instead of covering
+	-- a phone screen with fixed 180x100 pixels; seen only near the base (INFO_DISTANCE).
 	local gui = billboard(
 		body,
-		UDim2.fromOffset(180, 100),
-		Vector3.new(0, size / 2 + 2.8, 0),
+		INFO_SIZE,
+		Vector3.new(0, size / 2 + 2.2, 0),
 		labelText(entry, creature, rarity, mutation, data, passes, floor)
 	)
 	gui.Name = "InfoGui"
+	gui.MaxDistance = INFO_DISTANCE
 	gui.Label.Size = UDim2.fromScale(1, 0.78)
 	local bar = Instance.new("Frame")
 	bar.Name = "HpBar"

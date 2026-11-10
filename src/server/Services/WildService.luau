@@ -97,9 +97,11 @@ local function spawnWild()
 	prompt.Parent = body
 
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(200, 44)
+	-- Rare ones call from across the map in fixed pixels; ordinary ones are sized in studs and seen
+	-- only nearby, so they do not cover a phone screen.
+	gui.Size = if rarity.rank >= 5 then UDim2.fromOffset(200, 44) else UDim2.fromScale(6, 1.3)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, WildService.SIZE + 2, 0)
-	gui.MaxDistance = rarity.rank >= 5 and 400 or 120
+	gui.MaxDistance = rarity.rank >= 5 and 400 or 60
 	gui.AlwaysOnTop = rarity.rank >= 5
 	gui.Parent = body
 	local label = Instance.new("TextLabel")
