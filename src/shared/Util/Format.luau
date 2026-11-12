@@ -61,4 +61,20 @@ function Format.time(seconds)
 	return string.format("%d:%02d", minutes, seconds % 60)
 end
 
+-- Short timers for the HUD plates, where a line holds about 15 letters on a phone (tests/layout.spec.luau):
+-- timer "m:ss" or "h:mm:ss", clock "h:mm" (hours and minutes, for "come back in 23:59").
+function Format.timer(seconds)
+	seconds = math.max(0, math.floor(seconds))
+	local hours = math.floor(seconds / 3600)
+	if hours > 0 then
+		return string.format("%d:%02d:%02d", hours, math.floor(seconds / 60) % 60, seconds % 60)
+	end
+	return string.format("%d:%02d", math.floor(seconds / 60), seconds % 60)
+end
+
+function Format.clock(seconds)
+	seconds = math.max(0, math.floor(seconds))
+	return string.format("%d:%02d", math.floor(seconds / 3600), math.floor(seconds / 60) % 60)
+end
+
 return Format

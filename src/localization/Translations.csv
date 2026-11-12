@@ -18,15 +18,15 @@ hud.shop,🛒 Shop,,,🛒 Магазин,🛒 Дүкен
 hud.help,❓ How to Play,,,❓ Как играть,❓ Қалай ойнау керек
 hud.admin,🛠 Test,,,🛠 Тест,🛠 Тест
 hud.luck,🍀 Luck x{luck},,,🍀 Удача x{luck},🍀 Сәт x{luck}
-hud.boost,Boost x2: {time},,,Буст x2: {time},Күшейткіш x2: {time}
-hud.vip,👑 VIP: x2 coins,,,👑 VIP: x2 монет,👑 VIP: x2 монета
-hud.goal_daily,🎁 Daily reward ready: day {day}/{total}!,,,🎁 Награда дня готова: день {day}/{total}!,🎁 Күндік сыйлық дайын: {day}/{total}-күн!
-hud.goal_quest_done,✅ Quest done! Tap to claim,,,"✅ Задание выполнено! Нажми, чтобы забрать",✅ Тапсырма орындалды! Алу үшін бас
-hud.goal_gift,⏰ Playtime gift ready! Tap to claim,,,"⏰ Подарок за игру готов! Нажми, чтобы забрать",⏰ Ойын сыйлығы дайын! Алу үшін бас
-hud.goal_quest,🎯 {quest}: {progress}/{target},,,🎯 {quest}: {progress}/{target},🎯 {quest}: {progress}/{target}
-hud.goal_next_gift,⏰ Next gift in {minutes} min,,,⏰ Следующий подарок через {minutes} мин,⏰ Келесі сыйлық {minutes} мин кейін
-hud.goal_tomorrow,🔥 Come back in {time}: streak day {day}/{total},,,🔥 Возвращайся через {time}: день серии {day}/{total},🔥 {time} кейін қайт: серияның {day}/{total}-күні
-hud.goal_mega,🔥 Come back in {time}: day {day} mega reward!,,,🔥 Возвращайся через {time}: день {day} — мега-награда!,🔥 {time} кейін қайт: {day}-күн — мега сыйлық!
+hud.boost,Boost {time},,,Буст {time},Буст {time}
+hud.vip,👑 VIP x2 coins,,,👑 VIP x2 монет,👑 VIP x2 ақша
+hud.goal_daily,🎁 Daily reward {day}/{total}!,,,🎁 Награда дня {day}/{total}!,🎁 Күндік сыйлық {day}/{total}!
+hud.goal_quest_done,✅ Quest done! Tap to claim,,,✅ Задание готово! Забери,✅ Тапсырма орындалды! Бас
+hud.goal_gift,⏰ Gift ready! Tap to claim,,,⏰ Подарок готов! Забери,⏰ Сыйлық дайын! Ал
+hud.goal_quest,🎯 {progress}/{target} {quest},,,🎯 {progress}/{target} {quest},🎯 {progress}/{target} {quest}
+hud.goal_next_gift,⏰ Next gift in {minutes} min,,,⏰ Подарок через {minutes} мин,⏰ Сыйлық {minutes} мин кейін
+hud.goal_tomorrow,🔥 Day {day}/{total} in {time},,,🔥 День {day}/{total} через {time},🔥 {day}/{total}-күн {time} кейін
+hud.goal_mega,🔥 Mega reward in {time},,,🔥 Мега-приз через {time},🔥 Мега сыйлық {time} кейін
 panel.factory,🏭 Brainrot Capsule Factory,,,🏭 Фабрика капсул с брейнротами,🏭 Brainrot Capsule Factory
 panel.base,🧠 My Base,,,🧠 Моя база,🧠 Менің базам
 panel.upgrades,⬆️ Factory Upgrades,,,⬆️ Улучшения фабрики,⬆️ Фабриканы жақсарту
@@ -168,15 +168,15 @@ reward.coins_base_full,💰 {coins} (base is full),,,💰 {coins} (база по
 reward.creature,🧠 {name},,,🧠 {name},🧠 {name}
 quest.craft25.text,Craft 25 brainrots,,,Создай 25 брейнротов,25 брейнрот жаса
 quest.craft80.text,Craft 80 brainrots,,,Создай 80 брейнротов,80 брейнрот жаса
-quest.fuse3.text,Fuse brainrots 3 times,,,Скрести брейнротов 3 раза,Брейнроттарды 3 рет біріктір
+quest.fuse3.text,Fuse 3 times,,,Скрести 3 раза,3 рет біріктір
 quest.sell10.text,Sell 10 brainrots,,,Продай 10 брейнротов,10 брейнрот сат
 quest.steal1.text,Steal 1 brainrot,,,Укради 1 брейнрота,1 брейнрот ұрла
-quest.slap3.text,Slap 3 players,,,Шлёпни 3 игроков,3 ойыншыға шапалақ ур
+quest.slap3.text,Slap 3 players,,,Шлёпни 3 игроков,3 рет шапалақ ур
 quest.slapThief.text,Slap a thief,,,Шлёпни вора,Ұрыға шапалақ ур
-quest.lock3.text,Lock your base 3 times,,,Закрой базу замком 3 раза,Базаңды 3 рет құлыпта
-quest.mutant1.text,Get a mutated brainrot,,,Получи брейнрота с мутацией,Мутант брейнрот ал
-quest.sigma5.text,Get 5 brainrots of Sigma rarity or rarer,,,Получи 5 брейнротов «Сигма» или реже,Сигма немесе одан сирек деңгейдегі 5 брейнрот ал
-quest.index1.text,Unlock a new brainrot in the Index,,,Открой нового брейнрота в Индексе,Индекстен жаңа брейнрот аш
+quest.lock3.text,Lock base 3 times,,,Замок 3 раза,3 рет құлыпта
+quest.mutant1.text,Get a mutant,,,Получи мутанта,Мутант брейнрот ал
+quest.sigma5.text,Get 5 Sigma+,,,Получи 5 Сигма+,5 Сигма+ ал
+quest.index1.text,Find a new brainrot,,,Найди новый вид,Жаңа түр тап
 quest.done,📋 Quest complete: {text}! Claim your reward 🎁,,,📋 Задание выполнено: {text}! Забери награду 🎁,📋 Тапсырма орындалды: {text}! Сыйлығыңды ал 🎁
 quest.daily_ready,🎁 Your daily reward is ready: day {day} of {total}! Open 🎁 Rewards,,,🎁 Твоя ежедневная награда готова: день {day} из {total}! Открой 🎁 Награды,🎁 Күндік сыйлығың дайын: {day}-күн / {total}! 🎁 Сыйлықтарды аш
 quest.daily_claimed,Today's reward is already claimed. Come back tomorrow!,,,Сегодняшняя награда уже получена. Приходи завтра!,Бүгінгі сыйлық алынып қойған. Ертең қайта кел!
@@ -416,10 +416,10 @@ name.removed,Name removed,,,Имя убрано,Ат жойылды
 reveal.fused,🧬 FUSED,,,🧬 СКРЕЩИВАНИЕ,🧬 БІРІКТІРІЛДІ
 reveal.new,✨ NEW!,,,✨ НОВЫЙ!,✨ ЖАҢА!
 reveal.first,🎉 YOUR FIRST BRAINROT!,,,🎉 ТВОЙ ПЕРВЫЙ БРЕЙНРОТ!,🎉 АЛҒАШҚЫ БРЕЙНРОТЫҢ!
-status.carry,🏃 Carry the brainrot to your base! {time},,,🏃 Неси брейнрота на свою базу! {time},🏃 Брейнротты базаңа апар! {time}
+status.carry,🏃 Carry it home! {time},,,🏃 Неси на базу! {time},🏃 Базаңа апар! {time}
 status.shield,🛡️ Shield {time},,,🛡️ Защита {time},🛡️ Қалқан {time}
-status.locked,🔒 Base locked {time},,,🔒 База закрыта {time},🔒 База құлыптаулы {time}
-status.lock_ready,⏳ Lock ready in {time},,,⏳ Замок через {time},⏳ Құлып дайын болады: {time}
+status.locked,🔒 Base locked {time},,,🔒 База закрыта {time},🔒 Құлып {time}
+status.lock_ready,⏳ Lock ready in {time},,,⏳ Замок через {time},⏳ Құлып {time} кейін
 status.open,🔓 Base is open!,,,🔓 База открыта!,🔓 База ашық!
 steal.carry_label,🦹 {name},,,🦹 {name},🦹 {name}
 steal.reason_thief_left,the thief left,,,вор вышел,ұры шығып кетті
@@ -513,19 +513,21 @@ event.luck_storm.name,🍀 Luck Storm,,,🍀 Шторм удачи,🍀 Сәт �
 event.luck_storm.desc,x2 luck for everyone!,,,x2 удачи всем!,Барлығына x2 сәт!
 event.money_rain.name,💰 Money Rain,,,💰 Денежный дождь,💰 Ақша жаңбыры
 event.money_rain.desc,x2 income for everyone!,,,x2 дохода всем!,Барлығына x2 табыс!
-event.mutant_fog.name,🧬 Mutagen Fog,,,🧬 Мутаген-туман,🧬 Мутаген тұманы
+event.mutant_fog.name,🧬 Mutagen Fog,,,🧬 Туман мутаций,🧬 Мутаген тұманы
 event.mutant_fog.desc,x3 mutation chance!,,,x3 шанс мутаций!,x3 мутация мүмкіндігі!
-event.turbo.name,⚡ Turbo Factory,,,⚡ Турбо-фабрика,⚡ Турбо фабрика
-event.turbo.desc,Machines run 2x faster!,,,Машины работают в 2 раза быстрее!,Машиналар 2 есе жылдам жұмыс істейді!
+event.turbo.name,⚡ Turbo Factory,,,⚡ Турбо фабрика,⚡ Турбо фабрика
+event.turbo.desc,Machines run 2x faster!,,,Машины в 2 раза быстрее!,Машиналар 2 есе жылдам!
 event.minute67.name,🤌 MINUTE 67,,,🤌 МИНУТА 67,🤌 67-МИНУТ
-event.minute67.desc,SIX SEVEN and Mutation 67 chance x6.7!,,,Шанс SIX SEVEN и мутации 67 x6.7!,"SIX SEVEN және 67 мутациясының мүмкіндігі x6,7!"
-event.boss.name,👹 BRAINROT BOSS,,,👹 БОСС-БРЕЙНРОТ,👹 БРЕЙНРОТ БАСТЫҒЫ
-event.boss.desc,"Slap the boss on the plaza, whole server!",,,Шлёпайте босса на площади всем сервером!,Алаңдағы бастыққа бүкіл сервермен шапалақ ур!
+event.minute67.desc,SIX SEVEN chance x6.7!,,,Шанс SIX SEVEN x6.7!,"SIX SEVEN шансы x6,7!"
+event.boss.name,👹 BRAINROT BOSS,,,👹 БОСС БРЕЙНРОТ,👹 БРЕЙНРОТ БАСТЫҒЫ
+event.boss.desc,Slap the boss together!,,,Бейте босса на площади!,Алаңда бастықты ұр!
 event.started,🎉 New event: {name}: {desc},,,🎉 Начался ивент {name}: {desc},🎉 Жаңа іс-шара: {name}: {desc}
 event.ended,The event is over. Next one soon!,,,Ивент закончился. Следующий скоро!,Іс-шара аяқталды. Келесісі жақында!
 event.soon,⏰ In one minute: {name}!,,,⏰ Через минуту: {name}!,⏰ Бір минуттан кейін: {name}!
 event.next,Next event,,,Следующий ивент,Келесі іс-шара
-event.next_in,{name} in {time},,,{name} через {time},{name} {time} кейін
+event.next_in,{name} in {time},,,{name} через {time},{time} кейін: {name}
+event.plate_now,{event} {time},,,{event} {time},{event} {time}
+event.plate_next,⏰ {event} {time},,,⏰ {event} {time},⏰ {event} {time}
 tutorial.1.text,Tap 🏭 Factory and craft your first brainrot!,,,Нажми 🏭 Фабрика и создай первого брейнрота!,"🏭 Фабрика түймесін басып, алғашқы брейнротыңды жаса!"
 tutorial.2.text,Brainrots earn coins every second! Craft 4 more,,,Брейнроты приносят монеты каждую секунду! Создай ещё 4,Брейнроттар әр секунд сайын монета табады! Тағы 4 жаса
 tutorial.3.text,Buy any upgrade in ⬆️ Upgrades,,,Купи любое улучшение в ⬆️ Улучшения,⬆️ Жақсартулардан кез келгенін сатып ал

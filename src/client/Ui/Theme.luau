@@ -103,6 +103,8 @@ end
 -- Theme.show(frame, visible, key) clears it when the reason is gone (visible = false) or changed (another key:
 -- the next tutorial step, the lock turning from open to closed). The eye clears all of them (Theme.reopenAll).
 Theme.CLOSE = 36 -- on PC, in screen units; on touch screens Hud sizes it in points (Layout.PT.CLOSE)
+-- The ✕ stands 4 units from the right edge: a text next to it ends at least 2 units before it
+-- (width -Theme.CLOSE - 6 - its left offset; tests/layout.spec.luau checks every plate).
 Theme.closables = {}
 
 function Theme.closable(frame)

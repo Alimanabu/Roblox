@@ -24,7 +24,8 @@ function StealStatus.new(hud)
 		Parent = side,
 	}, { Theme.corner(14), Theme.stroke(Color3.new(1, 1, 1), 3) })
 	self.carryLabel = Theme.label({
-		Size = UDim2.new(1, -Theme.CLOSE - 8, 1, -8),
+		Name = "CarryText",
+		Size = UDim2.new(1, -Theme.CLOSE - 14, 1, -8),
 		Position = UDim2.fromOffset(8, 4),
 		Text = "",
 		TextWrapped = true,
@@ -44,7 +45,8 @@ function StealStatus.new(hud)
 	self.lockStroke = Theme.stroke(C.Blue, 3)
 	self.lockStroke.Parent = self.lock
 	self.lockLabel = Theme.label({
-		Size = UDim2.new(1, -Theme.CLOSE - 6, 1, -8),
+		Name = "LockText",
+		Size = UDim2.new(1, -Theme.CLOSE - 12, 1, -8),
 		Position = UDim2.fromOffset(6, 4),
 		Text = "",
 		Parent = self.lock,

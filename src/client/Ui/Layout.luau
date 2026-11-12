@@ -21,6 +21,7 @@ Layout.PT = {
 	MENU_WIDTH = 150,
 	MENU_FONT = 13,
 	TOP = 4, -- the top row: coins and level
+	TOP_ROW = 54, -- its height: the level line in 2 lines of 12 pt and the XP bar under it
 	LEFT = 8,
 	ROBLOX_BAR = 108, -- the Roblox menu and chat buttons take the top left corner
 	HINT = 18, -- the tutorial hint text (a newbie must read it at a glance, 10.11 feedback)

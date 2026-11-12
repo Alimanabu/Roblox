@@ -20,6 +20,7 @@ Hud.SIDE_BUTTON = 72 -- round buttons of the left column
 Hud.SIDE_GAP = 6
 Hud.COLUMN_Y = 0.25 -- the left and right columns start at this share of the screen height
 Hud.PLATE_WIDTH = 180 -- plates of the right column
+Hud.LEVEL_WIDTH = 420 -- PC: the level line holds a long title and the rebirth title at 12+ pt
 Hud.NOTIFY_MAX = 2 -- notifications on screen at once
 Hud.TOUCH_CELL = 120 -- width of a menu button on a touch screen
 
@@ -112,6 +113,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = screenGui,
 	}, { Theme.corner(16), Theme.stroke(C.Coins, 3) })
 	self.coinsLabel = Theme.label({
+		Name = "CoinsText",
 		Size = UDim2.new(1, -16, 0.6, 0),
 		Position = UDim2.new(0, 8, 0.03, 0),
 		TextColor3 = C.Coins,
@@ -119,6 +121,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = self.coinsFrame,
 	})
 	self.incomeLabel = Theme.label({
+		Name = "IncomeText",
 		Size = UDim2.new(1, -16, 0.32, 0),
 		Position = UDim2.new(0, 8, 0.63, 0),
 		TextColor3 = C.Good,
@@ -134,23 +137,27 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = screenGui,
 	}, { Theme.corner(16), Theme.stroke(C.Purple, 3) })
 	self.titleLabel = Theme.label({
+		Name = "LevelText",
 		Size = UDim2.new(1, -16, 0.44, 0),
 		Position = UDim2.new(0, 8, 0.05, 0),
 		Text = S.t("common.title_level", { title = S.m("level.1.name"), level = 1 }),
 		Parent = self.levelFrame,
 	})
 	local bar = create("Frame", {
+		Name = "XpBar",
 		Size = UDim2.new(1, -16, 0.38, 0),
 		Position = UDim2.new(0, 8, 0.53, 0),
 		BackgroundColor3 = C.Card,
 		Parent = self.levelFrame,
 	}, { Theme.corner(8) })
+	self.xpBar = bar
 	self.xpFill = create("Frame", {
 		Size = UDim2.fromScale(0, 1),
 		BackgroundColor3 = C.Purple,
 		Parent = bar,
 	}, { Theme.corner(8) })
 	self.xpLabel = Theme.label({
+		Name = "XpText",
 		Size = UDim2.fromScale(1, 1),
 		Text = "0 / 10 XP",
 		ZIndex = 2,
@@ -173,12 +180,15 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	self.menuButton = Hud.sideButton({ Name = "MenuButton", Text = "☰", Parent = screenGui }, 0, function()
 		self:setMenuOpen(not self.menuOpen)
 	end)
+	self.badgeList = {}
 	self.menuBadge = badge(self.menuButton)
+	table.insert(self.badgeList, self.menuBadge)
 	-- Rewards do not pop up over the game: this button glows while something waits.
 	self.giftButton = Hud.sideButton({ Name = "RewardsButton", Text = "🎁", Parent = screenGui }, 1, function()
 		onMenu("Rewards")
 	end)
 	self.giftBadge = badge(self.giftButton)
+	table.insert(self.badgeList, self.giftBadge)
 
 	-- The menu: PC two columns under the left column; touch a drawer next to it that scrolls.
 	self.menuGrid = create("UIGridLayout", {
@@ -222,6 +232,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		end
 		-- Red "!" dot when a section has something to claim.
 		self.badges[item.id] = badge(button)
+		table.insert(self.badgeList, self.badges[item.id])
 	end
 
 	-- Plates: PC and landscape a column at the right edge, portrait a grid in the top strip.
@@ -260,7 +271,7 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		onMenu("Rewards")
 	end)
 	self.goalButton.TextWrapped = true
-	self.goalButton:FindFirstChildOfClass("UIPadding").PaddingRight = UDim.new(0, Theme.CLOSE)
+	self.goalButton:FindFirstChildOfClass("UIPadding").PaddingRight = UDim.new(0, Theme.CLOSE + 6)
 	Theme.closable(self.goalButton)
 	self:addPlate(self.goalButton, { self.goalButton }, { land = 52, own = true, quiet = true })
 
@@ -274,14 +285,16 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		Parent = self.side,
 	}, { Theme.corner(16), Theme.stroke(C.Good, 3) })
 	self.luckLabel = Theme.label({
-		Size = UDim2.new(1, -Theme.CLOSE - 8, 0, 26),
+		Name = "LuckText",
+		Size = UDim2.new(1, -Theme.CLOSE - 14, 0, 26),
 		Position = UDim2.fromOffset(8, 3),
 		Text = S.t("hud.luck", { luck = "1" }),
 		TextColor3 = C.Good,
 		Parent = luckFrame,
 	})
 	self.boostLabel = Theme.label({
-		Size = UDim2.new(1, -Theme.CLOSE - 8, 0, 18),
+		Name = "BoostText",
+		Size = UDim2.new(1, -Theme.CLOSE - 14, 0, 18),
 		Position = UDim2.fromOffset(8, 30),
 		Text = "",
 		TextColor3 = C.Muted,
@@ -351,7 +364,7 @@ function Hud:layoutHint(plate, size, touch, portrait, u)
 	local width, lines, font, stepFont, c
 	if touch and portrait then
 		frame.AnchorPoint = Vector2.new(0.5, 0)
-		frame.Position = UDim2.new(0.5, 0, 0, k * (PT.TOP + 50 + 4))
+		frame.Position = UDim2.new(0.5, 0, 0, k * (PT.TOP + PT.TOP_ROW + 4))
 		width, lines = size.X - 16, Layout.HINT_LINES.portrait
 	elseif touch then
 		frame.AnchorPoint = Vector2.new(1, 0)
@@ -408,7 +421,7 @@ function Hud:placeSide(size, touch, scale)
 	local PT = Layout.PT
 	local portrait = Layout.isPortrait(size)
 	local focus = touch and self.tutorialFocus == true
-	local plateWidth = math.min(190, size.X * Layout.EDGE - 10)
+	local plateWidth = math.min(190, size.X * Layout.EDGE - PT.LEFT)
 	local gridMode = touch and portrait
 	if touch then
 		if portrait and focus then
@@ -417,7 +430,7 @@ function Hud:placeSide(size, touch, scale)
 			self.side.Size = UDim2.fromOffset(pt(size.X - 16), pt(44))
 		elseif portrait then
 			self.side.AnchorPoint = Vector2.new(0.5, 0)
-			self.side.Position = UDim2.new(0.5, 0, 0, pt(PT.TOP + 50 + 4))
+			self.side.Position = UDim2.new(0.5, 0, 0, pt(PT.TOP + PT.TOP_ROW + 4))
 			self.side.Size = UDim2.fromOffset(pt(size.X - 16), pt(100))
 		else
 			local top = PT.ROBLOX_BAR - 48 + (if focus then Hud.hintPoints(false) + PT.GAP else 0)
@@ -479,10 +492,24 @@ function Hud:applyLayout(size, touch, scale)
 		local x0 = math.max(PT.ROBLOX_BAR, (size.X - 366) / 2)
 		local width = math.min(180, (size.X - PT.LEFT - x0 - PT.GAP) / 2)
 		self.coinsFrame.AnchorPoint, self.levelFrame.AnchorPoint = Vector2.new(0, 0), Vector2.new(0, 0)
+		-- The level line takes 2 lines of 12 pt: it gets more of the row than the coins (a short number).
+		local levelWidth = math.min(200, math.floor((width * 2) * 0.58))
+		local coinsWidth = math.min(180, width * 2 - levelWidth)
+		local row = PT.TOP_ROW
 		self.coinsFrame.Position = UDim2.new(0, pt(x0), 0, pt(PT.TOP))
-		self.coinsFrame.Size = UDim2.fromOffset(pt(width), pt(50))
-		self.levelFrame.Position = UDim2.new(0, pt(x0 + width + PT.GAP), 0, pt(PT.TOP))
-		self.levelFrame.Size = UDim2.fromOffset(pt(width), pt(50))
+		self.coinsFrame.Size = UDim2.fromOffset(pt(coinsWidth), pt(row))
+		self.levelFrame.Position = UDim2.new(0, pt(x0 + coinsWidth + PT.GAP), 0, pt(PT.TOP))
+		self.levelFrame.Size = UDim2.fromOffset(pt(levelWidth), pt(row))
+		self.titleLabel.Position = UDim2.new(0, pt(4), 0, pt(2))
+		self.titleLabel.Size = UDim2.new(1, -pt(8), 0, pt(PT.FONT * Layout.LINE * 2 + 1))
+		self.titleLabel.TextScaled = false
+		self.titleLabel.TextWrapped = true
+		self.titleLabel.TextSize = pt(PT.FONT)
+		self.xpBar.Position = UDim2.new(0, pt(4), 0, pt(row - 4 - 16))
+		self.xpBar.Size = UDim2.new(1, -pt(8), 0, pt(16))
+		for _, badgeLabel in ipairs(self.badgeList) do
+			badgeLabel.Size = UDim2.fromOffset(pt(20), pt(20))
+		end
 		self.settingsButton.AnchorPoint = Vector2.new(0, 0)
 		self.settingsButton.Size = UDim2.fromOffset(round, round)
 		self.settingsButton.Position = UDim2.new(0, pt(PT.LEFT), top.scale, pt(top.pt + 3 * (PT.BUTTON + PT.GAP)))
@@ -492,7 +519,13 @@ function Hud:applyLayout(size, touch, scale)
 		self.coinsFrame.Size = UDim2.fromOffset(320, 86)
 		self.levelFrame.AnchorPoint = Vector2.new(0.5, 0)
 		self.levelFrame.Position = UDim2.new(0.5, 0, 0, 96)
-		self.levelFrame.Size = UDim2.fromOffset(320, 46)
+		self.levelFrame.Size = UDim2.fromOffset(Hud.LEVEL_WIDTH, 46)
+		self.titleLabel.Position, self.titleLabel.Size = UDim2.new(0, 8, 0.05, 0), UDim2.new(1, -16, 0.44, 0)
+		self.titleLabel.TextScaled, self.titleLabel.TextWrapped = true, false
+		self.xpBar.Position, self.xpBar.Size = UDim2.new(0, 8, 0.53, 0), UDim2.new(1, -16, 0.38, 0)
+		for _, badgeLabel in ipairs(self.badgeList) do
+			badgeLabel.Size = UDim2.fromOffset(24, 24)
+		end
 		self.settingsButton.AnchorPoint = Vector2.new(1, 0)
 		self.settingsButton.Size = UDim2.fromOffset(44, 44)
 		self.settingsButton.Position = UDim2.new(0.5, -168, 0, 6)
@@ -551,7 +584,7 @@ function Hud:applyLayout(size, touch, scale)
 				plate.close.Size = UDim2.fromOffset(c, c)
 			end
 			if spec.own then
-				plate.padding.PaddingRight = UDim.new(0, c + pt(6))
+				plate.padding.PaddingRight = UDim.new(0, c + pt(4))
 				plateText(frame, true, u, PT.FONT, plate.pc[1])
 			else
 				local count = #plate.labels
@@ -559,8 +592,8 @@ function Hud:applyLayout(size, touch, scale)
 				local y = 0
 				for index, label in ipairs(plate.labels) do
 					local share = split[index] or 1 / count
-					label.Position = UDim2.new(0, pt(6), y, pt(2))
-					label.Size = UDim2.new(1, -(c + pt(10)), share, -pt(4))
+					label.Position = UDim2.new(0, pt(4), y, pt(2))
+					label.Size = UDim2.new(1, -(c + pt(8)), share, -pt(4))
 					y += share
 					plateText(label, true, u, PT.FONT, plate.pc[index])
 				end
@@ -679,7 +712,7 @@ function Hud.goal(state, now)
 	end
 	local tomorrow = r.streak % total + 1
 	-- The day changes at midnight UTC (Daily.today). Counted here: the state comes only on changes.
-	local time = Format.time(86400 - math.floor(now) % 86400)
+	local time = Format.clock(86400 - math.floor(now) % 86400)
 	if tomorrow == total then
 		return S.t("hud.goal_mega", { time = time, day = tomorrow }), "tomorrow"
 	end
@@ -731,7 +764,7 @@ function Hud:update(state)
 	self.coinsLabel.Text = Format.coins(state.coins)
 	self.incomeLabel.Text = S.t("common.per_second", { coins = "+" .. Format.coins(state.income) })
 	local title = S.t("common.title_level", { title = state.title, level = state.level })
-	if state.rebirthTitle then
+	if state.rebirthTitle and not self.touch then
 		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, S.text(state.rebirthTitle))
 	end
 	self.titleLabel.Text = title
@@ -740,7 +773,7 @@ function Hud:update(state)
 	self.xpLabel.Text = Format.number(state.xp) .. " / " .. Format.number(state.xpNext) .. " XP"
 	self.luckLabel.Text = S.t("hud.luck", { luck = string.format("%.2f", state.luck) })
 	if state.luckBoostLeft > 0 then
-		self.boostLabel.Text = S.t("hud.boost", { time = Format.time(state.luckBoostLeft) })
+		self.boostLabel.Text = S.t("hud.boost", { time = Format.timer(state.luckBoostLeft) })
 		self.boostLabel.TextColor3 = C.Good
 	else
 		self.boostLabel.Text = state.passes.VIP and S.t("hud.vip") or ""
