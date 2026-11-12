@@ -485,7 +485,7 @@ local function openQuest(data)
 end
 
 local function questGoal(def, progress)
-	return S.t("hud.goal_quest", { quest = text(def.textKey), progress = progress, target = def.target })
+	return S.t("hud.goal_quest", { quest = text(def.shortKey), progress = progress, target = def.target })
 end
 
 scenario("цель: новичок видит награду дня 1; после получения она не предлагается и второй раз не выдаётся", function()
@@ -549,11 +549,13 @@ scenario("цель: подарок за время готов → забрать
 	local state = stateOf(goaler)
 	local now = workspace:GetServerTimeNow()
 	local left = (Daily.today() + 1) * DAY - now
-	-- Время цели — часы и минуты «23:59» (Format.clock): строка плашки на телефоне держит около 15 букв.
-	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.clock(left), day = 2, total = TOTAL }),
+	-- Время цели: «23 ч» от часа, «45 мин» в последний час (Format.hoursOrMinutes).
+	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.hoursOrMinutes(left), day = 2, total = TOTAL }),
 		"нет цели «вернись завтра, день 2»: " .. Hud.goal(state, now))
 	-- Таймер идёт без нового состояния от сервера.
-	check(Hud.goal(state, now + 120) == S.t("hud.goal_tomorrow", { time = Format.clock(left - 120), day = 2, total = TOTAL }),
+	-- Таймер идёт без нового состояния: через час часов на один меньше (сдвиг 3600 с, а не 120: цель считает часы).
+	check(Hud.goal(state, now + 3600) ~= Hud.goal(state, now), "через час цель та же: таймер стоит")
+	check(Hud.goal(state, now + 3600) == S.t("hud.goal_tomorrow", { time = Format.hoursOrMinutes(left - 3600), day = 2, total = TOTAL }),
 		"таймер цели стоит без нового состояния")
 end)
 
@@ -586,7 +588,7 @@ scenario("цель: после дня 6 зовёт за мега-наградо�
 	local wait = gifts[#gifts].minutes - 10
 	check(Hud.goal(state, now) == S.t("hud.goal_next_gift", { minutes = wait }), "нет цели «следующий подарок через " .. wait .. " мин»: " .. Hud.goal(state, now))
 	gifts[#gifts].claimed = true
-	local time = Format.clock((Daily.today() + 1) * DAY - now)
+	local time = Format.hoursOrMinutes((Daily.today() + 1) * DAY - now)
 	state.rewards.streak = TOTAL - 1
 	check(Hud.goal(state, now) == S.t("hud.goal_mega", { time = time, day = TOTAL }), "нет цели «мега-награда»: " .. Hud.goal(state, now))
 	state.rewards.streak = TOTAL
@@ -598,8 +600,8 @@ scenario("цель: после дня 6 зовёт за мега-наградо�
 	end
 	for _, line in ipairs({
 		S.t("hud.goal_daily", { day = TOTAL, total = TOTAL }), S.t("hud.goal_quest_done"), S.t("hud.goal_gift"),
-		S.t("hud.goal_next_gift", { minutes = 120 }), S.t("hud.goal_mega", { time = Format.clock(DAY - 1), day = TOTAL }),
-		S.t("hud.goal_tomorrow", { time = Format.clock(DAY - 1), day = TOTAL, total = TOTAL }),
+		S.t("hud.goal_next_gift", { minutes = 120 }), S.t("hud.goal_mega", { time = Format.hoursOrMinutes(DAY - 1), day = TOTAL }),
+		S.t("hud.goal_tomorrow", { time = Format.hoursOrMinutes(DAY - 1), day = TOTAL, total = TOTAL }),
 	}) do
 		longest = math.max(longest, utf8.len(line) or 0)
 	end
