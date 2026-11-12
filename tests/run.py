@@ -80,6 +80,7 @@ def world(spec, locale):
     """Запускает spec с настоящими сервером и клиентом на заглушке мира."""
     extra = [f'__LOCALE = "{locale}"\n', translation_entries(), read("tests", "world.luau")]
     extra += [module_def(name, "src", "shared", name + ".luau") for name in WORLD_MODULES]
+    extra.append(module_def("TextWidths", "tests", "text_widths.luau"))  # замер ширины знаков (layout.spec)
     extra += folder_defs("server", "") + folder_defs("client", "client/")
     return run(spec, extra)
 
@@ -324,6 +325,21 @@ def negative_funnel_glue():
     return subprocess.call([sys.executable, "-X", "utf8", os.path.join(ROOT, "tests", "test_funnel_glue_negative.py"), LUAU, "--old-only"])
 
 
+def publish_tool_tests():
+    """Тест программы выкладки (_tools/roblox/test_publish_place.py, лежит рядом с проектом, вне git; урок 24).
+    На сервере GitHub этой папки нет: там пропуск с явной строкой. На своём компьютере нет файла — ❌."""
+    tools = os.path.join(os.path.dirname(ROOT), "_tools", "roblox")
+    if not os.path.exists(os.path.join(tools, "test_publish_place.py")):
+        if os.environ.get("GITHUB_ACTIONS"):
+            print("⚪ Тест выкладки: на сервере GitHub нет _tools/roblox, пропущен")
+            return 0
+        print("❌ Тест выкладки: нет " + os.path.join(tools, "test_publish_place.py"))
+        return 1
+    code = subprocess.call([sys.executable, "-m", "unittest", "-q", "test_publish_place"], cwd=tools)
+    print("✅ Тест выкладки (publish_place): прошёл" if code == 0 else "❌ Тест выкладки (publish_place): упал")
+    return code
+
+
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
@@ -353,6 +369,7 @@ def main():
     rejoin = world("rejoin.spec.luau", "en-us")
     funnel = world("funnel.spec.luau", "en-us")
     funnel_glue = negative_funnel_glue()
+    publish_tool = publish_tool_tests()
     frames = world("frames.spec.luau", "en-us")
     loading = world("loading.spec.luau", "en-us")
     retention = world("retention.spec.luau", "en-us")
@@ -367,7 +384,7 @@ def main():
 
     return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
-            or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue)
+            or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue or publish_tool)
 
 
 if __name__ == "__main__":

@@ -331,19 +331,36 @@ local function measureTouch(screen, phase, closes)
 	print(string.format("MEASURE|%s|%s|измерено %d|крестиков %d", screen.id, phase, measured, seen.Close or 0))
 end
 
--- Ширина строки в точках: буква 0,6 размера шрифта, значки и эмодзи 1,2, невидимые знаки 0 (оценка с запасом для FredokaOne).
+-- Ширина строки в точках по замеру шрифтов (tests/text_widths.luau: дата, источник, ширина каждого знака в долях кегля;
+-- знака нет в таблице — коэффициент его класса). WIDTH_MULT > 1 — «шрифт шире на столько»: так считается запас.
+local Widths = shared_require("TextWidths")
+local WIDTH_MULT = 1
+local function charClass(ch, code)
+	if code >= 0x2190 then
+		return "symbol"
+	elseif string.find("әғқңөұүһіӘҒҚҢӨҰҮҺІ", ch, 1, true) then
+		return "kk"
+	elseif code >= 0x0400 and code <= 0x04FF then
+		return if code < 0x0430 or (code >= 0x0400 and code < 0x0410) then "cyr_upper" else "cyr_lower"
+	elseif ch:match("%l") then
+		return "latin_lower"
+	elseif ch:match("%u") then
+		return "latin_upper"
+	elseif ch:match("%d") then
+		return "digit"
+	elseif ch == " " then
+		return "space"
+	end
+	return "punct"
+end
 local function textWidth(text, font)
 	local width = 0
 	for _, code in utf8.codes(text) do
-		if code == 0xFE0F or code == 0x200D then
-			width += 0
-		elseif code >= 0x2190 then
-			width += 1.2 * font
-		else
-			width += 0.6 * font
-		end
+		local ch = utf8.char(code)
+		local em = Widths.chars[ch] or Widths.classes[charClass(ch, code)]
+		width += em * font
 	end
-	return width
+	return width * WIDTH_MULT
 end
 -- Сколько строк займёт текст при переносе по словам.
 local function wrappedLines(text, font, width)
@@ -530,12 +547,16 @@ local function plateTexts(touch)
 	add("Goal", S.t("hud.goal_quest_done"))
 	add("Goal", S.t("hud.goal_gift"))
 	for _, quest in ipairs(Daily0.QuestPool) do
-		add("Goal", S.t("hud.goal_quest", { quest = S.t("quest." .. quest.id .. ".text"), progress = quest.target - 1, target = quest.target }))
+		-- На плашке — короткий текст задания (quest.<id>.short); окно наград и уведомление показывают полный.
+		add("Goal", S.t("hud.goal_quest", { quest = S.t("quest." .. quest.id .. ".short"), progress = quest.target - 1, target = quest.target }))
 	end
 	add("Goal", S.t("hud.goal_next_gift", { minutes = 60 }))
 	-- Таймеры плашек такие же, как в Hud: «через 23:59» до полуночи UTC, буст «1:29:59».
-	add("Goal", S.t("hud.goal_tomorrow", { time = Format0.clock(86399), day = days - 1, total = days }))
-	add("Goal", S.t("hud.goal_mega", { time = Format0.clock(86399), day = days }))
+	-- «Вернись через 23 ч» и в последний час «через 59 мин»: обе формы.
+	for _, left in ipairs({ 86399, 3599 }) do
+		add("Goal", S.t("hud.goal_tomorrow", { time = Format0.hoursOrMinutes(left), day = days - 1, total = days }))
+		add("Goal", S.t("hud.goal_mega", { time = Format0.hoursOrMinutes(left), day = days }))
+	end
 	add("LuckText", S.t("hud.luck", { luck = "99.99" }))
 	add("BoostText", S.t("hud.boost", { time = Format0.timer(899) }))
 	add("BoostText", S.t("hud.boost", { time = Format0.timer(5399) })) -- два буста подряд: больше часа
@@ -594,6 +615,29 @@ end
 
 local textsChecked = 0
 local closeChecked = 0
+-- Запас: во сколько раз шрифт может оказаться шире замера, прежде чем фраза перестанет помещаться (урок 23).
+-- Порог 5 %: разница движка и Pillow (сглаживание, округление до пикселя) и подстановка другого запасного шрифта.
+local MIN_MARGIN = 0.05
+local worst = { margin = math.huge }
+local worstBy = {} -- надпись -> наименьший запас на всех экранах
+local function margin(fits)
+	if not fits() then
+		return 0
+	end
+	local lo, hi = 1, 3
+	for _ = 1, 20 do
+		local mid = (lo + hi) / 2
+		WIDTH_MULT = mid
+		local ok = fits()
+		WIDTH_MULT = 1
+		if ok then
+			lo = mid
+		else
+			hi = mid
+		end
+	end
+	return lo - 1
+end
 -- Рамка текста: прямоугольник надписи минус UIPadding (в точках).
 local function textBox(r, k)
 	local pad = r.obj:FindFirstChildOfClass("UIPadding")
@@ -636,6 +680,26 @@ local function checkPlateText(screen)
 			for _, raw in ipairs(texts) do
 				local text = plain(raw)
 				textsChecked += 1
+				local fits
+				if r.obj.TextScaled then
+					fits = function()
+						local size, lines = scaledFit(text, w, h, maxSize)
+						return size >= MIN_FONT and lines <= MAX_LINES
+					end
+				else
+					local font = r.obj.TextSize * k
+					fits = function()
+						local lines = if r.obj.TextWrapped then wrappedLines(text, font, w) else (textWidth(text, font) <= w and 1 or 99)
+						return lines <= MAX_LINES and lines * font * 1.2 <= h + 0.5
+					end
+				end
+				local m = margin(fits)
+				worstBy[r.name] = math.min(worstBy[r.name] or math.huge, m)
+				if m < worst.margin then
+					worst = { margin = m, text = text, where = screen.id .. " " .. r.name }
+				end
+				check(m >= MIN_MARGIN, string.format("%s: %s «%s» запас ширины %.1f %%, нужно не меньше %.0f %%",
+					screen.id, r.name, text, m * 100, MIN_MARGIN * 100))
 				if r.obj.TextScaled then
 					local size, lines = scaledFit(text, w, h, maxSize)
 					check(size >= MIN_FONT and lines <= MAX_LINES, string.format("%s: %s «%s» растягивается до %d pt в %d строк (рамка %.0fx%.0f pt), нужно ≥ %d pt и ≤ %d строк",
@@ -651,14 +715,16 @@ local function checkPlateText(screen)
 	end
 	-- Надпись плашки не заходит под её ✕ (reviewer 10.11, замечание 6: строка события на ПК под крестиком).
 	local rects = collect(gui, screen.size)
+	local compared = 0
 	for plate in pairs(plates) do
-		local close = plate:FindFirstChild("Close")
+		local close = plate.Name ~= "Badge" and plate:FindFirstChild("Close")
 		local closeRect
 		for _, r in ipairs(rects) do
-			if r.obj == close then
+			if close and r.obj == close then
 				closeRect = r
 			end
 		end
+		check(plate.Name == "Badge" or closeRect ~= nil, screen.id .. ": у плашки " .. plate.Name .. " не найден ✕ на экране: сравнивать не с чем")
 		if closeRect then
 			for _, r in ipairs(rects) do
 				if (r.obj.Parent == plate or r.obj == plate) and r.obj ~= close and textsOf[r.name] and r.obj.Visible ~= false then
@@ -669,6 +735,7 @@ local function checkPlateText(screen)
 					check(not overlaps(box, closeRect), string.format("%s: надпись %s заходит под ✕ плашки %s (%.0f..%.0f, ✕ с %.0f)",
 						screen.id, r.name, plate.Name, box.x, box.x + box.w, closeRect.x))
 					closeChecked += 1
+					compared += 1
 				end
 			end
 		end
@@ -677,8 +744,11 @@ local function checkPlateText(screen)
 		plate.Visible = visible
 	end
 	for name in pairs(textsOf) do
-		check(found[name] or name == "Badge", screen.id .. ": надпись " .. name .. " не нашлась для замера текста")
+		check(found[name], screen.id .. ": надпись " .. name .. " не нашлась для замера текста")
 	end
+	-- Надписей рядом с ✕: телефон — цель, удача (2), замок, «несёшь», событие (1 строка); ПК — то же, у события 2 надписи.
+	local needCompared = if screen.touch then 6 else 7
+	check(compared >= needCompared, string.format("%s: надписей сверено с ✕ %d, нужно не меньше %d", screen.id, compared, needCompared))
 	print(string.format("TEXT|%s|надписей %d|фраз проверено всего %d|надписей рядом с ✕ всего %d", screen.id, (function()
 		local n = 0
 		for _ in pairs(found) do
@@ -686,6 +756,19 @@ local function checkPlateText(screen)
 		end
 		return n
 	end)(), textsChecked, closeChecked))
+end
+-- Минимальный запас ширины по языку прогона (печатается в конце раздела 1, урок 23).
+local function printMargin()
+	print(string.format("ЗАПАС|%s|мин %.1f %%|%s|«%s»|таблица %s", tostring(__LOCALE), worst.margin * 100, worst.where or "-",
+		worst.text or "-", Widths.date))
+	local names = {}
+	for name in pairs(worstBy) do
+		table.insert(names, name)
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		print(string.format("ЗАПАС_НАДПИСЬ|%s|%s|%.1f %%", tostring(__LOCALE), name, worstBy[name] * 100))
+	end
 end
 
 frames()
@@ -747,6 +830,38 @@ for _, screen in ipairs(SCREENS) do
 				check(gap >= MIN_GAP - 0.5, string.format("%s: зазор между %s и %s %.1f pt, нужно не меньше %d", screen.id, r.name, rows[index + 1].name, gap, MIN_GAP))
 			end
 		end
+		-- Титул перерождения на сенсорном экране — первой строкой меню ☰ (решение лида 13.11): виден, и каждый из 10 титулов
+		-- на языке игрока помещается в строку меню не больше чем в 2 строки с запасом ширины (урок 23).
+		do
+			local ClientState1 = shared_require("client/State")
+			local saved = ClientState1.current
+			local state = table.clone(saved)
+			state.rebirthTitle = S.m("rebirth.10.title")
+			ClientState1.set(state)
+			frames()
+			local label = findNamed(menu, "RebirthTitle")
+			local r = label and rectOf(label, screen.size)
+			check(r ~= nil and label.Visible == true, screen.id .. ": титула перерождения нет в меню ☰")
+			if r then
+				local font = label.TextSize * scale
+				for n = 1, 10 do
+					local text = "♻️ " .. S.t("rebirth." .. n .. ".title")
+					local m = margin(function()
+						local lines = wrappedLines(text, font, r.fullW)
+						return lines <= MAX_LINES and lines * font * 1.2 <= r.fullH + 0.5
+					end)
+					textsChecked += 1
+					check(m >= MIN_MARGIN, string.format("%s: титул «%s» в меню, запас ширины %.1f %%", screen.id, text, m * 100))
+					worstBy.RebirthTitle = math.min(worstBy.RebirthTitle or math.huge, m)
+					if m < worst.margin then
+						worst = { margin = m, text = text, where = screen.id .. " RebirthTitle" }
+					end
+				end
+			end
+			ClientState1.set(saved)
+			frames()
+			check(label == nil or label.Visible == false, screen.id .. ": без перерождения титул остался в меню")
+		end
 		-- Два уведомления подряд: внизу, не в середине.
 		Remotes.Notify:FireClient(player, "Test notification one", nil)
 		Remotes.Notify:FireClient(player, "Test notification two", nil)
@@ -781,6 +896,24 @@ end
 setScreen(SMALL_PC)
 frames()
 checkWindowClose(SMALL_PC)
+
+-- Страховка в игре (урок 23): движок сказал «текст не влез» (TextFits = false) — надпись ужимается, не выше своего
+-- размера; новая раскладка возвращает текст фиксированного размера.
+setScreen(SCREENS[7])
+frames()
+do
+	local label = findNamed(gui, "LuckText")
+	local size = label.TextSize
+	check(label.TextScaled == false, "на телефоне надпись удачи растягивается до проверки страховки")
+	label.TextFits = false
+	local limit = label:FindFirstChild("FitLimit")
+	check(label.TextScaled == true and limit ~= nil and limit.MaxTextSize == math.floor(size),
+		"TextFits = false не ужал надпись: TextScaled " .. tostring(label.TextScaled))
+	setScreen(SCREENS[2])
+	frames()
+	check(label.TextScaled == false and label:FindFirstChild("FitLimit") == nil, "новая раскладка не вернула фиксированный размер")
+end
+printMargin()
 
 -- Перезапуск на ПК: меню открыто сразу (новое устройство без касания).
 setScreen(SCREENS[4])
