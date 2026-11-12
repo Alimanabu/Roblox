@@ -20,6 +20,7 @@ Layout.PT = {
 	FONT = 12, -- the smallest text
 	MENU_WIDTH = 150,
 	MENU_FONT = 13,
+	MIN_FIT = 10, -- the safety net (Hud.guardFit) never shrinks a text below this (lead's decision 13.11)
 	TOP = 4, -- the top row: coins and level
 	TOP_ROW = 54, -- its height: the level line in 2 lines of 12 pt and the XP bar under it
 	LEFT = 8,

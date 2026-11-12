@@ -76,7 +76,7 @@ end
 function Format.hoursOrMinutes(seconds)
 	seconds = math.max(0, math.floor(seconds))
 	if seconds >= 3600 then
-		return S.t("format.hours_short", { hours = math.floor(seconds / 3600) })
+		return S.t("format.hours_short", { hours = math.ceil(seconds / 3600) }) -- 23 h 01 min left is "24 h", not "23 h"
 	end
 	return S.t("format.minutes_short", { minutes = math.max(1, math.ceil(seconds / 60)) })
 end
