@@ -122,6 +122,7 @@ function QuestService.snapshot(player, data)
 			table.insert(quests, {
 				index = index,
 				text = S.m(def.textKey),
+				short = S.m(def.shortKey), -- the goal plate; the rewards window and the notification keep the full text
 				progress = quest.progress,
 				target = def.target,
 				claimed = quest.claimed,

@@ -4,6 +4,8 @@ common.not_enough_coins,Not enough coins: you need {cost},,,Не хватает 
 common.title_level,{title} • lvl {level},,,{title} • ур. {level},{title} • дең. {level}
 common.per_second,{coins}/s,,,{coins}/с,{coins}/с
 format.hours,{hours} h {minutes} min,,,{hours} ч {minutes} мин,{hours} сағ {minutes} мин
+format.hours_short,{hours}h,,,{hours} ч,{hours} сағ
+format.minutes_short,{minutes} min,,,{minutes} мин,{minutes} мин
 hud.rewards,🎁 Rewards,,,🎁 Награды,🎁 Сыйлықтар
 hud.factory,🏭 Factory,,,🏭 Фабрика,🏭 Фабрика
 hud.base,🧠 Base,,,🧠 База,🧠 База
@@ -19,14 +21,14 @@ hud.help,❓ How to Play,,,❓ Как играть,❓ Қалай ойнау к�
 hud.admin,🛠 Test,,,🛠 Тест,🛠 Тест
 hud.luck,🍀 Luck x{luck},,,🍀 Удача x{luck},🍀 Сәт x{luck}
 hud.boost,Boost {time},,,Буст {time},Буст {time}
-hud.vip,👑 VIP x2 coins,,,👑 VIP x2 монет,👑 VIP x2 ақша
+hud.vip,👑 VIP x2 coins,,,👑 VIP x2 монет,👑 VIP x2 монета
 hud.goal_daily,🎁 Daily reward {day}/{total}!,,,🎁 Награда дня {day}/{total}!,🎁 Күндік сыйлық {day}/{total}!
 hud.goal_quest_done,✅ Quest done! Tap to claim,,,✅ Задание готово! Забери,✅ Тапсырма орындалды! Бас
 hud.goal_gift,⏰ Gift ready! Tap to claim,,,⏰ Подарок готов! Забери,⏰ Сыйлық дайын! Ал
 hud.goal_quest,🎯 {progress}/{target} {quest},,,🎯 {progress}/{target} {quest},🎯 {progress}/{target} {quest}
 hud.goal_next_gift,⏰ Next gift in {minutes} min,,,⏰ Подарок через {minutes} мин,⏰ Сыйлық {minutes} мин кейін
-hud.goal_tomorrow,🔥 Day {day}/{total} in {time},,,🔥 День {day}/{total} через {time},🔥 {day}/{total}-күн {time} кейін
-hud.goal_mega,🔥 Mega reward in {time},,,🔥 Мега-приз через {time},🔥 Мега сыйлық {time} кейін
+hud.goal_tomorrow,🔥 Come back in {time}: streak {day}/{total},,,🔥 Вернись через {time}: серия {day}/{total},🔥 {time} кейін қайт: серия {day}/{total}
+hud.goal_mega,🔥 Come back in {time}: mega gift!,,,🔥 Через {time} мега-приз!,🔥 Мега сыйлық: {time} кейін қайт
 panel.factory,🏭 Brainrot Capsule Factory,,,🏭 Фабрика капсул с брейнротами,🏭 Brainrot Capsule Factory
 panel.base,🧠 My Base,,,🧠 Моя база,🧠 Менің базам
 panel.upgrades,⬆️ Factory Upgrades,,,⬆️ Улучшения фабрики,⬆️ Фабриканы жақсарту
@@ -167,16 +169,27 @@ reward.skin,🎨 skin,,,🎨 скин,🎨 скин
 reward.coins_base_full,💰 {coins} (base is full),,,💰 {coins} (база полна),💰 {coins} (база толы)
 reward.creature,🧠 {name},,,🧠 {name},🧠 {name}
 quest.craft25.text,Craft 25 brainrots,,,Создай 25 брейнротов,25 брейнрот жаса
+quest.craft25.short,Craft 25 brainrots,HUD goal plate,,Создай 25 брейнротов,25 брейнрот жаса
 quest.craft80.text,Craft 80 brainrots,,,Создай 80 брейнротов,80 брейнрот жаса
-quest.fuse3.text,Fuse 3 times,,,Скрести 3 раза,3 рет біріктір
+quest.craft80.short,Craft 80 brainrots,HUD goal plate,,Создай 80 брейнротов,80 брейнрот жаса
+quest.fuse3.text,Fuse brainrots 3 times,,,Скрести брейнротов 3 раза,Брейнроттарды 3 рет біріктір
+quest.fuse3.short,Fuse 3 times,HUD goal plate,,Скрести 3 раза,3 рет біріктір
 quest.sell10.text,Sell 10 brainrots,,,Продай 10 брейнротов,10 брейнрот сат
+quest.sell10.short,Sell 10 brainrots,HUD goal plate,,Продай 10 брейнротов,10 брейнрот сат
 quest.steal1.text,Steal 1 brainrot,,,Укради 1 брейнрота,1 брейнрот ұрла
-quest.slap3.text,Slap 3 players,,,Шлёпни 3 игроков,3 рет шапалақ ур
+quest.steal1.short,Steal 1 brainrot,HUD goal plate,,Укради 1 брейнрота,1 брейнрот ұрла
+quest.slap3.text,Slap 3 players,,,Шлёпни 3 игроков,3 ойыншыға шапалақ ур
+quest.slap3.short,Slap 3 players,HUD goal plate,,Шлёпни 3 игроков,Шапалақ: 3 ойыншы
 quest.slapThief.text,Slap a thief,,,Шлёпни вора,Ұрыға шапалақ ур
-quest.lock3.text,Lock base 3 times,,,Замок 3 раза,3 рет құлыпта
-quest.mutant1.text,Get a mutant,,,Получи мутанта,Мутант брейнрот ал
-quest.sigma5.text,Get 5 Sigma+,,,Получи 5 Сигма+,5 Сигма+ ал
-quest.index1.text,Find a new brainrot,,,Найди новый вид,Жаңа түр тап
+quest.slapThief.short,Slap a thief,HUD goal plate,,Шлёпни вора,Ұрыға шапалақ ур
+quest.lock3.text,Lock your base 3 times,,,Закрой базу замком 3 раза,Базаңды 3 рет құлыпта
+quest.lock3.short,Lock base 3 times,HUD goal plate,,Закрой базу 3 раза,Базаңды 3 рет құлыпта
+quest.mutant1.text,Get a mutated brainrot,,,Получи брейнрота с мутацией,Мутант брейнрот ал
+quest.mutant1.short,Get a mutant,HUD goal plate,,Получи мутанта,Мутант брейнрот ал
+quest.sigma5.text,Get 5 brainrots of Sigma rarity or rarer,,,Получи 5 брейнротов «Сигма» или реже,Сигма немесе одан сирек деңгейдегі 5 брейнрот ал
+quest.sigma5.short,5 Sigma or rarer,HUD goal plate,,5 Сигма или реже,5 Сигма не сирегірек
+quest.index1.text,Unlock a new brainrot in the Index,,,Открой нового брейнрота в Индексе,Жаңа түр тап
+quest.index1.short,New brainrot in Index,HUD goal plate,,Новый вид в Индексе,Индекске жаңа брейнрот
 quest.done,📋 Quest complete: {text}! Claim your reward 🎁,,,📋 Задание выполнено: {text}! Забери награду 🎁,📋 Тапсырма орындалды: {text}! Сыйлығыңды ал 🎁
 quest.daily_ready,🎁 Your daily reward is ready: day {day} of {total}! Open 🎁 Rewards,,,🎁 Твоя ежедневная награда готова: день {day} из {total}! Открой 🎁 Награды,🎁 Күндік сыйлығың дайын: {day}-күн / {total}! 🎁 Сыйлықтарды аш
 quest.daily_claimed,Today's reward is already claimed. Come back tomorrow!,,,Сегодняшняя награда уже получена. Приходи завтра!,Бүгінгі сыйлық алынып қойған. Ертең қайта кел!
@@ -518,14 +531,15 @@ event.mutant_fog.desc,x3 mutation chance!,,,x3 шанс мутаций!,x3 му�
 event.turbo.name,⚡ Turbo Factory,,,⚡ Турбо фабрика,⚡ Турбо фабрика
 event.turbo.desc,Machines run 2x faster!,,,Машины в 2 раза быстрее!,Машиналар 2 есе жылдам!
 event.minute67.name,🤌 MINUTE 67,,,🤌 МИНУТА 67,🤌 67-МИНУТ
-event.minute67.desc,SIX SEVEN chance x6.7!,,,Шанс SIX SEVEN x6.7!,"SIX SEVEN шансы x6,7!"
+event.minute67.desc,SIX SEVEN and Mutation 67 chance x6.7!,,,Шанс SIX SEVEN и мутации 67 x6.7!,"SIX SEVEN және 67 мутациясының мүмкіндігі x6,7!"
+event.minute67.short,SIX SEVEN chance x6.7!,,,Шанс SIX SEVEN x6.7!,"SIX SEVEN шансы x6,7!"
 event.boss.name,👹 BRAINROT BOSS,,,👹 БОСС БРЕЙНРОТ,👹 БРЕЙНРОТ БАСТЫҒЫ
 event.boss.desc,Slap the boss together!,,,Бейте босса на площади!,Алаңда бастықты ұр!
 event.started,🎉 New event: {name}: {desc},,,🎉 Начался ивент {name}: {desc},🎉 Жаңа іс-шара: {name}: {desc}
 event.ended,The event is over. Next one soon!,,,Ивент закончился. Следующий скоро!,Іс-шара аяқталды. Келесісі жақында!
 event.soon,⏰ In one minute: {name}!,,,⏰ Через минуту: {name}!,⏰ Бір минуттан кейін: {name}!
 event.next,Next event,,,Следующий ивент,Келесі іс-шара
-event.next_in,{name} in {time},,,{name} через {time},{time} кейін: {name}
+event.next_in,{name} in {time},,,{name} через {time},{name} {time} кейін
 event.plate_now,{event} {time},,,{event} {time},{event} {time}
 event.plate_next,⏰ {event} {time},,,⏰ {event} {time},⏰ {event} {time}
 tutorial.1.text,Tap 🏭 Factory and craft your first brainrot!,,,Нажми 🏭 Фабрика и создай первого брейнрота!,"🏭 Фабрика түймесін басып, алғашқы брейнротыңды жаса!"

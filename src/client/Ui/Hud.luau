@@ -208,6 +208,14 @@ function Hud.new(screenGui, onMenu, giftsReady)
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		Parent = screenGui,
 	}, { self.menuGrid })
+	self.rebirthLabel = Theme.label({
+		Name = "RebirthTitle",
+		Text = "",
+		TextColor3 = Color3.fromRGB(255, 190, 40),
+		LayoutOrder = 0,
+		Visible = false,
+		Parent = self.menu,
+	})
 	self.menuOpen = true
 	self.badges = {}
 	self.buttons = {}
@@ -333,8 +341,31 @@ function Hud:setEye(button)
 	self:applyLayout(self.size, self.touch, self.scale)
 end
 
+-- Safety net: if the engine reports that a fixed-size text does not fit (TextFits), the label shrinks it
+-- (TextScaled, never above its size) instead of cutting the tail. The tests keep every phrase within 2 lines
+-- with a width margin (tests/layout.spec.luau); this covers a font that renders wider than measured.
+function Hud.guardFit(label)
+	if label:GetAttribute("FitGuard") then
+		return
+	end
+	label:SetAttribute("FitGuard", true)
+	label:GetPropertyChangedSignal("TextFits"):Connect(function()
+		if label.TextFits == false and label:GetAttribute("FixedFont") then
+			local limit = label:FindFirstChild("FitLimit") or create("UITextSizeConstraint", { Name = "FitLimit", Parent = label })
+			limit.MaxTextSize = math.max(1, math.floor(label.TextSize))
+			label.TextScaled = true
+		end
+	end)
+end
+
 -- Text of a plate in points (touch) or as drawn for PC.
 local function plateText(label, touch, u, font, pc)
+	Hud.guardFit(label)
+	local limit = label:FindFirstChild("FitLimit")
+	if limit then
+		limit:Destroy()
+	end
+	label:SetAttribute("FixedFont", touch or nil)
 	if touch then
 		label.TextScaled = false
 		label.TextSize = font * u
@@ -550,6 +581,10 @@ function Hud:applyLayout(size, touch, scale)
 		self.menuGrid.CellPadding = UDim2.fromOffset(5, 5)
 		self.menu.Size = UDim2.fromOffset(Layout.menuWidth(2), math.ceil(#MENU / 2) * 43)
 	end
+	plateText(self.rebirthLabel, touch, u, PT.MENU_FONT, { TextScaled = true })
+	if not touch then
+		self.rebirthLabel.Visible = false
+	end
 	for _, button in pairs(self.buttons) do
 		button.TextScaled = not touch
 		if touch then
@@ -705,14 +740,14 @@ function Hud.goal(state, now)
 		end
 	end
 	if best then
-		return S.t("hud.goal_quest", { quest = S.text(best.text), progress = best.progress, target = best.target }), "quest"
+		return S.t("hud.goal_quest", { quest = S.text(best.short or best.text), progress = best.progress, target = best.target }), "quest"
 	end
 	if nextGift then
 		return S.t("hud.goal_next_gift", { minutes = math.max(1, math.ceil(nextGift.minutes - minutes)) }), "next_gift"
 	end
 	local tomorrow = r.streak % total + 1
 	-- The day changes at midnight UTC (Daily.today). Counted here: the state comes only on changes.
-	local time = Format.clock(86400 - math.floor(now) % 86400)
+	local time = Format.hoursOrMinutes(86400 - math.floor(now) % 86400)
 	if tomorrow == total then
 		return S.t("hud.goal_mega", { time = time, day = tomorrow }), "tomorrow"
 	end
@@ -764,6 +799,10 @@ function Hud:update(state)
 	self.coinsLabel.Text = Format.coins(state.coins)
 	self.incomeLabel.Text = S.t("common.per_second", { coins = "+" .. Format.coins(state.income) })
 	local title = S.t("common.title_level", { title = state.title, level = state.level })
+	-- The rebirth title: on a touch screen the first line of the ☰ menu (lead's decision 13.11), on PC in the level line.
+	local rebirthText = if state.rebirthTitle then "♻️ " .. S.text(state.rebirthTitle) else ""
+	self.rebirthLabel.Text = rebirthText
+	self.rebirthLabel.Visible = self.touch == true and rebirthText ~= ""
 	if state.rebirthTitle and not self.touch then
 		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, S.text(state.rebirthTitle))
 	end

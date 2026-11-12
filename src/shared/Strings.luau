@@ -24,6 +24,8 @@ local Source = {
 
 	-- Numbers and time
 	["format.hours"] = "{hours} h {minutes} min",
+	["format.hours_short"] = "{hours}h",
+	["format.minutes_short"] = "{minutes} min",
 
 	-- Top bar and menu
 	["hud.rewards"] = "🎁 Rewards",
@@ -47,8 +49,8 @@ local Source = {
 	["hud.goal_gift"] = "⏰ Gift ready! Tap to claim",
 	["hud.goal_quest"] = "🎯 {progress}/{target} {quest}",
 	["hud.goal_next_gift"] = "⏰ Next gift in {minutes} min",
-	["hud.goal_tomorrow"] = "🔥 Day {day}/{total} in {time}",
-	["hud.goal_mega"] = "🔥 Mega reward in {time}",
+	["hud.goal_tomorrow"] = "🔥 Come back in {time}: streak {day}/{total}",
+	["hud.goal_mega"] = "🔥 Come back in {time}: mega gift!",
 
 	-- Window titles
 	["panel.factory"] = "🏭 Brainrot Capsule Factory",
@@ -199,16 +201,27 @@ local Source = {
 
 	-- Quests
 	["quest.craft25.text"] = "Craft 25 brainrots",
+	["quest.craft25.short"] = "Craft 25 brainrots",
 	["quest.craft80.text"] = "Craft 80 brainrots",
-	["quest.fuse3.text"] = "Fuse 3 times",
+	["quest.craft80.short"] = "Craft 80 brainrots",
+	["quest.fuse3.text"] = "Fuse brainrots 3 times",
+	["quest.fuse3.short"] = "Fuse 3 times",
 	["quest.sell10.text"] = "Sell 10 brainrots",
+	["quest.sell10.short"] = "Sell 10 brainrots",
 	["quest.steal1.text"] = "Steal 1 brainrot",
+	["quest.steal1.short"] = "Steal 1 brainrot",
 	["quest.slap3.text"] = "Slap 3 players",
+	["quest.slap3.short"] = "Slap 3 players",
 	["quest.slapThief.text"] = "Slap a thief",
-	["quest.lock3.text"] = "Lock base 3 times",
-	["quest.mutant1.text"] = "Get a mutant",
-	["quest.sigma5.text"] = "Get 5 Sigma+",
-	["quest.index1.text"] = "Find a new brainrot",
+	["quest.slapThief.short"] = "Slap a thief",
+	["quest.lock3.text"] = "Lock your base 3 times",
+	["quest.lock3.short"] = "Lock base 3 times",
+	["quest.mutant1.text"] = "Get a mutated brainrot",
+	["quest.mutant1.short"] = "Get a mutant",
+	["quest.sigma5.text"] = "Get 5 brainrots of Sigma rarity or rarer",
+	["quest.sigma5.short"] = "5 Sigma or rarer",
+	["quest.index1.text"] = "Unlock a new brainrot in the Index",
+	["quest.index1.short"] = "New brainrot in Index",
 	["quest.done"] = "📋 Quest complete: {text}! Claim your reward 🎁",
 	["quest.daily_claimed"] = "Today's reward is already claimed. Come back tomorrow!",
 	["quest.daily_reward"] = "🎁 Day {day}: {reward}",
@@ -581,7 +594,8 @@ local Source = {
 	["event.turbo.name"] = "⚡ Turbo Factory",
 	["event.turbo.desc"] = "Machines run 2x faster!",
 	["event.minute67.name"] = "🤌 MINUTE 67",
-	["event.minute67.desc"] = "SIX SEVEN chance x6.7!",
+	["event.minute67.desc"] = "SIX SEVEN and Mutation 67 chance x6.7!",
+	["event.minute67.short"] = "SIX SEVEN chance x6.7!",
 	["event.boss.name"] = "👹 BRAINROT BOSS",
 	["event.boss.desc"] = "Slap the boss together!",
 	["event.started"] = "🎉 New event: {name}: {desc}",

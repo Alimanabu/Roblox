@@ -42,6 +42,8 @@ end
 for _, event in ipairs(Events.Hourly) do
 	S.fill(event, "event." .. event.id, "name", "desc")
 end
+-- The PC plate has 2 lines for the description: Minute 67 shows a short one there, the start notification the full one.
+S.fill(Events.SixSeven, "event." .. Events.SixSeven.id, "short")
 
 function Events.byId(id)
 	for _, event in ipairs(Events.Hourly) do

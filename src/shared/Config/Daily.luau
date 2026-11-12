@@ -59,7 +59,7 @@ Daily.Wheel = {
 
 Daily.QuestById = {}
 for _, quest in ipairs(Daily.QuestPool) do
-	S.fill(quest, "quest." .. quest.id, "text")
+	S.fill(quest, "quest." .. quest.id, "text", "short") -- short: only the goal plate of the HUD (2 lines on a phone)
 	Daily.QuestById[quest.id] = quest
 end
 for index, slot in ipairs(Daily.Wheel) do

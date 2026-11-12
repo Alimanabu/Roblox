@@ -61,7 +61,7 @@ function EventBanner.lines(event, active, left, touch)
 		return "", S.t(if active then "event.plate_now" else "event.plate_next", { event = event.name, time = Format.timer(left) })
 	end
 	if active then
-		return event.name, event.desc .. " " .. Format.time(left)
+		return event.name, (event.short or event.desc) .. " " .. Format.time(left)
 	end
 	return S.t("event.next"), S.t("event.next_in", { name = event.name, time = Format.time(left) })
 end
