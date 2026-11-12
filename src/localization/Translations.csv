@@ -190,7 +190,7 @@ quest.sigma5.text,Get 5 brainrots of Sigma rarity or rarer,,,Получи 5 бр
 quest.sigma5.short,5 Sigma or rarer,HUD goal plate,,5 Сигма или реже,5 Сигма не сирегірек
 quest.index1.text,Unlock a new brainrot in the Index,,,Открой нового брейнрота в Индексе,Жаңа түр тап
 quest.index1.short,New brainrot in Index,HUD goal plate,,Новый вид в Индексе,Индекске жаңа брейнрот
-quest.done,📋 Quest complete: {text}! Claim your reward 🎁,,,📋 Задание выполнено: {text}! Забери награду 🎁,📋 Тапсырма орындалды: {text}! Сыйлығыңды ал 🎁
+quest.done,📋 Done: {text}! Claim it in 🎁,,,📋 Готово: {text}! Награда в 🎁,📋 Орындалды: {text}! Сыйлығыңды ал 🎁
 quest.daily_ready,🎁 Your daily reward is ready: day {day} of {total}! Open 🎁 Rewards,,,🎁 Твоя ежедневная награда готова: день {day} из {total}! Открой 🎁 Награды,🎁 Күндік сыйлығың дайын: {day}-күн / {total}! 🎁 Сыйлықтарды аш
 quest.daily_claimed,Today's reward is already claimed. Come back tomorrow!,,,Сегодняшняя награда уже получена. Приходи завтра!,Бүгінгі сыйлық алынып қойған. Ертең қайта кел!
 quest.daily_reward,🎁 Day {day}: {reward},,,🎁 День {day}: {reward},🎁 {day}-күн: {reward}

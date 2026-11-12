@@ -1275,16 +1275,19 @@ function Rewards.build(content, state)
 	})
 	for order, quest in ipairs(r.quests) do
 		local done = quest.progress >= quest.target
-		local box = card({ Size = UDim2.new(1, -10, 0, 70), LayoutOrder = 10 + order }, { Theme.padding(8) })
+		-- The full quest text (up to ~50 letters in kk) in 2 lines of 12+ pt on a phone (UIScale 0.5): the text is 56 units
+		-- high (64 units = 32 pt at the smallest scale 0.5), the bar under it (tests/layout.spec.luau measures every quest in every language).
+		local box = card({ Size = UDim2.new(1, -10, 0, 104), LayoutOrder = 10 + order }, { Theme.padding(8) })
 		Theme.label({
-			Size = UDim2.new(0.65, 0, 0.5, 0),
+			Name = "QuestText",
+			Size = UDim2.new(0.65, 0, 0, 64),
 			Text = S.text(quest.text),
 			TextXAlignment = Enum.TextXAlignment.Left,
 			Parent = box,
 		})
 		local bar = create("Frame", {
-			Size = UDim2.new(0.62, 0, 0.35, 0),
-			Position = UDim2.fromScale(0, 0.6),
+			Size = UDim2.new(0.62, 0, 0, 20),
+			Position = UDim2.new(0, 0, 0, 68),
 			BackgroundColor3 = C.CardLocked,
 			Parent = box,
 		}, { Theme.corner(6) })

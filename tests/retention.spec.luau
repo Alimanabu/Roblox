@@ -550,6 +550,13 @@ scenario("цель: подарок за время готов → забрать
 	local now = workspace:GetServerTimeNow()
 	local left = (Daily.today() + 1) * DAY - now
 	-- Время цели: «23 ч» от часа, «45 мин» в последний час (Format.hoursOrMinutes).
+	-- Часы округляются вверх (reviewer 13.11, круг 2): 23 ч 01 мин — «24 ч»; ровно час — «1 ч»; меньше часа — минуты вверх.
+	for _, case in ipairs({ { 23 * 3600 + 60, "format.hours_short", { hours = 24 } }, { 3600, "format.hours_short", { hours = 1 } },
+		{ 3601, "format.hours_short", { hours = 2 } }, { 3599, "format.minutes_short", { minutes = 60 } },
+		{ 30, "format.minutes_short", { minutes = 1 } } }) do
+		check(Format.hoursOrMinutes(case[1]) == S.t(case[2], case[3]),
+			string.format("время цели при %d с: «%s», нужно «%s»", case[1], Format.hoursOrMinutes(case[1]), S.t(case[2], case[3])))
+	end
 	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.hoursOrMinutes(left), day = 2, total = TOTAL }),
 		"нет цели «вернись завтра, день 2»: " .. Hud.goal(state, now))
 	-- Таймер идёт без нового состояния от сервера.
