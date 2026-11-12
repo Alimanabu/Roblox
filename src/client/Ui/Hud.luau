@@ -234,7 +234,6 @@ function Hud.new(screenGui, onMenu, giftsReady)
 			local localPlayer = game:GetService("Players").LocalPlayer
 			local function refresh()
 				button.Visible = localPlayer:GetAttribute("IsAdmin") == true
-				self:fitMenu()
 			end
 			refresh()
 			localPlayer:GetAttributeChangedSignal("IsAdmin"):Connect(refresh)
@@ -335,22 +334,6 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	return self
 end
 
--- Touch: the drawer is as high as its visible rows (the rebirth title and the buttons, the admin one only for admins),
--- but not higher than the screen allows (then it scrolls).
-function Hud:fitMenu()
-	if not self.menuLimit then
-		return
-	end
-	local rows = if self.rebirthLabel.Visible then 1 else 0
-	for _, button in pairs(self.buttons) do
-		if button.Visible ~= false then
-			rows += 1
-		end
-	end
-	local PT = Layout.PT
-	self.menu.Size = UDim2.fromOffset(self.menuU * PT.MENU_WIDTH, self.menuU * math.min(self.menuLimit, rows * (PT.ROW + PT.GAP)))
-end
-
 -- The eye is made by Main in its own ScreenGui: here it only gets its place.
 function Hud:setEye(button)
 	self.eyeButton = button
@@ -359,9 +342,8 @@ function Hud:setEye(button)
 end
 
 -- Safety net: if the engine reports that a fixed-size text does not fit (TextFits), the label shrinks it
--- (TextScaled between Layout.PT.MIN_FIT points and its own size) instead of cutting the tail, and says so once in
--- Output with its name and text. The tests keep every phrase within 2 lines with a width margin
--- (tests/layout.spec.luau); this covers a font that renders wider than measured.
+-- (TextScaled, never above its size) instead of cutting the tail. The tests keep every phrase within 2 lines
+-- with a width margin (tests/layout.spec.luau); this covers a font that renders wider than measured.
 function Hud.guardFit(label)
 	if label:GetAttribute("FitGuard") then
 		return
@@ -371,36 +353,22 @@ function Hud.guardFit(label)
 		if label.TextFits == false and label:GetAttribute("FixedFont") then
 			local limit = label:FindFirstChild("FitLimit") or create("UITextSizeConstraint", { Name = "FitLimit", Parent = label })
 			limit.MaxTextSize = math.max(1, math.floor(label.TextSize))
-			limit.MinTextSize = math.min(limit.MaxTextSize, label:GetAttribute("FitMin") or Layout.PT.MIN_FIT)
 			label.TextScaled = true
-			if not label:GetAttribute("FitWarned") then
-				label:SetAttribute("FitWarned", true)
-				warn(string.format("[Hud] text does not fit, shrinking to %.0f..%.0f: %s \"%s\"", limit.MinTextSize, limit.MaxTextSize,
-					label.Name, label.Text))
-			end
 		end
 	end)
 end
 
--- A fixed text size on a touch screen, under the safety net; on PC the drawn look (TextScaled) comes back.
-function Hud.fixFont(label, touch, u, font)
+-- Text of a plate in points (touch) or as drawn for PC.
+local function plateText(label, touch, u, font, pc)
 	Hud.guardFit(label)
 	local limit = label:FindFirstChild("FitLimit")
 	if limit then
 		limit:Destroy()
 	end
 	label:SetAttribute("FixedFont", touch or nil)
-	label:SetAttribute("FitMin", if touch then Layout.PT.MIN_FIT * u else nil)
 	if touch then
 		label.TextScaled = false
 		label.TextSize = font * u
-	end
-end
-
--- Text of a plate in points (touch) or as drawn for PC.
-local function plateText(label, touch, u, font, pc)
-	Hud.fixFont(label, touch, u, font)
-	if touch then
 		label.TextWrapped = true
 		label.TextXAlignment = Enum.TextXAlignment.Left
 	else
@@ -600,8 +568,7 @@ function Hud:applyLayout(size, touch, scale)
 	if touch then
 		local height = size.Y * (1 - top.scale) - top.pt - PT.LEFT
 		self.menu.Position = UDim2.new(0, pt(PT.LEFT + PT.BUTTON + PT.GAP), top.scale, pt(top.pt))
-		self.menuLimit, self.menuU = height, u
-		self:fitMenu()
+		self.menu.Size = UDim2.fromOffset(pt(PT.MENU_WIDTH), pt(math.min(height, #MENU * (PT.ROW + PT.GAP))))
 		self.menu.ScrollBarThickness = 4
 		self.menuGrid.FillDirectionMaxCells = 1
 		self.menuGrid.CellSize = UDim2.fromOffset(pt(PT.MENU_WIDTH - 8), pt(PT.ROW))
@@ -613,16 +580,15 @@ function Hud:applyLayout(size, touch, scale)
 		self.menuGrid.CellSize = UDim2.fromOffset(Layout.MENU_COLUMN, 38)
 		self.menuGrid.CellPadding = UDim2.fromOffset(5, 5)
 		self.menu.Size = UDim2.fromOffset(Layout.menuWidth(2), math.ceil(#MENU / 2) * 43)
-		self.menuLimit = nil
 	end
 	plateText(self.rebirthLabel, touch, u, PT.MENU_FONT, { TextScaled = true })
 	if not touch then
 		self.rebirthLabel.Visible = false
 	end
 	for _, button in pairs(self.buttons) do
-		Hud.fixFont(button, touch, u, PT.MENU_FONT)
 		button.TextScaled = not touch
 		if touch then
+			button.TextSize = pt(PT.MENU_FONT)
 			button.TextXAlignment = Enum.TextXAlignment.Left
 		end
 	end
@@ -693,12 +659,11 @@ function Hud:applyLayout(size, touch, scale)
 		end
 	end
 
-	-- Notifications: one at a time at the bottom on a touch screen (the place: Hud:placeSide); two on PC.
+	-- Notifications: one line at the bottom on a touch screen (the place: Hud:placeSide); two on PC.
 	if touch then
 		self.notifyMax = 1
-		-- 2 lines of 13 pt (a finished quest names the whole quest); a portrait screen gives it the whole width at the bottom.
-		self.notifyHeight = pt(36)
-		self.notifyWidth = pt(if portrait then size.X - 16 else math.min(size.X * 0.7, 420))
+		self.notifyHeight = pt(if portrait then 36 else 28)
+		self.notifyWidth = pt(math.min(size.X * 0.7, 420))
 		self.notifyFont = pt(13)
 		self.notifyFrame.Size = UDim2.fromOffset(self.notifyWidth, self.notifyHeight)
 	else
@@ -837,11 +802,7 @@ function Hud:update(state)
 	-- The rebirth title: on a touch screen the first line of the ☰ menu (lead's decision 13.11), on PC in the level line.
 	local rebirthText = if state.rebirthTitle then "♻️ " .. S.text(state.rebirthTitle) else ""
 	self.rebirthLabel.Text = rebirthText
-	local titleShown = self.touch == true and rebirthText ~= ""
-	if self.rebirthLabel.Visible ~= titleShown then
-		self.rebirthLabel.Visible = titleShown
-		self:fitMenu() -- one more row: the last button must not slide out of the drawer
-	end
+	self.rebirthLabel.Visible = self.touch == true and rebirthText ~= ""
 	if state.rebirthTitle and not self.touch then
 		title = string.format('%s • <font color="#ffbe28">♻️ %s</font>', title, S.text(state.rebirthTitle))
 	end

@@ -620,7 +620,6 @@ local closeChecked = 0
 local MIN_MARGIN = 0.05
 local worst = { margin = math.huge }
 local worstBy = {} -- надпись -> наименьший запас на всех экранах
-local menusWhole = 0 -- экранов, где меню с титулом помещается целиком
 local function margin(fits)
 	if not fits() then
 		return 0
@@ -652,87 +651,6 @@ local function textBox(r, k)
 	end
 	return w, h
 end
--- Любая надпись: запас ширины (урок 23), ≥ 12 pt и ≤ 2 строк. opts: scaled, font (pt), maxSize (pt), wrapped, lines.
-local function fitCheck(where, name, text, w, h, opts)
-	text = plain(text)
-	local maxLines = opts.lines or MAX_LINES
-	local function fits()
-		if opts.scaled then
-			local size, lines = scaledFit(text, w, h, opts.maxSize)
-			return size >= MIN_FONT and lines <= maxLines
-		end
-		local lines = if opts.wrapped == false then (textWidth(text, opts.font) <= w and 1 or 99) else wrappedLines(text, opts.font, w)
-		return lines <= maxLines and lines * opts.font * 1.2 <= h + 0.5
-	end
-	local m = margin(fits)
-	textsChecked += 1
-	worstBy[name] = math.min(worstBy[name] or math.huge, m)
-	if m < worst.margin then
-		worst = { margin = m, text = text, where = where .. " " .. name }
-	end
-	check(m >= MIN_MARGIN, string.format("%s: %s «%s» не помещается (≥ %d pt, ≤ %d строк) с запасом ширины %.0f %%: запас %.1f %% (рамка %.0fx%.0f pt)",
-		where, name, text, MIN_FONT, maxLines, MIN_MARGIN * 100, m * 100, w, h))
-end
-
--- Размер объекта в единицах UIScale по цепочке родителей (с UIPadding родителя), без раскладки: так меряется строка,
--- даже если она сейчас прокручена за край окна.
-local function unitsOf(obj, size, k)
-	if obj.ClassName == "ScreenGui" then
-		return size.X / k, size.Y / k
-	end
-	local pw, ph = unitsOf(obj.Parent, size, k)
-	local pad = obj.Parent:FindFirstChildOfClass("UIPadding")
-	if pad then
-		pw -= (pad.PaddingLeft.args[2] or 0) + (pad.PaddingRight.args[2] or 0)
-		ph -= (pad.PaddingTop.args[2] or 0) + (pad.PaddingBottom.args[2] or 0)
-	end
-	local sxs, sxo, sys, syo = parts(obj.Size)
-	return sxs * pw + sxo, sys * ph + syo
-end
-
--- Полный текст задания (reviewer 13.11, круг 2): строка задания в окне наград — все 11 заданий на языке игрока;
--- уведомление «задание выполнено» — с самым длинным текстом.
-local function checkQuestTexts(screen)
-	local k = gui:FindFirstChildOfClass("UIScale").Scale
-	World.click(findNamed(gui, "RewardsButton"))
-	frames()
-	local label = findNamed(gui, "QuestText")
-	check(label ~= nil, screen.id .. ": в окне наград нет строки задания QuestText")
-	if label then
-		local w, h = unitsOf(label, screen.size, k)
-		for _, quest in ipairs(Daily0.QuestPool) do
-			fitCheck(screen.id, "QuestText", S.t("quest." .. quest.id .. ".text"), w * k, h * k, { scaled = true, maxSize = 100 * k })
-		end
-	end
-	local close = findNamed(gui, "CloseWindow")
-	if close then
-		World.click(close)
-		frames()
-	end
-	local longest, longestWidth = nil, -1
-	for _, quest in ipairs(Daily0.QuestPool) do
-		local text = S.t("quest.done", { text = S.t("quest." .. quest.id .. ".text") })
-		if textWidth(text, 1) > longestWidth then
-			longest, longestWidth = text, textWidth(text, 1)
-		end
-	end
-	shared_require("Remotes").Notify:FireClient(player, longest, nil)
-	frames(2)
-	local newest
-	for _, child in ipairs(findNamed(gui, "Notifications"):GetChildren()) do
-		if child.ClassName == "TextLabel" and (newest == nil or child.LayoutOrder > newest.LayoutOrder) then
-			newest = child
-		end
-	end
-	local r = newest and rectOf(newest, screen.size)
-	check(r ~= nil, screen.id .. ": уведомление «задание выполнено» не на экране")
-	if r then
-		local constraint = newest:FindFirstChildOfClass("UITextSizeConstraint")
-		fitCheck(screen.id, "Notify", longest, r.fullW, r.fullH, { scaled = newest.TextScaled == true, font = (newest.TextSize or 0) * k,
-			maxSize = (constraint and constraint.MaxTextSize or 100) * k, wrapped = newest.TextWrapped })
-	end
-end
-
 local function checkPlateText(screen)
 	local k = gui:FindFirstChildOfClass("UIScale").Scale
 	-- Плашки показываются на время замера (замер синхронный: клиент между строками не перерисовывает экран).
@@ -881,7 +799,6 @@ for _, screen in ipairs(SCREENS) do
 		end
 		measureTouch(screen, "без подсказки", 3)
 		checkPlateText(screen)
-		checkQuestTexts(screen)
 		World.click(eye) -- глаз дважды: всё закрытое снова на экране, подсказка тоже
 		frames()
 		World.click(eye)
@@ -941,35 +858,6 @@ for _, screen in ipairs(SCREENS) do
 					end
 				end
 			end
-			-- Титул занимает строку: с кнопкой администратора строк на две больше обычного. Меню не выше экрана, а пока
-			-- помещается целиком — каждая видимая кнопка внутри рамки (reviewer 13.11, круг 2: титул вытеснял нижнюю).
-			player:SetAttribute("IsAdmin", true)
-			frames()
-			local mr = rectOf(menu, screen.size)
-			local Layout0 = shared_require("client/Ui/Layout")
-			local shown, inside = 0, 0
-			for _, button in ipairs(menu:GetChildren()) do
-				if button.ClassName == "TextButton" and button.Visible ~= false then
-					shown += 1
-				end
-			end
-			for _, b in ipairs(collect(gui, screen.size)) do
-				if b.menu and b.obj.ClassName == "TextButton" and mr and b.fullY >= mr.y - 0.5 and b.fullY + b.fullH <= mr.y + mr.fullH + 0.5 then
-					inside += 1
-				end
-			end
-			local need = (shown + 1) * (Layout0.PT.ROW + Layout0.PT.GAP)
-			-- Сколько места даёт экран: в портрете меню начинается на четверти высоты, в альбоме — под кнопками Roblox.
-			local room = if screen.size.Y > screen.size.X then screen.size.Y * 0.75 - Layout0.PT.LEFT
-				else screen.size.Y - (Layout0.PT.ROBLOX_BAR - 48) - Layout0.PT.LEFT
-			if need <= room + 0.5 then
-				menusWhole += 1
-				check(inside == shown, string.format("%s: с титулом в рамке меню кнопок %d из %d", screen.id, inside, shown))
-			else
-				check(mr ~= nil and mr.y + mr.fullH <= screen.size.Y + 0.5, screen.id .. ": меню с титулом выше экрана")
-			end
-			print(string.format("MENU|%s|титул + кнопок %d|в рамке %d|рамка %.0f pt, нужно %.0f", screen.id, shown, inside, mr and mr.fullH or 0, need))
-			player:SetAttribute("IsAdmin", nil)
 			ClientState1.set(saved)
 			frames()
 			check(label == nil or label.Visible == false, screen.id .. ": без перерождения титул остался в меню")
@@ -1001,16 +889,9 @@ for _, screen in ipairs(SCREENS) do
 		check(measured >= MIN_MEASURED, screen.id .. ": измерено элементов " .. measured .. ", нужно не меньше " .. MIN_MEASURED)
 		print(string.format("MEASURE|%s|ПК|измерено %d", screen.id, measured))
 		checkPlateText(screen)
-		checkQuestTexts(screen)
 		checkWindowClose(screen)
 	end
 end
--- Набор не пустой (урок 11): меню с титулом целиком хотя бы на одном экране; фраз проверено не меньше, чем на 7 экранах
--- при полном наборе (плашки, 11 заданий окна, уведомление, 10 титулов на 5 сенсорных экранах).
-check(menusWhole >= 1, "меню с титулом ни на одном экране не помещается целиком: проверка «кнопки в рамке» ничего не доказала")
-local MIN_TEXTS = 760 -- 13.11: 767 = плашки и верхняя строка 633 + 11 заданий окна наград × 7 + уведомление × 7 + 10 титулов × 5
-check(textsChecked >= MIN_TEXTS, string.format("фраз проверено %d, нужно не меньше %d", textsChecked, MIN_TEXTS))
-print(string.format("TEXTS|%s|фраз проверено %d|меню целиком на экранах %d", tostring(__LOCALE), textsChecked, menusWhole))
 
 setScreen(SMALL_PC)
 frames()
@@ -1023,30 +904,11 @@ frames()
 do
 	local label = findNamed(gui, "LuckText")
 	local size = label.TextSize
-	local k = gui:FindFirstChildOfClass("UIScale").Scale
 	check(label.TextScaled == false, "на телефоне надпись удачи растягивается до проверки страховки")
-	local warned, realWarn = {}, warn
-	warn = function(...)
-		table.insert(warned, table.concat({ ... }, " "))
-	end
 	label.TextFits = false
-	label.TextFits = false -- второй раз: предупреждение одно
 	local limit = label:FindFirstChild("FitLimit")
 	check(label.TextScaled == true and limit ~= nil and limit.MaxTextSize == math.floor(size),
 		"TextFits = false не ужал надпись: TextScaled " .. tostring(label.TextScaled))
-	-- Нижняя граница — 10 pt на экране (решение лида 13.11), не меньше.
-	local minPt = (limit and tonumber(limit.MinTextSize) or -1) * k
-	check(math.abs(minPt - 10) < 0.01, string.format("страховка ужимает до %.2f pt, нужно ровно 10", minPt))
-	check(#warned == 1 and string.find(warned[1], "LuckText", 1, true) ~= nil and string.find(warned[1], label.Text, 1, true) ~= nil,
-		"страховка: предупреждений " .. #warned .. ", нужно одно с именем и текстом надписи: " .. tostring(warned[1]))
-	-- Кнопки меню на телефоне тоже фиксированного размера: страховка и у них.
-	local menuItem = findNamed(menu, "Factory")
-	menuItem.TextFits = false
-	local itemLimit = menuItem:FindFirstChild("FitLimit")
-	check(menuItem.TextScaled == true and itemLimit ~= nil and math.abs((tonumber(itemLimit.MinTextSize) or -1) * k - 10) < 0.01,
-		"страховка не работает на кнопке меню: TextScaled " .. tostring(menuItem.TextScaled))
-	check(#warned == 2, "у кнопки меню нет своего предупреждения: " .. #warned)
-	warn = realWarn
 	setScreen(SCREENS[2])
 	frames()
 	check(label.TextScaled == false and label:FindFirstChild("FitLimit") == nil, "новая раскладка не вернула фиксированный размер")

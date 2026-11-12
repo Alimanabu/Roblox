@@ -1,4 +1,4 @@
--- Ширина знаков в долях кегля (em = TextSize). СГЕНЕРИРОВАНО tests/gen_text_widths.py, не править руками: замер 2026-11-13,
+-- Ширина знаков в долях кегля (em = TextSize). СГЕНЕРИРОВАНО, не править руками: замер 2026-11-13,
 -- Pillow по файлам шрифтов Roblox version-67c8b1dedbb74fed\content\fonts: FredokaOne-Regular.ttf; знаков без FredokaOne —
 -- большее из SourceSansPro-Regular.ttf (запасной шрифт Roblox по списку в RobloxStudioBeta.exe) и Arimo-Regular.ttf;
 -- эмодзи — большее из TwemojiMozilla.ttf и RobloxEmoji.ttf. Не замер в движке: у ключа нет права luau-execution.
