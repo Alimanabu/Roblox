@@ -78,8 +78,8 @@ def main():
               "| настоящий код", code_new)
         print("\n".join(fails[:10]))
         return 1
-    print(f"✅ Отрицательный тест воронки: старая логика «было-стало» роняет funnel.spec ({len(fails)} ❌, среди них {glued[0]}), "
-          "настоящий код проходит" if not OLD_ONLY else "настоящий код проверяет funnel.spec в run.py")
+    tail = "настоящий код проверяет funnel.spec в run.py" if OLD_ONLY else "настоящий код проходит"
+    print(f"✅ Отрицательный тест воронки: старая логика «было-стало» роняет funnel.spec ({len(fails)} ❌, среди них {glued[0]}), {tail}")
     return 0
 
 
