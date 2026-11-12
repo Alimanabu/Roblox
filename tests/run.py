@@ -319,6 +319,11 @@ def negative_show_keys():
     return subprocess.call([sys.executable, "-X", "utf8", os.path.join(ROOT, "tests", "test_show_keys_negative.py")])
 
 
+def negative_funnel_glue():
+    """Отрицательный тест урока 22 (tests/test_funnel_glue_negative.py): старая логика склеивает шаги 4 и 5."""
+    return subprocess.call([sys.executable, "-X", "utf8", os.path.join(ROOT, "tests", "test_funnel_glue_negative.py"), LUAU, "--old-only"])
+
+
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
@@ -347,6 +352,7 @@ def main():
     trade_kk = world("trade.spec.luau", "kk-kz")
     rejoin = world("rejoin.spec.luau", "en-us")
     funnel = world("funnel.spec.luau", "en-us")
+    funnel_glue = negative_funnel_glue()
     frames = world("frames.spec.luau", "en-us")
     loading = world("loading.spec.luau", "en-us")
     retention = world("retention.spec.luau", "en-us")
@@ -361,7 +367,7 @@ def main():
 
     return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
-            or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk)
+            or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue)
 
 
 if __name__ == "__main__":

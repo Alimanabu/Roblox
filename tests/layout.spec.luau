@@ -23,6 +23,9 @@ local SCREENS = {
 	{ id = "телефон_360", size = Vector2.new(360, 780), touch = true },
 	{ id = "телефон_800", size = Vector2.new(800, 360), touch = true }, -- самый частый Android в альбоме (reviewer 10.11)
 }
+-- Окно Roblox на ноутбуке не во весь экран: масштаб окон 0,71, ✕ окна в единицах был бы 31×28 pt. Здесь меряются
+-- только ✕ окон (checkWindowClose); раскладка ПК в маленьком окне остаётся в единицах масштаба и в SCREENS не входит.
+local SMALL_PC = { id = "ПК_окно", size = Vector2.new(960, 540), touch = false }
 local MIN_MEASURED = 15 -- меньше измеренных элементов на экране: тест ничего не доказывает
 -- Размеры касания в точках экрана (после UIScale): ☰ ≥ 44, строка меню ≥ 40 с зазором ≥ 6, ✕ ≥ 36, текст ≥ 12.
 local MIN_BUTTON, MIN_ROW, MIN_GAP, MIN_CLOSE, MIN_FONT = 44, 40, 6, 36, 12
@@ -502,6 +505,189 @@ local function checkWindowClose(screen)
 	print(string.format("WINCLOSE|%s|окно %.1fx%.1f pt|битва %.1fx%.1f pt", screen.id, cw * k, ch * k, bw * k, bh * k))
 end
 
+-- 1б. Текст плашек и верхней строки (reviewer 10.11, замечание 3; урок 20). Каждая фраза, которая может попасть в надпись,
+-- на языке игрока помещается в рамку не больше чем в 2 строки и не обрезается; растягиваемый текст (TextScaled) Roblox
+-- уменьшает, пока он не влезет, поэтому для него считается размер, который получится, и он не мельче 12 pt.
+-- Фразы берутся из словаря с самыми длинными параметрами, а не с теми, что сейчас на экране.
+local MAX_LINES = 2
+local Format0 = shared_require("Util/Format")
+local Events0 = shared_require("Config/Events")
+local Daily0 = shared_require("Config/Daily")
+local Levels0 = shared_require("Config/Levels")
+local Rebirths0 = shared_require("Config/Rebirths")
+local function plain(text)
+	return (string.gsub(text, "<[^>]+>", ""))
+end
+-- touch: фразы сенсорного экрана (у события одна строка, у уровня нет титула перерождения), иначе ПК.
+local function plateTexts(touch)
+	local list = {}
+	local function add(name, text)
+		list[name] = list[name] or {}
+		table.insert(list[name], text)
+	end
+	local days = #Daily0.Rewards
+	add("Goal", S.t("hud.goal_daily", { day = days, total = days }))
+	add("Goal", S.t("hud.goal_quest_done"))
+	add("Goal", S.t("hud.goal_gift"))
+	for _, quest in ipairs(Daily0.QuestPool) do
+		add("Goal", S.t("hud.goal_quest", { quest = S.t("quest." .. quest.id .. ".text"), progress = quest.target - 1, target = quest.target }))
+	end
+	add("Goal", S.t("hud.goal_next_gift", { minutes = 60 }))
+	-- Таймеры плашек такие же, как в Hud: «через 23:59» до полуночи UTC, буст «1:29:59».
+	add("Goal", S.t("hud.goal_tomorrow", { time = Format0.clock(86399), day = days - 1, total = days }))
+	add("Goal", S.t("hud.goal_mega", { time = Format0.clock(86399), day = days }))
+	add("LuckText", S.t("hud.luck", { luck = "99.99" }))
+	add("BoostText", S.t("hud.boost", { time = Format0.timer(899) }))
+	add("BoostText", S.t("hud.boost", { time = Format0.timer(5399) })) -- два буста подряд: больше часа
+	add("BoostText", S.t("hud.vip"))
+	for _, key in ipairs({ "status.shield", "status.locked", "status.lock_ready" }) do
+		add("LockText", S.t(key, { time = Format0.time(599) }))
+	end
+	add("LockText", S.t("status.open"))
+	add("CarryText", S.t("status.carry", { time = Format0.time(59) }))
+	local events = {}
+	for _, event in ipairs(Events0.Random) do
+		table.insert(events, event)
+	end
+	for _, event in ipairs(Events0.Hourly) do
+		table.insert(events, event)
+	end
+	-- Плашка события берёт строки из EventBanner.lines: идёт сейчас (до 3 мин) и следующее (до 15 мин).
+	local EventBanner0 = shared_require("client/Ui/EventBanner")
+	for _, event in ipairs(events) do
+		for _, case in ipairs({ { true, Events0.DURATION - 1 }, { false, Events0.CYCLE - 1 } }) do
+			local title, info = EventBanner0.lines(event, case[1], case[2], touch)
+			if not touch then
+				add("EventTitle", title)
+			end
+			add("EventInfo", info)
+		end
+	end
+	add("CoinsText", Format0.coins(999.9e18))
+	add("IncomeText", S.t("common.per_second", { coins = "+" .. Format0.coins(999.9e15) }))
+	for _, title in ipairs(Levels0.Titles) do
+		local name = S.t("level." .. title.level .. ".name")
+		add("LevelText", S.t("common.title_level", { title = name, level = Levels0.MAX_LEVEL }))
+		for rebirth = 1, if touch then 0 else Rebirths0.TITLE_COUNT do
+			add("LevelText", string.format('%s • <font color="#ffbe28">♻️ %s</font>',
+				S.t("common.title_level", { title = name, level = Levels0.MAX_LEVEL }), S.t("rebirth." .. rebirth .. ".title")))
+		end
+	end
+	-- Опыт: самый большой порог уровня (до 67-го).
+	local xpMax = Format0.number(Levels0.xpToNext(Levels0.MAX_LEVEL - 1))
+	add("XpText", xpMax .. " / " .. xpMax .. " XP")
+	add("Badge", "!")
+	return list
+end
+local PLATE_TEXTS = { [true] = plateTexts(true), [false] = plateTexts(false) }
+
+-- Наибольший размер шрифта, при котором текст влезает в рамку (так Roblox растягивает TextScaled), и число строк при нём.
+local function scaledFit(text, width, height, maxSize)
+	for size = math.floor(maxSize), 1, -1 do
+		local lines = wrappedLines(text, size, width)
+		if lines * size * 1.2 <= height + 0.01 then
+			return size, lines
+		end
+	end
+	return 0, 99
+end
+
+local textsChecked = 0
+local closeChecked = 0
+-- Рамка текста: прямоугольник надписи минус UIPadding (в точках).
+local function textBox(r, k)
+	local pad = r.obj:FindFirstChildOfClass("UIPadding")
+	local function off(value)
+		return value and value.args and value.args[2] or 0
+	end
+	local w, h = r.fullW, r.fullH
+	if pad then
+		w -= (off(pad.PaddingLeft) + off(pad.PaddingRight)) * k
+		h -= (off(pad.PaddingTop) + off(pad.PaddingBottom)) * k
+	end
+	return w, h
+end
+local function checkPlateText(screen)
+	local k = gui:FindFirstChildOfClass("UIScale").Scale
+	-- Плашки показываются на время замера (замер синхронный: клиент между строками не перерисовывает экран).
+	local plates = {}
+	for _, name in ipairs({ "Goal", "Luck", "LockStatus", "CarryStatus", "EventBanner" }) do
+		local plate = findNamed(gui, name)
+		if plate then
+			plates[plate] = plate.Visible
+			plate.Visible = true
+		end
+	end
+	for _, item in ipairs(gui:GetDescendants()) do
+		if item.Name == "Badge" then
+			plates[item] = item.Visible
+			item.Visible = true
+		end
+	end
+	local found = {}
+	local textsOf = PLATE_TEXTS[screen.touch == true]
+	for _, r in ipairs(collect(gui, screen.size)) do
+		local texts = textsOf[r.name]
+		if texts and (r.obj.ClassName == "TextLabel" or r.obj.ClassName == "TextButton") then
+			found[r.name] = true
+			local w, h = textBox(r, k)
+			local constraint = r.obj:FindFirstChildOfClass("UITextSizeConstraint")
+			local maxSize = (constraint and constraint.MaxTextSize or 100) * k
+			for _, raw in ipairs(texts) do
+				local text = plain(raw)
+				textsChecked += 1
+				if r.obj.TextScaled then
+					local size, lines = scaledFit(text, w, h, maxSize)
+					check(size >= MIN_FONT and lines <= MAX_LINES, string.format("%s: %s «%s» растягивается до %d pt в %d строк (рамка %.0fx%.0f pt), нужно ≥ %d pt и ≤ %d строк",
+						screen.id, r.name, text, size, lines, w, h, MIN_FONT, MAX_LINES))
+				else
+					local font = r.obj.TextSize * k
+					local lines = if r.obj.TextWrapped then wrappedLines(text, font, w) else (textWidth(text, font) <= w and 1 or 99)
+					check(lines <= MAX_LINES and lines * font * 1.2 <= h + 0.5, string.format("%s: %s «%s» %.0f pt в %d строк, в рамку %.0fx%.0f pt влезает %d",
+						screen.id, r.name, text, font, lines, w, h, math.floor((h + 0.5) / (font * 1.2))))
+				end
+			end
+		end
+	end
+	-- Надпись плашки не заходит под её ✕ (reviewer 10.11, замечание 6: строка события на ПК под крестиком).
+	local rects = collect(gui, screen.size)
+	for plate in pairs(plates) do
+		local close = plate:FindFirstChild("Close")
+		local closeRect
+		for _, r in ipairs(rects) do
+			if r.obj == close then
+				closeRect = r
+			end
+		end
+		if closeRect then
+			for _, r in ipairs(rects) do
+				if (r.obj.Parent == plate or r.obj == plate) and r.obj ~= close and textsOf[r.name] and r.obj.Visible ~= false then
+					local w = textBox(r, k)
+					local pad = r.obj:FindFirstChildOfClass("UIPadding")
+					local left = if pad then (pad.PaddingLeft.args[2] or 0) * k else 0
+					local box = { x = r.x + left, y = r.y, w = w, h = r.h }
+					check(not overlaps(box, closeRect), string.format("%s: надпись %s заходит под ✕ плашки %s (%.0f..%.0f, ✕ с %.0f)",
+						screen.id, r.name, plate.Name, box.x, box.x + box.w, closeRect.x))
+					closeChecked += 1
+				end
+			end
+		end
+	end
+	for plate, visible in pairs(plates) do
+		plate.Visible = visible
+	end
+	for name in pairs(textsOf) do
+		check(found[name] or name == "Badge", screen.id .. ": надпись " .. name .. " не нашлась для замера текста")
+	end
+	print(string.format("TEXT|%s|надписей %d|фраз проверено всего %d|надписей рядом с ✕ всего %d", screen.id, (function()
+		local n = 0
+		for _ in pairs(found) do
+			n += 1
+		end
+		return n
+	end)(), textsChecked, closeChecked))
+end
+
 frames()
 check(menu.Visible == false, "на телефоне меню не свёрнуто при входе")
 local Remotes = shared_require("Remotes")
@@ -529,6 +715,7 @@ for _, screen in ipairs(SCREENS) do
 			end
 		end
 		measureTouch(screen, "без подсказки", 3)
+		checkPlateText(screen)
 		World.click(eye) -- глаз дважды: всё закрытое снова на экране, подсказка тоже
 		frames()
 		World.click(eye)
@@ -582,8 +769,18 @@ for _, screen in ipairs(SCREENS) do
 					string.format("%s: %s за краем экрана %.0f,%.0f %.0fx%.0f", screen.id, r.name, r.x, r.y, r.w, r.h))
 			end
 		end
+		-- На ПК тоже не меньше 15 измеренных (reviewer 10.11, замечание 4): пустой набор не проходит.
+		local _, measured = middle(screen.size)
+		check(measured >= MIN_MEASURED, screen.id .. ": измерено элементов " .. measured .. ", нужно не меньше " .. MIN_MEASURED)
+		print(string.format("MEASURE|%s|ПК|измерено %d", screen.id, measured))
+		checkPlateText(screen)
+		checkWindowClose(screen)
 	end
 end
+
+setScreen(SMALL_PC)
+frames()
+checkWindowClose(SMALL_PC)
 
 -- Перезапуск на ПК: меню открыто сразу (новое устройство без касания).
 setScreen(SCREENS[4])
