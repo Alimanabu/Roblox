@@ -549,10 +549,11 @@ scenario("цель: подарок за время готов → забрать
 	local state = stateOf(goaler)
 	local now = workspace:GetServerTimeNow()
 	local left = (Daily.today() + 1) * DAY - now
-	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.time(left), day = 2, total = TOTAL }),
+	-- Время цели — часы и минуты «23:59» (Format.clock): строка плашки на телефоне держит около 15 букв.
+	check(Hud.goal(state, now) == S.t("hud.goal_tomorrow", { time = Format.clock(left), day = 2, total = TOTAL }),
 		"нет цели «вернись завтра, день 2»: " .. Hud.goal(state, now))
 	-- Таймер идёт без нового состояния от сервера.
-	check(Hud.goal(state, now + 120) == S.t("hud.goal_tomorrow", { time = Format.time(left - 120), day = 2, total = TOTAL }),
+	check(Hud.goal(state, now + 120) == S.t("hud.goal_tomorrow", { time = Format.clock(left - 120), day = 2, total = TOTAL }),
 		"таймер цели стоит без нового состояния")
 end)
 
@@ -585,7 +586,7 @@ scenario("цель: после дня 6 зовёт за мега-наградо�
 	local wait = gifts[#gifts].minutes - 10
 	check(Hud.goal(state, now) == S.t("hud.goal_next_gift", { minutes = wait }), "нет цели «следующий подарок через " .. wait .. " мин»: " .. Hud.goal(state, now))
 	gifts[#gifts].claimed = true
-	local time = Format.time((Daily.today() + 1) * DAY - now)
+	local time = Format.clock((Daily.today() + 1) * DAY - now)
 	state.rewards.streak = TOTAL - 1
 	check(Hud.goal(state, now) == S.t("hud.goal_mega", { time = time, day = TOTAL }), "нет цели «мега-награда»: " .. Hud.goal(state, now))
 	state.rewards.streak = TOTAL
@@ -597,8 +598,8 @@ scenario("цель: после дня 6 зовёт за мега-наградо�
 	end
 	for _, line in ipairs({
 		S.t("hud.goal_daily", { day = TOTAL, total = TOTAL }), S.t("hud.goal_quest_done"), S.t("hud.goal_gift"),
-		S.t("hud.goal_next_gift", { minutes = 120 }), S.t("hud.goal_mega", { time = Format.time(DAY - 1), day = TOTAL }),
-		S.t("hud.goal_tomorrow", { time = Format.time(DAY - 1), day = TOTAL, total = TOTAL }),
+		S.t("hud.goal_next_gift", { minutes = 120 }), S.t("hud.goal_mega", { time = Format.clock(DAY - 1), day = TOTAL }),
+		S.t("hud.goal_tomorrow", { time = Format.clock(DAY - 1), day = TOTAL, total = TOTAL }),
 	}) do
 		longest = math.max(longest, utf8.len(line) or 0)
 	end
