@@ -18,13 +18,13 @@ local ROUND_DELAY = 1.3
 
 BattleView.PC_CLOSE = Vector2.new(40, 36) -- the ✕ on PC, in units of the UIScale
 
--- On a touch screen the ✕ is at least Layout.PT.CLOSE points (36), whatever the UIScale (see Panels:applyLayout).
+-- The ✕ is at least Layout.PT.CLOSE points (36), whatever the UIScale (see Panels:applyLayout).
 function BattleView:applyLayout(touch, scale)
 	local close = BattleView.PC_CLOSE
-	if touch then
-		local side = math.max(close.X, Layout.PT.CLOSE / scale)
-		close = Vector2.new(side, side)
-	end
+	-- At least Layout.PT.CLOSE points (36) on every screen: a touch screen and a small PC window (UIScale below 1)
+	-- alike. On a big PC screen the drawn size stays.
+	local side = Layout.PT.CLOSE / scale
+	close = Vector2.new(math.max(close.X, side), math.max(close.Y, side))
 	self.closeButton.Size = UDim2.fromOffset(close.X, close.Y)
 	self.title.Size = UDim2.new(1, -(close.X + 8), 0, 40)
 end

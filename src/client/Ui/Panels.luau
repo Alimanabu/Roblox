@@ -1979,14 +1979,14 @@ function Panels.new(screenGui)
 	return self
 end
 
--- The window stays in units of the UIScale (Main.updateScale), its ✕ does not: on a touch screen it is at least
+-- The window stays in units of the UIScale (Main.updateScale), its ✕ does not: on every screen it is at least
 -- Layout.PT.CLOSE points (36), otherwise a phone (scale 0.5) shrinks it to 22x20. The list moves down under it.
 function Panels:applyLayout(touch, scale)
 	local close = Panels.PC_CLOSE
-	if touch then
-		local side = math.max(close.X, Layout.PT.CLOSE / scale)
-		close = Vector2.new(side, side)
-	end
+	-- At least Layout.PT.CLOSE points (36) on every screen: a touch screen and a small PC window (UIScale below 1)
+	-- alike. On a big PC screen the drawn size stays.
+	local side = Layout.PT.CLOSE / scale
+	close = Vector2.new(math.max(close.X, side), math.max(close.Y, side))
 	self.closeButton.Size = UDim2.fromOffset(close.X, close.Y)
 	self.titleLabel.Size = UDim2.new(1, -(close.X + 36), 0, 44)
 	local top = math.max(60, 10 + close.Y + 6)
