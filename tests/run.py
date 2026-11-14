@@ -340,10 +340,41 @@ def publish_tool_tests():
     return code
 
 
+SOUND_ID = re.compile(r'\b(?:id|alt)\s*=\s*"([^"]*)"')
+
+
+def check_sounds(text=None):
+    """14.11: звуки игры — только публичные rbxassetid://<число> (бесплатные, Creator Store). Встроенных
+    rbxasset://sounds/*.wav нет в клиенте Roblox (звуки были немыми). text: текст Config/Sounds.luau для
+    отрицательного теста. Пустой набор не проходит: ссылок не меньше 12 (9 звуков игры и 4 шлепалки)."""
+    code = "\n".join(line.split("--")[0] for line in (text or read("src", "shared", "Config", "Sounds.luau")).splitlines())
+    ids = SOUND_ID.findall(code)
+    problems = [f"звук не rbxassetid://<число>: {value}" for value in ids if not re.fullmatch(r"rbxassetid://\d{6,}", value)]
+    if len(ids) < 12:
+        problems.append(f"найдено звуков {len(ids)}, нужно не меньше 12: проверять нечего")
+    if text is None:
+        for problem in problems:
+            print("❌ " + problem)
+        if not problems:
+            print(f"✅ Звуки игры: {len(ids)} ссылок, все rbxassetid://<число>, встроенных rbxasset:// нет")
+    return problems
+
+
+def negative_sounds():
+    """Отрицательный тест check_sounds: встроенный rbxasset:// и пустой набор должны ловиться."""
+    good = "\n".join('\ta%d = { id = "rbxassetid://91140%05d", volume = 1 },' % (n, n) for n in range(12))
+    bad = good + '\n\tb = { id = "rbxasset://sounds/button.wav" },'
+    ok = not check_sounds(good) and len(check_sounds(bad)) == 1 and bool(check_sounds("-- пусто\nreturn {}"))
+    print("✅ Отрицательный тест звуков: rbxasset:// и пустой набор ловятся" if ok else "❌ Отрицательный тест звуков: проверка пропускает плохое")
+    return 0 if ok else 1
+
+
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
     text_assign = check_text_assignments()
+    sounds = 1 if check_sounds() else 0
+    sounds_negative = negative_sounds()
     funnel_calls = check_funnel_calls()
     show_keys = check_show_keys()
     show_keys_negative = negative_show_keys()
@@ -383,7 +414,7 @@ def main():
     onboarding_ru = world("onboarding.spec.luau", "ru-ru")
     onboarding_kk = world("onboarding.spec.luau", "kk-kz")
 
-    return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or policy or trade or trade_ru or trade_kk
+    return (economy or purchases or dictionary or text_assign or sounds or sounds_negative or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
             or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue or publish_tool)
 
