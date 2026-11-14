@@ -211,6 +211,35 @@ function WildService.init()
 	end)
 end
 
+-- For NPC bots (BotService): the nearest wild brainrot below the announced rarity (rank 5 and up stays for players).
+-- Returns the model, the hold time and the creature, or nil.
+function WildService.nearestFor(position, maxRank)
+	local best, bestDistance
+	for model, wild in pairs(wilds) do
+		if model.Parent and wild.rarity.rank <= maxRank then
+			local distance = (wild.position - position).Magnitude
+			if not bestDistance or distance < bestDistance then
+				best, bestDistance = model, distance
+			end
+		end
+	end
+	if not best then
+		return nil
+	end
+	local prompt = best.PrimaryPart and best.PrimaryPart:FindFirstChild("WildPrompt")
+	return best, if prompt then prompt.HoldDuration else 1, wilds[best].creature
+end
+
+-- A bot caught it: the brainrot is gone from the map, nobody gets it (a bot has no profile). Returns the creature.
+function WildService.catchByBot(model)
+	local wild = wilds[model]
+	if not wild then
+		return nil
+	end
+	despawn(model)
+	return wild.creature
+end
+
 function WildService.forceSpawn()
 	spawnWild()
 end
