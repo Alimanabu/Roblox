@@ -632,6 +632,22 @@ function PlotService.render(player)
 	end
 end
 
+-- Plots nobody owns (for NPC bots: they pretend to craft at a free machine).
+function PlotService.freePlots()
+	local free = {}
+	for _, plot in ipairs(plots) do
+		if not plot.owner then
+			table.insert(free, plot)
+		end
+	end
+	return free
+end
+
+-- Where a bot stands to "work" the machine of a plot (beside the machine, behind the building).
+function PlotService.craftSpot(plot)
+	return (plot.cframe * CFrame.new(12, 3, -PLOT_SIZE / 2 + 10)).Position
+end
+
 function PlotService.getPlot(player)
 	return plotOf[player]
 end
