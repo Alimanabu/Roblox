@@ -335,7 +335,7 @@ local function stealable(owner, model, data, plot)
 end
 
 -- May a bot go after this brainrot of this owner right now? An allow-list: every condition must hold, anything
--- not recognised means no. (The tests print a table of cases: tests/bots.spec.luau, "таблица целей".)
+-- not recognised means no. (tests/bots.spec.luau runs a table of 12 allowed and 14 refused cases against it.)
 function BotService.canTarget(owner, model, now)
 	local data = DataService.get(owner)
 	local plot = PlotService.getPlot(owner)
