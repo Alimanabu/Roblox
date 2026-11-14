@@ -36,8 +36,9 @@ local EVENTS = {
 	"State", -- (snapshot)
 	"CraftResult", -- (result)
 	"Notify", -- (text, color)
-	"Knockback", -- (velocity) you got slapped
+	"Knockback", -- (velocity, silent) you got slapped; silent = the sound comes from SlapFx
 	"Sfx", -- (soundName) play a sound
+	"SlapFx", -- (player, hit) someone swung the Slapper: sound in 3D on their character (hit = it connected)
 	"TradeState", -- (state | nil) trade state
 	"TradeInvite", -- (fromUserId, fromName) you are invited to trade
 	"WheelResult", -- (index) what dropped on the wheel

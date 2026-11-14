@@ -446,13 +446,14 @@ local function onLockPrompt(player, prompt)
 end
 
 -- A Slapper hit on someone else's brainrot: minus 1 heart. At zero the brainrot is stunned and can be stolen.
+-- Returns true if a brainrot was hit.
 local function hitBrainrot(player, root)
 	if carries[player] then
-		return
+		return false
 	end
 	local facing = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 	if facing.Magnitude < 0.01 then
-		return
+		return false
 	end
 	facing = facing.Unit
 
@@ -480,14 +481,13 @@ local function hitBrainrot(player, root)
 		end
 	end
 	if not target then
-		return
+		return false
 	end
 
-	local hp = math.max(0, (target:GetAttribute("Hp") or 1) - 1)
+	local hp = math.max(0,(target:GetAttribute("Hp") or 1) - 1)
 	target:SetAttribute("Hp", hp)
 	damaged[target] = true
 	lastHit[target] = os.clock()
-	Remotes.Sfx:FireClient(player, "slap")
 
 	local prompt = target.PrimaryPart and target.PrimaryPart:FindFirstChild("StealPrompt")
 	local creatureId = prompt and prompt:GetAttribute("CreatureId")
@@ -503,6 +503,7 @@ local function hitBrainrot(player, root)
 		Remotes.Sfx:FireClient(targetOwner, "alarm")
 	end
 	PlotService.refreshHp(target)
+	return true
 end
 
 -- Brainrot hearts: the stun wears off, without hits health regenerates.
@@ -533,6 +534,37 @@ local function updateHp(t)
 	end
 end
 
+-- The swing: Roblox's own free "Slash" animations (R6 and R15), played on the server so that the
+-- character's Animator replicates it to everyone nearby.
+StealService.SWING_ANIMATION = { R15 = "rbxassetid://522635514", R6 = "rbxassetid://129967390" }
+local swingTracks = setmetatable({}, { __mode = "k" }) -- [humanoid] = AnimationTrack
+
+local function playSwing(player)
+	local humanoid = humanoidOf(player)
+	if not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	local track = swingTracks[humanoid]
+	if not track then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = humanoid
+		end
+		local animation = Instance.new("Animation")
+		local rig = if humanoid.RigType == Enum.HumanoidRigType.R6 then "R6" else "R15"
+		animation.AnimationId = StealService.SWING_ANIMATION[rig]
+		local ok, loaded = pcall(animator.LoadAnimation, animator, animation)
+		if not ok or not loaded then
+			return
+		end
+		loaded.Priority = Enum.AnimationPriority.Action
+		swingTracks[humanoid] = loaded
+		track = loaded
+	end
+	track:Play(0.05)
+end
+
 -- Slapper: pushes players back. If you slap a thief, they drop the brainrot.
 -- On someone else's brainrot it removes a heart.
 local function slap(player)
@@ -546,9 +578,8 @@ local function slap(player)
 	if not root or not MoveGuardService.canAct(player) then
 		return
 	end
-	if BossService.tryHit(player, root) then
-		Remotes.Sfx:FireClient(player, "slap")
-	end
+	playSwing(player)
+	local hit = BossService.tryHit(player, root)
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= player then
 			local otherRoot = rootOf(other)
@@ -560,9 +591,10 @@ local function slap(player)
 					local facing = root.CFrame.LookVector
 					if flat.Unit:Dot(Vector3.new(facing.X, 0, facing.Z).Unit) > 0.2 then
 						local velocity = flat.Unit * StealService.SLAP_FORCE + Vector3.new(0, 35, 0)
-						Remotes.Knockback:FireClient(other, velocity)
+						Remotes.Knockback:FireClient(other, velocity, true) -- true: the slap sound comes from SlapFx
 						MoveGuardService.knockback(other, StealService.SLAP_FORCE)
 						Actions.fire(player, "slap", 1)
+						hit = true
 						if carries[other] then
 							Actions.fire(player, "slapThief", 1)
 							endCarry(other, false, S.m("steal.reason_slapped", { name = player.DisplayName }))
@@ -574,7 +606,11 @@ local function slap(player)
 			end
 		end
 	end
-	hitBrainrot(player, root)
+	if hitBrainrot(player, root) then
+		hit = true
+	end
+	-- Everyone's client plays the slap (hit) or the whoosh (miss) in 3D on the swinging character.
+	Remotes.SlapFx:FireAllClients(player, hit)
 end
 
 local function createSlapper()

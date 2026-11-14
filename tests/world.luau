@@ -705,6 +705,7 @@ local services = {
 	ReplicatedStorage = service("ReplicatedStorage"),
 	Lighting = service("Lighting"),
 	SoundService = service("SoundService"),
+	ContentProvider = service("ContentProvider", { PreloadAsync = noop }),
 	StarterPack = service("StarterPack"),
 	ProximityPromptService = service("ProximityPromptService", { PromptTriggered = newSignal(), PromptButtonHoldBegan = newSignal(), PromptButtonHoldEnded = newSignal() }),
 	Debris = service("Debris", { AddItem = noop }),

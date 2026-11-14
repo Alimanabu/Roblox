@@ -11,6 +11,7 @@ local Remotes = require(Shared.Remotes)
 local State = require(script.Parent.State)
 local Sfx = require(script.Parent.Sfx)
 local Music = require(script.Parent.Music)
+local SlapFx = require(script.Parent.SlapFx)
 local LegendaryFx = require(script.Parent.LegendaryFx)
 local PetFollow = require(script.Parent.PetFollow)
 local WorldText = require(script.Parent.WorldText)
@@ -219,16 +220,21 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 end)
 
 -- You got slapped: you fly off.
-Remotes.Knockback.OnClientEvent:Connect(function(velocity)
+Remotes.Knockback.OnClientEvent:Connect(function(velocity, silent)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	Sfx.play("slap")
+	-- A Slapper hit makes its own sound in 3D (SlapFx); the boss shockwave has none, so it plays here.
+	if not silent then
+		Sfx.play("slap")
+	end
 	if root and humanoid then
 		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 		root.AssemblyLinearVelocity = velocity
 	end
 end)
+
+SlapFx.init()
 
 -- Steal and lock status.
 local status = StealStatus.new(hud)
