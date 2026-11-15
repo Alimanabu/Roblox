@@ -784,6 +784,26 @@ local services = {
 			}
 		end,
 	}),
+	-- Приглашения: World.invite.can — ответ CanSendGameInviteAsync, throws — запрос падает, wait — сколько секунд он
+	-- идёт, promptFails — окно приглашения не открылось; prompts — кому окно открыто, asked — сколько было запросов.
+	SocialService = service("SocialService", {
+		CanSendGameInviteAsync = function()
+			World.invite.asked += 1
+			if World.invite.wait then
+				task.wait(World.invite.wait)
+			end
+			if World.invite.throws then
+				error("CanSendGameInviteAsync: HTTP 500")
+			end
+			return World.invite.can
+		end,
+		PromptGameInvite = function(_, player)
+			if World.invite.promptFails then
+				error("PromptGameInvite: not available")
+			end
+			table.insert(World.invite.prompts, player)
+		end,
+	}),
 	LocalizationService = service("LocalizationService"),
 	UserInputService = service("UserInputService", { TouchEnabled = false }),
 	-- Every call is written to World.analytics; World.analyticsDown = true makes the service throw.
@@ -802,6 +822,7 @@ local services = {
 World.services = services
 World.analytics = {} -- calls of AnalyticsService: { method, args }
 World.restricted = {} -- [userId] = true: Roblox запрещает игроку платные случайные награды
+World.invite = { can = true, asked = 0, prompts = {} }
 
 local translations = Instance_new("LocalizationTable", "Translations")
 rawget(translations, "__state").props.GetEntries = function()

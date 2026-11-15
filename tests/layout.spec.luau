@@ -313,7 +313,8 @@ local function measureTouch(screen, phase, closes)
 	local seen = {}
 	for _, r in ipairs(rects) do
 		seen[r.name] = (seen[r.name] or 0) + 1
-		local need = (r.name == "MenuButton" or r.name == "RewardsButton" or r.name == "EyeButton" or r.name == "SettingsButton") and MIN_BUTTON
+		local need = (r.name == "MenuButton" or r.name == "RewardsButton" or r.name == "EyeButton" or r.name == "SettingsButton"
+			or r.name == "InviteButton") and MIN_BUTTON
 			or r.name == "Close" and MIN_CLOSE
 		if need and r.obj.ClassName == "TextButton" then
 			check(r.fullW >= need - 0.5 and r.fullH >= need - 0.5,
@@ -328,6 +329,8 @@ local function measureTouch(screen, phase, closes)
 	end
 	check((seen.MenuButton or 0) == 1 and (seen.Close or 0) >= closes,
 		string.format("%s: не нашёл ☰ или крестики для замера (крестиков %d, нужно %d)", where, seen.Close or 0, closes))
+	-- Кнопка «позвать друзей» (13.11) — постоянная часть экрана: одна, и мерка середины выше её уже посчитала.
+	check((seen.InviteButton or 0) == 1, string.format("%s: кнопок 👥 на экране %d, нужна одна", where, seen.InviteButton or 0))
 	print(string.format("MEASURE|%s|%s|измерено %d|крестиков %d", screen.id, phase, measured, seen.Close or 0))
 end
 
@@ -716,21 +719,67 @@ local function checkQuestTexts(screen)
 			longest, longestWidth = text, textWidth(text, 1)
 		end
 	end
-	shared_require("Remotes").Notify:FireClient(player, longest, nil)
-	frames(2)
-	local newest
-	for _, child in ipairs(findNamed(gui, "Notifications"):GetChildren()) do
-		if child.ClassName == "TextLabel" and (newest == nil or child.LayoutOrder > newest.LayoutOrder) then
-			newest = child
+	-- Уведомления этого круга (13.11, позвать друзей): строка про бонус за друга после первой капсулы (число с запасом
+	-- в три знака) и отказ приглашения.
+	local NOTICES = {
+		{ "Notify", longest },
+		{ "NotifyFriend", S.t("social.friend_hint", { bonus = 100 }) },
+		{ "NotifyInvite", S.t("social.invite_unavailable") },
+	}
+	for _, notice in ipairs(NOTICES) do
+		shared_require("Remotes").Notify:FireClient(player, notice[2], nil)
+		frames(2)
+		local newest
+		for _, child in ipairs(findNamed(gui, "Notifications"):GetChildren()) do
+			if child.ClassName == "TextLabel" and (newest == nil or child.LayoutOrder > newest.LayoutOrder) then
+				newest = child
+			end
+		end
+		local r = newest and rectOf(newest, screen.size)
+		check(r ~= nil and newest.Text == notice[2], screen.id .. ": уведомление " .. notice[1] .. " не на экране")
+		if r then
+			local constraint = newest:FindFirstChildOfClass("UITextSizeConstraint")
+			fitCheck(screen.id, notice[1], notice[2], r.fullW, r.fullH, { scaled = newest.TextScaled == true, font = (newest.TextSize or 0) * k,
+				maxSize = (constraint and constraint.MaxTextSize or 100) * k, wrapped = newest.TextWrapped })
 		end
 	end
-	local r = newest and rectOf(newest, screen.size)
-	check(r ~= nil, screen.id .. ": уведомление «задание выполнено» не на экране")
-	if r then
-		local constraint = newest:FindFirstChildOfClass("UITextSizeConstraint")
-		fitCheck(screen.id, "Notify", longest, r.fullW, r.fullH, { scaled = newest.TextScaled == true, font = (newest.TextSize or 0) * k,
-			maxSize = (constraint and constraint.MaxTextSize or 100) * k, wrapped = newest.TextWrapped })
+end
+
+-- Строка меню «Invite friends» (13.11) на языке игрока: в одну строку с запасом ширины (урок 23). Место считается по
+-- ячейке сетки меню, а не по раскладке: на альбомном телефоне строка прокручена за край меню.
+local function checkInviteRow(screen)
+	local k = gui:FindFirstChildOfClass("UIScale").Scale
+	local button = menu:FindFirstChild("Invite")
+	check(button ~= nil and button.Visible ~= false, screen.id .. ": в меню нет строки Invite")
+	if not button then
+		return
 	end
+	local _, cw, _, ch = parts(menu:FindFirstChildOfClass("UIGridLayout").CellSize)
+	local pad = button:FindFirstChildOfClass("UIPadding")
+	local w = (cw - pad.PaddingLeft.args[2] - pad.PaddingRight.args[2]) * k
+	local h = (ch - pad.PaddingTop.args[2] - pad.PaddingBottom.args[2]) * k
+	local constraint = button:FindFirstChildOfClass("UITextSizeConstraint")
+	fitCheck(screen.id, "MenuInvite", S.t("hud.invite"), w, h, { scaled = button.TextScaled == true, font = (button.TextSize or 0) * k,
+		maxSize = (constraint and constraint.MaxTextSize or 100) * k, wrapped = false, lines = 1 })
+end
+
+-- Сенсорный экран: вместо строки меню круглая кнопка 👥 и подпись под ней («Invite friends», до двух строк мелкого
+-- шрифта) на языке игрока; строки Invite в свёрнутом меню нет (оно держит свои строки). Подпись меряется целиком.
+local function checkInviteCaption(screen)
+	local k = gui:FindFirstChildOfClass("UIScale").Scale
+	local caption = findNamed(gui, "InviteText")
+	check(caption ~= nil and caption.Visible == true, screen.id .. ": нет подписи под кнопкой 👥")
+	local row = menu:FindFirstChild("Invite")
+	check(row ~= nil and row.Visible == false, screen.id .. ": на сенсорном экране строка Invite видна в меню")
+	if not caption then
+		return
+	end
+	local size = caption.Size.args
+	fitCheck(screen.id, "InviteCaption", S.t("hud.invite_short"), size[2] * k, size[4] * k, { scaled = caption.TextScaled == true,
+		font = (caption.TextSize or 0) * k, maxSize = 100, wrapped = caption.TextWrapped })
+	local x = caption.Position.args[2] * k
+	local w = size[2] * k
+	check(x >= 0 and x + w <= screen.size.X * 0.2 + 0.5, string.format("%s: подпись под 👥 заходит в середину экрана: %.0f..%.0f pt", screen.id, x, x + w))
 end
 
 local function checkPlateText(screen)
@@ -898,6 +947,7 @@ for _, screen in ipairs(SCREENS) do
 			end
 		end
 		check(#rows >= 6, screen.id .. ": в меню видно строк " .. #rows)
+		checkInviteCaption(screen)
 		table.sort(rows, function(a, b)
 			return a.fullY < b.fullY
 		end)
@@ -1002,13 +1052,19 @@ for _, screen in ipairs(SCREENS) do
 		print(string.format("MEASURE|%s|ПК|измерено %d", screen.id, measured))
 		checkPlateText(screen)
 		checkQuestTexts(screen)
+		checkInviteRow(screen)
+		-- Круглая кнопка 👥 — только на сенсорном экране: на ПК меню открыто, и строка «Invite friends» в нём видна.
+		local inviteButton = findNamed(gui, "InviteButton")
+		check(inviteButton ~= nil and inviteButton.Visible == false, screen.id .. ": круглая кнопка 👥 видна на ПК")
 		checkWindowClose(screen)
 	end
 end
 -- Набор не пустой (урок 11): меню с титулом целиком хотя бы на одном экране; фраз проверено не меньше, чем на 7 экранах
 -- при полном наборе (плашки, 11 заданий окна, уведомление, 10 титулов на 5 сенсорных экранах).
 check(menusWhole >= 1, "меню с титулом ни на одном экране не помещается целиком: проверка «кнопки в рамке» ничего не доказала")
-local MIN_TEXTS = 760 -- 13.11: 767 = плашки и верхняя строка 633 + 11 заданий окна наград × 7 + уведомление × 7 + 10 титулов × 5
+-- 13.11: 788 = плашки и верхняя строка 633 + 11 заданий окна наград × 7 + уведомление × 7 + 10 титулов × 5
+-- + круг «позвать друзей»: 2 уведомления × 7 + строка меню × 7 (порог был 760 при 767)
+local MIN_TEXTS = 781
 check(textsChecked >= MIN_TEXTS, string.format("фраз проверено %d, нужно не меньше %d", textsChecked, MIN_TEXTS))
 print(string.format("TEXTS|%s|фраз проверено %d|меню целиком на экранах %d", tostring(__LOCALE), textsChecked, menusWhole))
 
