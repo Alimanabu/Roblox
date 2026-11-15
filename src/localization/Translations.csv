@@ -450,6 +450,7 @@ steal.stolen,🦹 Stolen: {name}!,,,🦹 Украдено: {name}!,🦹 Ұрла
 steal.announce,🚨 {thief} stole {name} from {owner}!,,,🚨 {thief} украл {name} у {owner}!,🚨 {thief} ұрлады: {name} ({owner})
 steal.lost,😭 {thief} stole your {name}!,,,😭 {thief} украл твоего {name}!,😭 {thief} ұрлады: {name}!
 steal.returned,✅ {name} is back home!,,,✅ {name} вернулся домой!,✅ {name} үйіне оралды!
+steal.bot_returned,✅ [BOT] dropped your brainrot — it's back on your base,,,✅ [BOT] уронил твоего брейнрота — он снова на твоей базе,✅ [BOT] брейнротыңды тастап кетті — ол қайтадан базаңда
 steal.failed,❌ Steal failed: {reason},,,❌ Кража не удалась: {reason},❌ Ұрлау сәтсіз: {reason}
 steal.hit_first,👋 Knock out its ❤️ first: hit it with the Slapper!,,,👋 Сначала выбей ❤️: шлёпай его Шлёпалкой!,👋 Алдымен оның ❤️ құлат: Шапалақпен ур!
 steal.base_locked,🔒 This base is locked!,,,🔒 База закрыта!,🔒 Бұл база құлыптаулы!

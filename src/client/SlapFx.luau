@@ -82,8 +82,9 @@ function SlapFx.init()
 
 	Remotes.SlapFx.OnClientEvent:Connect(function(who, hit)
 		-- The player may have left by the time the event arrives (the remote then carries nil).
+		-- A bot is not a Player: the server sends its character model instead.
 		if who then
-			SlapFx.play(who.Character, hit == true)
+			SlapFx.play(if who:IsA("Model") then who else who.Character, hit == true)
 		end
 	end)
 end

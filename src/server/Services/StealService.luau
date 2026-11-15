@@ -62,6 +62,20 @@ local lastHit = setmetatable({}, { __mode = "k" }) -- [brainrot model] = os.cloc
 local hitAlertAt = {} -- [owner] = os.clock(): we do not spam the owner with "you are being hit"
 local hintAt = {} -- [player] = os.clock(): the "slap first" hint
 
+-- NPC bots (BotService) are not Players: they act through the same slap and steal code, as an "actor" table
+-- (IsBot = true, Character, DisplayName, SetAttribute). The list of live bots is given by BotService.
+local botSource = function()
+	return {}
+end
+-- BotService's allow-list (canTarget): may a bot take this brainrot of this owner right now? Nil: no bot takes anything.
+local botTargetCheck = nil
+function StealService.setBotTargetCheck(check)
+	botTargetCheck = check
+end
+function StealService.setBotSource(source)
+	botSource = source
+end
+
 local function now()
 	return workspace:GetServerTimeNow()
 end
@@ -219,9 +233,17 @@ local function endCarry(thief, success, reason)
 	local name = displayName(entry)
 	updateRobbed(owner)
 
+	-- A bot never keeps a brainrot taken from a human (decision 14.11): whatever ends its carry, the brainrot
+	-- goes back to the owner. This is an invariant here, not a case: a bot can never "succeed".
+	local isBot = thief.IsBot == true
+	if isBot then
+		success = false
+	end
 	-- Before crediting we check the spot again: the thief could have filled the base while running.
 	local thiefData = success and DataService.get(thief)
-	if success and not thiefData then
+	if not success then
+		-- nothing to credit
+	elseif not thiefData then
 		success, reason = false, S.m("steal.reason_thief_left")
 	elseif success and Formulas.isFromPastLife(entry, thief.UserId, thiefData.rebirths) then
 		success, reason = false, S.m("steal.reason_past_life")
@@ -281,12 +303,76 @@ local function endCarry(thief, success, reason)
 		DataService.markDirty(owner)
 		PlotService.render(owner)
 		if owner.Parent then
-			Remotes.Notify:FireClient(owner, S.m("steal.returned", { name = name }), GOOD)
+			if isBot then
+				Remotes.Notify:FireClient(owner, S.m("steal.bot_returned"), GOOD)
+			else
+				Remotes.Notify:FireClient(owner, S.m("steal.returned", { name = name }), GOOD)
+			end
 		end
 	end
-	if thief.Parent then
+	if thief.Parent and not isBot then
 		Remotes.Notify:FireClient(thief, S.m("steal.failed", { reason = reason }), BAD)
 	end
+end
+
+-- The brainrot is already taken out of the owner's data: the thief (a player or a bot) now carries it.
+local function beginCarry(thief, owner, ownerData, entry, thiefRoot, humanoid)
+	local deadline = now() + StealService.CARRY_TIME
+	local visual, highlight = makeCarryVisual(thief, entry)
+	carries[thief] = {
+		owner = owner,
+		entry = entry,
+		deadline = deadline,
+		visual = visual,
+		highlight = highlight,
+		startPosition = thiefRoot.Position,
+		startClock = os.clock(),
+		diedConn = humanoid.Died:Connect(function()
+			endCarry(thief, false, S.m("steal.reason_defeated"))
+		end),
+	}
+	humanoid.WalkSpeed = StealService.CARRY_SPEED
+	thief:SetAttribute("CarryDeadline", deadline)
+	updateRobbed(owner)
+
+	-- Owner's trap: the thief stands still while being shocked.
+	local trapLevel = ownerData.upgrades.trap or 0
+	if trapLevel > 0 then
+		local stun = trapLevel * StealService.TRAP_STUN_PER_LEVEL
+		local carry = carries[thief]
+		carry.deadline += stun
+		thief:SetAttribute("CarryDeadline", carry.deadline)
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.JumpHeight = 0
+		if carry.highlight then
+			carry.highlight.FillColor = Color3.fromRGB(255, 240, 60)
+		end
+		if not thief.IsBot then
+			Remotes.Notify:FireClient(thief, S.m("steal.trap_thief", { seconds = stun }), BAD)
+		end
+		Remotes.Notify:FireClient(owner, S.m("steal.trap_owner"), GOOD)
+		task.delay(stun, function()
+			if carries[thief] == carry and humanoid.Parent then
+				humanoid.WalkSpeed = StealService.CARRY_SPEED
+				humanoid.JumpPower = 50
+				humanoid.JumpHeight = 7.2
+				if carry.highlight then
+					carry.highlight.FillColor = Color3.fromRGB(255, 40, 60)
+				end
+			end
+		end)
+	end
+
+	DataService.markDirty(owner)
+	PlotService.render(owner)
+
+	local name = displayName(entry)
+	if not thief.IsBot then
+		Remotes.Notify:FireClient(thief, S.m("steal.carry", { name = name }), WARN)
+	end
+	Remotes.Notify:FireClient(owner, S.m("steal.alarm", { thief = thief.DisplayName, name = name }), BAD)
+	Remotes.Sfx:FireClient(owner, "alarm")
 end
 
 local function startSteal(thief, prompt)
@@ -364,58 +450,80 @@ local function startSteal(thief, prompt)
 		return
 	end
 
-	local deadline = now() + StealService.CARRY_TIME
-	local visual, highlight = makeCarryVisual(thief, entry)
-	carries[thief] = {
-		owner = owner,
-		entry = entry,
-		deadline = deadline,
-		visual = visual,
-		highlight = highlight,
-		startPosition = thiefRoot.Position,
-		startClock = os.clock(),
-		diedConn = humanoid.Died:Connect(function()
-			endCarry(thief, false, S.m("steal.reason_defeated"))
-		end),
-	}
-	humanoid.WalkSpeed = StealService.CARRY_SPEED
-	thief:SetAttribute("CarryDeadline", deadline)
-	updateRobbed(owner)
+	beginCarry(thief, owner, ownerData, entry, thiefRoot, humanoid)
+end
 
-	-- Owner's trap: the thief stands still while being shocked.
-	local trapLevel = ownerData.upgrades.trap or 0
-	if trapLevel > 0 then
-		local stun = trapLevel * StealService.TRAP_STUN_PER_LEVEL
-		local carry = carries[thief]
-		carry.deadline += stun
-		thief:SetAttribute("CarryDeadline", carry.deadline)
-		humanoid.WalkSpeed = 0
-		humanoid.JumpPower = 0
-		humanoid.JumpHeight = 0
-		if carry.highlight then
-			carry.highlight.FillColor = Color3.fromRGB(255, 240, 60)
-		end
-		Remotes.Notify:FireClient(thief, S.m("steal.trap_thief", { seconds = stun }), BAD)
-		Remotes.Notify:FireClient(owner, S.m("steal.trap_owner"), GOOD)
-		task.delay(stun, function()
-			if carries[thief] == carry and humanoid.Parent then
-				humanoid.WalkSpeed = StealService.CARRY_SPEED
-				humanoid.JumpPower = 50
-				humanoid.JumpHeight = 7.2
-				if carry.highlight then
-					carry.highlight.FillColor = Color3.fromRGB(255, 40, 60)
-				end
-			end
-		end)
+-- A bot steals by the same rules as a player: the brainrot must be stunned (its hearts slapped out),
+-- the bot must stand next to it, the base must not be locked, and the bot carries one brainrot at a time.
+-- A bot never takes a paid random brainrot. Returns true when the bot now carries it.
+function StealService.botBeginSteal(bot, model)
+	-- The allow-list is asked again right now, not only when the target was chosen: the owner's state may have changed.
+	local body0 = model.PrimaryPart
+	local plotModel0 = model.Parent and model.Parent.Parent
+	local owner0 = plotModel0 and PlotService.ownerOfModel(plotModel0)
+	if not botTargetCheck or not owner0 or not botTargetCheck(owner0, model, os.clock(), true) or not body0 then
+		return false
 	end
+	local plotModel = model.Parent and model.Parent.Parent
+	local owner = plotModel and PlotService.ownerOfModel(plotModel)
+	local uid = model:GetAttribute("Uid")
+	local body = model.PrimaryPart
+	local botRoot = rootOf(bot)
+	local humanoid = humanoidOf(bot)
+	if closing or not owner or not owner.Parent or type(uid) ~= "string" or model:GetAttribute("StunnedUntil") == nil then
+		return false
+	end
+	local prompt = body and body:FindFirstChild("StealPrompt")
+	if not prompt or not botRoot or not humanoid or humanoid.Health <= 0 then
+		return false
+	end
+	if (botRoot.Position - body.Position).Magnitude > prompt.MaxActivationDistance + 6 then
+		return false
+	end
+	if StealService.isLocked(owner) or carries[bot] then
+		return false
+	end
+	local ownerData = DataService.get(owner)
+	if not ownerData then
+		return false
+	end
+	local entry
+	for index, candidate in ipairs(ownerData.creatures) do
+		if candidate.uid == uid then
+			if Formulas.isPaidRandom(candidate) then
+				return false
+			end
+			entry = table.remove(ownerData.creatures, index)
+			break
+		end
+	end
+	if not entry then
+		return false
+	end
+	beginCarry(bot, owner, ownerData, entry, botRoot, humanoid)
+	return true
+end
 
-	DataService.markDirty(owner)
-	PlotService.render(owner)
+-- The bot ran far enough with the brainrot (BotService decides when). It never keeps it: the brainrot goes back to
+-- its owner's data and the owner gets a note. The pressure stays (the bot runs, a player can slap it), the loss does not.
+function StealService.botDeliver(bot)
+	if carries[bot] then
+		bot.escaped = (bot.escaped or 0) + 1
+		endCarry(bot, false, S.m("steal.reason_timeout"))
+	end
+end
 
-	local name = displayName(entry)
-	Remotes.Notify:FireClient(thief, S.m("steal.carry", { name = name }), WARN)
-	Remotes.Notify:FireClient(owner, S.m("steal.alarm", { thief = thief.DisplayName, name = name }), BAD)
-	Remotes.Sfx:FireClient(owner, "alarm")
+-- The bot leaves the server (or the last human left): a brainrot it carries goes back to its owner.
+function StealService.releaseBot(bot)
+	if carries[bot] then
+		endCarry(bot, false, S.m("steal.reason_shutdown"))
+	end
+	lastSlap[bot] = nil
+end
+
+-- What the bot carries now: { owner, entry, deadline } or nil.
+function StealService.carryOf(thief)
+	return carries[thief]
 end
 
 local function onLockPrompt(player, prompt)
@@ -447,7 +555,7 @@ end
 
 -- A Slapper hit on someone else's brainrot: minus 1 heart. At zero the brainrot is stunned and can be stolen.
 -- Returns true if a brainrot was hit.
-local function hitBrainrot(player, root)
+local function hitBrainrot(player, root, only)
 	if carries[player] then
 		return false
 	end
@@ -463,7 +571,7 @@ local function hitBrainrot(player, root)
 		if plot and not StealService.isLocked(owner) then
 			for _, model in ipairs(plot.model.Creatures:GetChildren()) do
 				local base = model:GetAttribute("BaseCFrame")
-				if base and (model:GetAttribute("Hp") or 0) > 0 then
+				if (only == nil or model == only) and base and (model:GetAttribute("Hp") or 0) > 0 then
 					local offset = base.Position - root.Position
 					local flat = Vector3.new(offset.X, 0, offset.Z)
 					local distance = flat.Magnitude
@@ -494,7 +602,9 @@ local function hitBrainrot(player, root)
 	local name = if creatureId then S.m(Creatures.get(creatureId).nameKey) else S.m("steal.brainrot")
 	if hp == 0 then
 		target:SetAttribute("StunnedUntil", now() + StealService.STUN_TIME)
-		Remotes.Notify:FireClient(player, S.m("steal.stunned_thief", { name = name }), GOOD)
+		if not player.IsBot then
+			Remotes.Notify:FireClient(player, S.m("steal.stunned_thief", { name = name }), GOOD)
+		end
 		Remotes.Notify:FireClient(targetOwner, S.m("steal.stunned_owner", { name = name }), BAD)
 		Remotes.Sfx:FireClient(targetOwner, "alarm")
 	elseif not hitAlertAt[targetOwner] or os.clock() - hitAlertAt[targetOwner] > 8 then
@@ -565,9 +675,39 @@ local function playSwing(player)
 	track:Play(0.05)
 end
 
+-- A player's slap on the bots in front of them: the bot is pushed back, a thief bot drops the brainrot.
+-- Slapping a bot does not count for quests or achievements ("slap"), a thief bot does ("slapThief").
+local function slapBots(player, root, facing)
+	local hit = false
+	for _, bot in ipairs(botSource()) do
+		local botRoot = rootOf(bot)
+		local humanoid = humanoidOf(bot)
+		if botRoot and humanoid and humanoid.Health > 0 then
+			local offset = botRoot.Position - root.Position
+			local flat = Vector3.new(offset.X, 0, offset.Z)
+			if flat.Magnitude <= StealService.SLAP_RANGE and flat.Magnitude > 0.01 then
+				if flat.Unit:Dot(Vector3.new(facing.X, 0, facing.Z).Unit) > 0.2 then
+					botRoot.AssemblyLinearVelocity = flat.Unit * StealService.SLAP_FORCE + Vector3.new(0, 35, 0)
+					bot.slappedBy, bot.slappedAt = player, os.clock()
+					hit = true
+					if carries[bot] then
+						Actions.fire(player, "slapThief", 1)
+						endCarry(bot, false, S.m("steal.reason_slapped", { name = player.DisplayName }))
+						Remotes.Notify:FireClient(player, S.m("steal.slap_thief"), GOOD)
+						Remotes.Sfx:FireClient(player, "success")
+					end
+				end
+			end
+		end
+	end
+	return hit
+end
+
 -- Slapper: pushes players back. If you slap a thief, they drop the brainrot.
--- On someone else's brainrot it removes a heart.
-local function slap(player)
+-- On someone else's brainrot it removes a heart. A bot slaps through here too (same cooldown, range and force),
+-- but it does not hit the boss and does not push other bots.
+local function slap(player, botTarget)
+	local isBot = player.IsBot == true
 	local nowClock = os.clock()
 	if lastSlap[player] and nowClock - lastSlap[player] < StealService.SLAP_COOLDOWN then
 		return
@@ -575,11 +715,11 @@ local function slap(player)
 	lastSlap[player] = nowClock
 
 	local root = rootOf(player)
-	if not root or not MoveGuardService.canAct(player) then
+	if not root or (not isBot and not MoveGuardService.canAct(player)) then
 		return
 	end
 	playSwing(player)
-	local hit = BossService.tryHit(player, root)
+	local hit = if isBot then false else BossService.tryHit(player, root)
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= player then
 			local otherRoot = rootOf(other)
@@ -593,24 +733,41 @@ local function slap(player)
 						local velocity = flat.Unit * StealService.SLAP_FORCE + Vector3.new(0, 35, 0)
 						Remotes.Knockback:FireClient(other, velocity, true) -- true: the slap sound comes from SlapFx
 						MoveGuardService.knockback(other, StealService.SLAP_FORCE)
-						Actions.fire(player, "slap", 1)
 						hit = true
+						if not isBot then
+							Actions.fire(player, "slap", 1)
+						end
 						if carries[other] then
-							Actions.fire(player, "slapThief", 1)
+							if not isBot then
+								Actions.fire(player, "slapThief", 1)
+							end
 							endCarry(other, false, S.m("steal.reason_slapped", { name = player.DisplayName }))
-							Remotes.Notify:FireClient(player, S.m("steal.slap_thief"), GOOD)
-							Remotes.Sfx:FireClient(player, "success")
+							if not isBot then
+								Remotes.Notify:FireClient(player, S.m("steal.slap_thief"), GOOD)
+								Remotes.Sfx:FireClient(player, "success")
+							end
 						end
 					end
 				end
 			end
 		end
 	end
-	if hitBrainrot(player, root) then
+	if not isBot and slapBots(player, root, root.CFrame.LookVector) then
+		hit = true
+	end
+	-- A player hits the nearest brainrot in front. A bot hits only the brainrot it came for (botTarget) and nothing
+	-- else: a slap at a player never touches a brainrot, and a brainrot standing in the way is left alone.
+	if (not isBot or botTarget ~= nil) and hitBrainrot(player, root, botTarget) then
 		hit = true
 	end
 	-- Everyone's client plays the slap (hit) or the whoosh (miss) in 3D on the swinging character.
-	Remotes.SlapFx:FireAllClients(player, hit)
+	-- A bot is not a Player: the client gets its character.
+	Remotes.SlapFx:FireAllClients(if isBot then player.Character else player, hit)
+end
+
+-- A bot swings the Slapper (BotService calls this; the cooldown is checked here, like for players).
+function StealService.botSlap(bot, targetModel)
+	slap(bot, targetModel)
 end
 
 local function createSlapper()
@@ -645,6 +802,9 @@ local function createSlapper()
 	tool.GripPos = Vector3.new(0, -1.2, 0)
 	return tool
 end
+
+-- A fresh Slapper for a bot to hold (the bot swings it through StealService.botSlap).
+StealService.newSlapper = createSlapper
 
 local function watchTool(tool, player)
 	tool.Activated:Connect(function()
@@ -770,6 +930,13 @@ function StealService.init()
 								other.Character:PivotTo(outside)
 							end
 						end
+						-- Bots are kept out of a locked base too (they have no movement budget to update).
+						for _, bot in ipairs(botSource()) do
+							local root = rootOf(bot)
+							if root and PlotService.isInside(plot, root.Position) then
+								bot.Character:PivotTo(PlotService.outsideCFrame(plot, root.Position))
+							end
+						end
 					end
 				end
 			end
@@ -778,7 +945,12 @@ function StealService.init()
 			for thief, carry in pairs(carries) do
 				local plot = PlotService.getPlot(thief)
 				local root = rootOf(thief)
-				if MoveGuardService.exceeded(thief) then
+				if thief.IsBot then
+					-- A bot is not a player: no movement budget and no base. BotService delivers it (botDeliver), the time runs out here.
+					if t > carry.deadline then
+						endCarry(thief, false, S.m("steal.reason_timeout"))
+					end
+				elseif MoveGuardService.exceeded(thief) then
 					endCarry(thief, false, S.m("steal.reason_too_fast"))
 				elseif
 					plot

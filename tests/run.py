@@ -10,7 +10,7 @@ MODULES = ["Strings", "Config/Rarities", "Config/Creatures", "Config/Mutations",
            "Config/Events", "Config/Daily", "Config/Achievements", "Config/Codes", "Config/Skins", "Config/Battles",
            "Util/Format", "Util/Formulas"]
 # Всё остальное из shared: нужно, только когда запускается вся игра (world).
-WORLD_MODULES = ["Remotes", "Config/Admins", "Config/Music", "Config/Social", "Config/Sounds", "Config/Tutorial", "Config/Funnels",
+WORLD_MODULES = ["Remotes", "Config/Bots", "Config/Admins", "Config/Music", "Config/Social", "Config/Sounds", "Config/Tutorial", "Config/Funnels",
                  "Util/CreatureModel"]
 
 
@@ -76,10 +76,24 @@ def translation_entries():
     return "__translationEntries = {\n" + ",\n".join(rows) + "\n}\n"
 
 
+BOTS_MODULE = "Config/Bots"
+BOTS_SPEC = "bots.spec.luau"
+
+
+def bots_config(enabled):
+    """NPC-боты (14.11): в каждом мире теста, кроме bots.spec, они выключены в самом конфиге (`Enabled`),
+    иначе при двух игроках они гуляли бы и крали у тестовых игроков. Замена должна сработать, иначе ошибка."""
+    text = read("src", "shared", BOTS_MODULE + ".luau")
+    assert "Enabled = true" in text, "в Config/Bots.luau нет строки «Enabled = true»"
+    text = text.replace("Enabled = true", "Enabled = " + ("true" if enabled else "false"), 1)
+    return '__defs["%s"] = function(script)' % BOTS_MODULE + chr(10) + text + chr(10) + 'end' + chr(10)
+
+
 def world(spec, locale):
     """Запускает spec с настоящими сервером и клиентом на заглушке мира."""
     extra = [f'__LOCALE = "{locale}"\n', translation_entries(), read("tests", "world.luau")]
-    extra += [module_def(name, "src", "shared", name + ".luau") for name in WORLD_MODULES]
+    extra += [module_def(name, "src", "shared", name + ".luau") for name in WORLD_MODULES if name != BOTS_MODULE]
+    extra.append(bots_config(spec == BOTS_SPEC))
     extra.append(module_def("TextWidths", "tests", "text_widths.luau"))  # замер ширины знаков (layout.spec)
     extra += folder_defs("server", "") + folder_defs("client", "client/")
     return run(spec, extra)
@@ -340,10 +354,41 @@ def publish_tool_tests():
     return code
 
 
+SOUND_ID = re.compile(r'\b(?:id|alt)\s*=\s*"([^"]*)"')
+
+
+def check_sounds(text=None):
+    """14.11: звуки игры — только публичные rbxassetid://<число> (бесплатные, Creator Store). Встроенных
+    rbxasset://sounds/*.wav нет в клиенте Roblox (звуки были немыми). text: текст Config/Sounds.luau для
+    отрицательного теста. Пустой набор не проходит: ссылок не меньше 12 (9 звуков игры и 4 шлепалки)."""
+    code = "\n".join(line.split("--")[0] for line in (text or read("src", "shared", "Config", "Sounds.luau")).splitlines())
+    ids = SOUND_ID.findall(code)
+    problems = [f"звук не rbxassetid://<число>: {value}" for value in ids if not re.fullmatch(r"rbxassetid://\d{6,}", value)]
+    if len(ids) < 12:
+        problems.append(f"найдено звуков {len(ids)}, нужно не меньше 12: проверять нечего")
+    if text is None:
+        for problem in problems:
+            print("❌ " + problem)
+        if not problems:
+            print(f"✅ Звуки игры: {len(ids)} ссылок, все rbxassetid://<число>, встроенных rbxasset:// нет")
+    return problems
+
+
+def negative_sounds():
+    """Отрицательный тест check_sounds: встроенный rbxasset:// и пустой набор должны ловиться."""
+    good = "\n".join('\ta%d = { id = "rbxassetid://91140%05d", volume = 1 },' % (n, n) for n in range(12))
+    bad = good + '\n\tb = { id = "rbxasset://sounds/button.wav" },'
+    ok = not check_sounds(good) and len(check_sounds(bad)) == 1 and bool(check_sounds("-- пусто\nreturn {}"))
+    print("✅ Отрицательный тест звуков: rbxasset:// и пустой набор ловятся" if ok else "❌ Отрицательный тест звуков: проверка пропускает плохое")
+    return 0 if ok else 1
+
+
 def main():
     economy = run("economy.spec.luau")
     dictionary = check_dictionary()
     text_assign = check_text_assignments()
+    sounds = 1 if check_sounds() else 0
+    sounds_negative = negative_sounds()
     funnel_calls = check_funnel_calls()
     show_keys = check_show_keys()
     show_keys_negative = negative_show_keys()
@@ -363,6 +408,7 @@ def main():
     screens_kk = world("screens.spec.luau", "kk-kz")
     steal = world("steal.spec.luau", "en-us")
     slap = world("slap.spec.luau", "en-us")
+    bots = world("bots.spec.luau", "en-us")
     policy = world("policy.spec.luau", "en-us")
     trade = world("trade.spec.luau", "en-us")
     trade_ru = world("trade.spec.luau", "ru-ru")
@@ -386,7 +432,7 @@ def main():
     invite_ru = world("invite.spec.luau", "ru-ru")
     invite_kk = world("invite.spec.luau", "kk-kz")
 
-    return (invite or invite_ru or invite_kk or economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or policy or trade or trade_ru or trade_kk
+    return (invite or invite_ru or invite_kk or economy or purchases or dictionary or text_assign or sounds or sounds_negative or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or bots or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
             or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue or publish_tool)
 

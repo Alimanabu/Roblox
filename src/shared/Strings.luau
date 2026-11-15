@@ -520,6 +520,7 @@ local Source = {
 	["steal.announce"] = "🚨 {thief} stole {name} from {owner}!",
 	["steal.lost"] = "😭 {thief} stole your {name}!",
 	["steal.returned"] = "✅ {name} is back home!",
+	["steal.bot_returned"] = "✅ [BOT] dropped your brainrot — it's back on your base",
 	["steal.failed"] = "❌ Steal failed: {reason}",
 	["steal.hit_first"] = "👋 Knock out its ❤️ first: hit it with the Slapper!",
 	["steal.base_locked"] = "🔒 This base is locked!",
