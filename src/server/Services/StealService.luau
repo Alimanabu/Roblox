@@ -67,6 +67,11 @@ local hintAt = {} -- [player] = os.clock(): the "slap first" hint
 local botSource = function()
 	return {}
 end
+-- BotService's allow-list (canTarget): may a bot take this brainrot of this owner right now? Nil: no bot takes anything.
+local botTargetCheck = nil
+function StealService.setBotTargetCheck(check)
+	botTargetCheck = check
+end
 function StealService.setBotSource(source)
 	botSource = source
 end
@@ -228,12 +233,16 @@ local function endCarry(thief, success, reason)
 	local name = displayName(entry)
 	updateRobbed(owner)
 
-	-- Before crediting we check the spot again: the thief could have filled the base while running.
-	-- A bot keeps no profile: only the owner's side of the steal is real (the brainrot was taken from a human).
+	-- A bot never keeps a brainrot taken from a human (decision 14.11): whatever ends its carry, the brainrot
+	-- goes back to the owner. This is an invariant here, not a case: a bot can never "succeed".
 	local isBot = thief.IsBot == true
-	local thiefData = success and not isBot and DataService.get(thief)
-	if not success or isBot then
-		-- A bot never takes a paid random brainrot (refused at the start): nothing to re-check.
+	if isBot then
+		success = false
+	end
+	-- Before crediting we check the spot again: the thief could have filled the base while running.
+	local thiefData = success and DataService.get(thief)
+	if not success then
+		-- nothing to credit
 	elseif not thiefData then
 		success, reason = false, S.m("steal.reason_thief_left")
 	elseif success and Formulas.isFromPastLife(entry, thief.UserId, thiefData.rebirths) then
@@ -249,9 +258,7 @@ local function endCarry(thief, success, reason)
 	end
 
 	if success then
-		if isBot then
-			thief.stolen = (thief.stolen or 0) + 1
-		else
+		do
 			local newEntry = { uid = tostring(thiefData.nextUid), id = entry.id, mut = entry.mut, paid = entry.paid, source = entry.source, skin = entry.skin, lineage = Formulas.mergeLineage(
 				table.clone(Formulas.lineageOf(entry, owner.UserId, 0)),
 				{ [tostring(thief.UserId)] = thiefData.rebirths }
@@ -296,7 +303,11 @@ local function endCarry(thief, success, reason)
 		DataService.markDirty(owner)
 		PlotService.render(owner)
 		if owner.Parent then
-			Remotes.Notify:FireClient(owner, S.m("steal.returned", { name = name }), GOOD)
+			if isBot then
+				Remotes.Notify:FireClient(owner, S.m("steal.bot_returned"), GOOD)
+			else
+				Remotes.Notify:FireClient(owner, S.m("steal.returned", { name = name }), GOOD)
+			end
 		end
 	end
 	if thief.Parent and not isBot then
@@ -446,6 +457,13 @@ end
 -- the bot must stand next to it, the base must not be locked, and the bot carries one brainrot at a time.
 -- A bot never takes a paid random brainrot. Returns true when the bot now carries it.
 function StealService.botBeginSteal(bot, model)
+	-- The allow-list is asked again right now, not only when the target was chosen: the owner's state may have changed.
+	local body0 = model.PrimaryPart
+	local plotModel0 = model.Parent and model.Parent.Parent
+	local owner0 = plotModel0 and PlotService.ownerOfModel(plotModel0)
+	if not botTargetCheck or not owner0 or not botTargetCheck(owner0, model, os.clock(), true) or not body0 then
+		return false
+	end
 	local plotModel = model.Parent and model.Parent.Parent
 	local owner = plotModel and PlotService.ownerOfModel(plotModel)
 	local uid = model:GetAttribute("Uid")
@@ -486,10 +504,12 @@ function StealService.botBeginSteal(bot, model)
 	return true
 end
 
--- The bot got away with the brainrot (BotService decides when it has run far enough).
+-- The bot ran far enough with the brainrot (BotService decides when). It never keeps it: the brainrot goes back to
+-- its owner's data and the owner gets a note. The pressure stays (the bot runs, a player can slap it), the loss does not.
 function StealService.botDeliver(bot)
 	if carries[bot] then
-		endCarry(bot, true)
+		bot.escaped = (bot.escaped or 0) + 1
+		endCarry(bot, false, S.m("steal.reason_timeout"))
 	end
 end
 
@@ -535,7 +555,7 @@ end
 
 -- A Slapper hit on someone else's brainrot: minus 1 heart. At zero the brainrot is stunned and can be stolen.
 -- Returns true if a brainrot was hit.
-local function hitBrainrot(player, root)
+local function hitBrainrot(player, root, only)
 	if carries[player] then
 		return false
 	end
@@ -551,7 +571,7 @@ local function hitBrainrot(player, root)
 		if plot and not StealService.isLocked(owner) then
 			for _, model in ipairs(plot.model.Creatures:GetChildren()) do
 				local base = model:GetAttribute("BaseCFrame")
-				if base and (model:GetAttribute("Hp") or 0) > 0 then
+				if (only == nil or model == only) and base and (model:GetAttribute("Hp") or 0) > 0 then
 					local offset = base.Position - root.Position
 					local flat = Vector3.new(offset.X, 0, offset.Z)
 					local distance = flat.Magnitude
@@ -686,7 +706,7 @@ end
 -- Slapper: pushes players back. If you slap a thief, they drop the brainrot.
 -- On someone else's brainrot it removes a heart. A bot slaps through here too (same cooldown, range and force),
 -- but it does not hit the boss and does not push other bots.
-local function slap(player)
+local function slap(player, botTarget)
 	local isBot = player.IsBot == true
 	local nowClock = os.clock()
 	if lastSlap[player] and nowClock - lastSlap[player] < StealService.SLAP_COOLDOWN then
@@ -735,7 +755,9 @@ local function slap(player)
 	if not isBot and slapBots(player, root, root.CFrame.LookVector) then
 		hit = true
 	end
-	if hitBrainrot(player, root) then
+	-- A player hits the nearest brainrot in front. A bot hits only the brainrot it came for (botTarget) and nothing
+	-- else: a slap at a player never touches a brainrot, and a brainrot standing in the way is left alone.
+	if (not isBot or botTarget ~= nil) and hitBrainrot(player, root, botTarget) then
 		hit = true
 	end
 	-- Everyone's client plays the slap (hit) or the whoosh (miss) in 3D on the swinging character.
@@ -744,7 +766,9 @@ local function slap(player)
 end
 
 -- A bot swings the Slapper (BotService calls this; the cooldown is checked here, like for players).
-StealService.botSlap = slap
+function StealService.botSlap(bot, targetModel)
+	slap(bot, targetModel)
+end
 
 local function createSlapper()
 	local tool = Instance.new("Tool")

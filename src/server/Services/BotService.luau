@@ -7,7 +7,8 @@
 -- StealService.slap (same cooldown, range and force), stunned brainrots, locks, the join shield and traps work on it.
 -- Being kind to real people: a bot never takes a paid random brainrot or one of the rare ones announced to the server,
 -- leaves players who are still in the tutorial alone, robs one owner at most once per OWNER_COOLDOWN and only one bot
--- steals at a time. A player can slap a thief bot: it drops the brainrot and the owner gets it back.
+-- steals at a time. A bot NEVER keeps a brainrot taken from a human (decision 14.11): when it gets away (or a player slaps
+-- it, or time runs out) the brainrot goes back to the owner's data with a note. The pressure stays, the loss does not.
 -- The behaviour is updated at most 4 times per second (TICK).
 
 local Players = game:GetService("Players")
@@ -54,10 +55,12 @@ local OUTFITS = {
 	{ Color3.fromRGB(255, 200, 60), Color3.fromRGB(50, 50, 110) },
 }
 
-local pathfinding = nil
+-- The path service (nil where it does not exist). A field, so the tests can put a counting one in its place.
+BotService.pathfinding = nil
 pcall(function()
-	pathfinding = game:GetService("PathfindingService")
+	BotService.pathfinding = game:GetService("PathfindingService")
 end)
+BotService.PATH_RETRY = 2.5 -- after a failed path computation no new one for this long (walk straight meanwhile)
 
 local folder
 local bots = {} -- live bots in the order they appeared
@@ -221,10 +224,10 @@ local function spawnBot(now)
 		since = now,
 		idleUntil = now + BotService.rng:NextNumber(1, 3),
 		nextStealAt = now + between(BotService.FIRST_STEAL_DELAY),
-		stash = 0, -- what it caught, crafted and stole (a bot keeps no inventory anywhere, this is only a counter)
+		stash = 0, -- what it caught and crafted (a bot keeps no inventory anywhere, this is only a counter)
 		collected = 0,
 		crafted = 0,
-		stolen = 0,
+		escaped = 0, -- thefts the bot ran away with (the brainrot always goes back to its owner)
 		leaving = false,
 	}
 	function bot:SetAttribute(key, value)
@@ -237,10 +240,12 @@ local function spawnBot(now)
 		rootOf(bot):SetNetworkOwner(nil)
 	end)
 	pcall(addWalkAnimation, humanoidOf(bot))
-	pcall(function()
-		local tool = StealService.newSlapper()
-		tool.Parent = model
+	local gave, problem = pcall(function()
+		StealService.newSlapper().Parent = model
 	end)
+	if not gave then
+		warn("[Bots] no Slapper for a bot:", problem)
+	end
 	table.insert(bots, bot)
 	lastSpawn = now
 	return bot
@@ -267,13 +272,15 @@ BotService.mover = function(bot, target)
 	if not root or not humanoid then
 		return
 	end
+	local pathfinding = BotService.pathfinding
 	if not pathfinding or flat(root.Position, target) < 14 then
 		bot.waypoints = nil
 		humanoid:MoveTo(target)
 		return
 	end
 	local now = os.clock()
-	if not bot.waypoints or not bot.pathTarget or (bot.pathTarget - target).Magnitude > 8 or now - bot.pathAt > 4 then
+	local stale = not bot.waypoints or not bot.pathTarget or (bot.pathTarget - target).Magnitude > 8 or now - bot.pathAt > 4
+	if stale and now >= (bot.pathRetryAt or 0) then
 		bot.pathTarget, bot.pathAt, bot.waypoints, bot.waypointIndex = target, now, nil, 2
 		local ok, path = pcall(pathfinding.CreatePath, pathfinding, { AgentRadius = 2.2, AgentHeight = 5.5, AgentCanJump = true })
 		if ok and path then
@@ -281,6 +288,10 @@ BotService.mover = function(bot, target)
 			if computed and path.Status == Enum.PathStatus.Success then
 				bot.waypoints = path:GetWaypoints()
 			end
+		end
+		if not bot.waypoints then
+			-- No path (unreachable target, service error): do not ask again every tick.
+			bot.pathRetryAt = now + BotService.PATH_RETRY
 		end
 	end
 	local waypoints = bot.waypoints
@@ -315,10 +326,11 @@ local function tutorialDone(data)
 end
 
 -- The brainrots of a player a bot may go after. Allow-list: every condition must hold.
-local function stealable(owner, model, data, plot)
+local function stealable(owner, model, data, plot, started)
 	local uid = model:GetAttribute("Uid")
 	local base = model:GetAttribute("BaseCFrame")
-	if type(uid) ~= "string" or not base or (model:GetAttribute("Hp") or 0) <= 0 then
+	-- When choosing, the brainrot must still have hearts; at the moment of the steal it is stunned (0 hearts) on purpose.
+	if type(uid) ~= "string" or not base or (not started and (model:GetAttribute("Hp") or 0) <= 0) then
 		return false
 	end
 	-- Only the ground level: a bot on the ground cannot reach the second floor.
@@ -336,7 +348,7 @@ end
 
 -- May a bot go after this brainrot of this owner right now? An allow-list: every condition must hold, anything
 -- not recognised means no. (tests/bots.spec.luau runs a table of 12 allowed and 14 refused cases against it.)
-function BotService.canTarget(owner, model, now)
+function BotService.canTarget(owner, model, now, started)
 	local data = DataService.get(owner)
 	local plot = PlotService.getPlot(owner)
 	local robbedAt = lastRobbed[owner]
@@ -346,7 +358,7 @@ function BotService.canTarget(owner, model, now)
 		and tutorialDone(data)
 		and not StealService.isLocked(owner)
 		and not (robbedAt and now - robbedAt < BotService.OWNER_COOLDOWN)
-		and stealable(owner, model, data, plot)
+		and stealable(owner, model, data, plot, started)
 end
 
 local function findStealTarget(bot, now)
@@ -532,7 +544,7 @@ local function stepSteal(bot, now, root)
 	face(bot, body.Position)
 	if job.phase == "slap" then
 		if model:GetAttribute("StunnedUntil") == nil then
-			StealService.botSlap(bot) -- the cooldown is checked there, like for a player
+			StealService.botSlap(bot, model) -- the cooldown is checked there, like for a player; only this brainrot is hit
 			return
 		end
 		job.phase, job.holdUntil = "hold", now + (model:GetAttribute("StealHold") or 1)
@@ -560,8 +572,7 @@ local function stepFlee(bot, now, root)
 		return
 	end
 	if flat(root.Position, bot.fleeTo) < 4 then
-		StealService.botDeliver(bot)
-		bot.stash += 1
+		StealService.botDeliver(bot) -- the brainrot goes back to its owner, the bot only "got away"
 		giveUpSteal(bot, now)
 	else
 		BotService.mover(bot, bot.fleeTo)
@@ -702,6 +713,7 @@ function BotService.init()
 	folder.Name = "Bots"
 	folder.Parent = workspace
 	StealService.setBotSource(BotService.list)
+	StealService.setBotTargetCheck(BotService.canTarget)
 	if not Bots.Enabled then
 		return
 	end

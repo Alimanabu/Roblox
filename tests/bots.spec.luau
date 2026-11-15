@@ -40,6 +40,9 @@ do
 	end
 end
 
+-- Боевой режим (не Studio): профили пишутся в DataStore (в памяти), и тест читает сохранение хозяина.
+World.studio = false
+
 local joined = 0
 Players.PlayerAdded:Connect(function()
 	joined += 1
@@ -64,6 +67,8 @@ local Config = shared_require("Config/Bots")
 
 local TICK = BotService.TICK
 local FAR = Vector3.new(600, 5, 600)
+
+local realMover = BotService.mover -- настоящий (с путём), нужен тесту «пауза после неудачного расчёта пути»
 
 -- Бот шагает к цели со скоростью своего Humanoid (как настоящий MoveTo), раз в тик.
 BotService.mover = function(bot, target)
@@ -211,6 +216,22 @@ local function has(player, entry)
 	return false
 end
 
+-- Что лежит в сохранении игрока (DataStore в памяти): сколько записей с этим uid и сколько потерь от воров записано.
+local function savedState(player, uid)
+	local store = World.services.DataStoreService:GetDataStore("BrainrotFactory_v1")
+	local saved = store.data["player_" .. player.UserId] -- заглушка DataStore в памяти (tests/world.luau, memoryStore)
+	if type(saved) ~= "table" or type(saved.creatures) ~= "table" then
+		return -1, -1
+	end
+	local copies = 0
+	for _, item in ipairs(saved.creatures) do
+		if item.uid == uid then
+			copies += 1
+		end
+	end
+	return copies, (saved.stats and saved.stats.lostToThieves) or 0
+end
+
 local function give(player, id, source)
 	local entry = FactoryService.give(player, id or "bananito_ninjini", "normal", source)
 	World.advance(0.5)
@@ -290,6 +311,33 @@ scenario("2 игрока: 3 бота; 3 игрока: бот уходит, ос�
 	check(waitFor(function()
 		return botCount() == 3
 	end, 30), "после ухода третьего ботов " .. botCount() .. ", нужно 3")
+end)
+
+scenario("уход отменили посреди «уходит»: бот не зависает, а возвращается к делам", function()
+	local third = addHuman(4020, "Third2")
+	put(third, FAR + Vector3.new(-30, 0, 0))
+	local leaver
+	check(waitFor(function()
+		for _, bot in ipairs(BotService.list()) do
+			if bot.state == "leave" then
+				leaver = bot
+				return true
+			end
+		end
+		return false
+	end, 40), "при 3 игроках никто не пошёл к выходу: " .. stateReport())
+	World.removePlayer(third) -- людей снова двое: уход отменён
+	World.advance(1)
+	if leaver then
+		check(leaver.leaving == false, "уход не отменён")
+		check(leaver.removed ~= true, "бот ушёл, хотя уход отменили")
+		check(leaver.state ~= "leave", "бот остался в состоянии «уходит» после отмены: " .. tostring(leaver.state))
+		step(6)
+		check(leaver.state ~= "leave" and leaver.removed ~= true, "бот так и не вернулся к делам: " .. tostring(leaver.state))
+	end
+	check(waitFor(function()
+		return botCount() == 3
+	end, 30), "после отмены ботов не 3: " .. botCount())
 end)
 
 scenario("4 игрока: боты уходят по одному, с паузой, не все разом; новых нет", function()
@@ -458,6 +506,183 @@ scenario("таблица целей: 12 брейнротов, которых б�
 	DataService.get(owner).tutorial.step = 1 -- следующие сценарии начинаются с «хозяин в обучении»
 end)
 
+-- Шлепок бота бьёт только свою цель (ревью 14.11, п. 2): брейнрот, стоящий ближе, не страдает.
+scenario("шлепок бота: только цель кражи; ответный шлепок брейнроты не трогает", function()
+	setWeights({ wander = 1 })
+	local rng = Random.new(5)
+	local bot = BotService.list()[1]
+	for _, variant in ipairs({
+		{ "платный", "bananito_ninjini", Formulas.SOURCE_COINS },
+		{ "редкий (aura)", Formulas.randomCreatureOf("aura", rng).id, Formulas.SOURCE_FREE },
+	}) do
+		World.advance(2)
+		local bodyBot = bot.Character.HumanoidRootPart
+		bot.Character.Humanoid.WalkSpeed = 0
+		local origin = bodyBot.Position
+		bodyBot.CFrame = CFrame.lookAt(origin, origin + Vector3.new(0, 0, 1))
+		local targetEntry = give(owner)
+		local nearEntry = give(owner, variant[2], variant[3])
+		local target, near = creatureModel(owner, targetEntry), creatureModel(owner, nearEntry)
+		target:SetAttribute("BaseCFrame", CFrame.new(origin.X, origin.Y, origin.Z + 6))
+		near:SetAttribute("BaseCFrame", CFrame.new(origin.X, origin.Y, origin.Z + 3))
+		local targetHp, nearHp = target:GetAttribute("Hp"), near:GetAttribute("Hp")
+		StealService.botSlap(bot, target)
+		check(target:GetAttribute("Hp") == targetHp - 1, variant[1] .. ": цель кражи не получила удар")
+		check(near:GetAttribute("Hp") == nearHp, variant[1] .. ": бот ударил брейнрота, который стоял ближе (" .. tostring(near:GetAttribute("Hp")) .. " из " .. nearHp .. ")")
+		-- Замах без цели (как ответный) брейнрота не бьёт вообще.
+		World.advance(StealService.SLAP_COOLDOWN + 0.1)
+		StealService.botSlap(bot)
+		check(target:GetAttribute("Hp") == targetHp - 1 and near:GetAttribute("Hp") == nearHp, variant[1] .. ": замах без цели задел брейнрота")
+		-- Ответ на шлепок игрока: брейнроты в конусе целы, игрок получает отдачу.
+		World.advance(StealService.SLAP_COOLDOWN + 0.1)
+		local at = origin + Vector3.new(0, 0, -2)
+		put(watcher, at, origin)
+		local before = #knockbacksTo(watcher)
+		-- Игрок шлёпнул бота (сам удар игрока бьёт ближайший брейнрот, как у любого игрока, поэтому отмечаем удар напрямую).
+		bot.slappedBy, bot.slappedAt = watcher, os.clock()
+		World.advance(1.5)
+		check(#knockbacksTo(watcher) == before + 1, variant[1] .. ": бот не ответил игроку")
+		check(target:GetAttribute("Hp") == targetHp - 1 and near:GetAttribute("Hp") == nearHp, variant[1] .. ": ответный шлепок задел брейнрота")
+		bot.retaliated = nil
+		local list = DataService.get(owner).creatures
+		table.remove(list, table.find(list, nearEntry))
+		table.remove(list, table.find(list, targetEntry))
+		FactoryService.CreaturesChanged:Fire(owner)
+		World.advance(1)
+		bot.Character.Humanoid.WalkSpeed = StealService.NORMAL_SPEED
+		put(watcher, FAR + Vector3.new(30, 0, 0))
+	end
+end)
+
+-- Список разрешений спрашивается и в момент кражи (ревью 14.11, п. 4): состояние хозяина могло измениться.
+scenario("кража в момент удержания: состояние хозяина изменилось — кражи нет (1 можно, 6 нет)", function()
+	setWeights({ wander = 1 })
+	local bot = BotService.list()[1]
+	local rng = Random.new(9)
+	local aura = Formulas.randomCreatureOf("aura", rng).id
+	local freeId = "bananito_ninjini"
+	local function prepare()
+		finishTutorial(owner)
+		World.advance(1)
+		local entry = give(owner, freeId)
+		local model = creatureModel(owner, entry)
+		model:SetAttribute("Hp", 0)
+		model:SetAttribute("StunnedUntil", workspace:GetServerTimeNow() + 15)
+		local body = model.PrimaryPart.Position
+		bot.Character.Humanoid.WalkSpeed = 0
+		bot.Character.HumanoidRootPart.CFrame = CFrame.new(body + Vector3.new(0, 0, -3))
+		return entry, model
+	end
+	local function cleanup(entry)
+		StealService.releaseBot(bot)
+		local list = DataService.get(owner).creatures
+		local index
+		for position, item in ipairs(list) do
+			if item.uid == entry.uid then
+				index = position
+			end
+		end
+		if index then
+			table.remove(list, index)
+		end
+		FactoryService.CreaturesChanged:Fire(owner)
+		World.advance(1)
+	end
+	-- Можно: всё разрешено, кража начинается (и брейнрот возвращается хозяину при освобождении бота).
+	do
+		local entry, model = prepare()
+		local took = StealService.botBeginSteal(bot, model)
+		check(took == true and StealService.carryOf(bot) ~= nil, "контроль: при всех разрешениях бот не начал кражу")
+		check(not has(owner, entry), "контроль: брейнрот не взят в руки")
+		cleanup(entry)
+	end
+	local cases = {
+		{ "хозяин снова в обучении", function() DataService.get(owner).tutorial.step = 1 end },
+		{ "брейнрот стал редким (ранг 5)", function(entry) entry.id = aura end },
+		{ "брейнрот стал платным", function(entry) entry.source = Formulas.SOURCE_COINS end },
+		{ "брейнрот переехал на второй этаж", function(_, model)
+			local base = model:GetAttribute("BaseCFrame")
+			model:SetAttribute("BaseCFrame", CFrame.new(base.Position.X, base.Position.Y + 14, base.Position.Z))
+		end },
+		{ "брейнрот пропал из данных хозяина", function(entry) entry.uid = "moved" end },
+		{ "хозяин закрыл базу", function()
+			local plot = PlotService.getPlot(owner)
+			local button = plot.model.LockButton
+			place(owner, button.Position + Vector3.new(0, 2, 3))
+			World.prompt(button.LockPrompt, owner, 0)
+		end },
+	}
+	local wrong = 0
+	for _, case in ipairs(cases) do
+		local entry, model = prepare()
+		local originalUid = entry.uid
+		case[2](entry, model)
+		local took = StealService.botBeginSteal(bot, model)
+		if took or StealService.carryOf(bot) then
+			wrong += 1
+			print("   ложный пропуск при краже: " .. case[1])
+		end
+		entry.uid = originalUid
+		entry.id = freeId
+		entry.source = Formulas.SOURCE_FREE
+		cleanup(entry)
+		if case[1] == "хозяин закрыл базу" then
+			World.advance(StealService.LOCK_TIME + StealService.LOCK_COOLDOWN)
+			place(owner, FAR)
+		end
+	end
+	check(wrong == 0, "бот начал кражу при запрете: " .. wrong .. " из " .. #cases)
+	bot.Character.Humanoid.WalkSpeed = StealService.NORMAL_SPEED
+	DataService.get(owner).tutorial.step = 1
+end)
+
+-- ComputeAsync не каждый тик (ревью 14.11, п. 3).
+scenario("недостижимая цель: расчёт пути не чаще раза в 2,5 с (за 15 с не больше 8)", function()
+	setWeights({ wander = 1 })
+	local bot = BotService.list()[1]
+	local humanoid = bot.Character.Humanoid
+	local moves, computes = 0, 0
+	humanoid.MoveTo = function()
+		moves += 1
+	end
+	local function service(success)
+		return {
+			CreatePath = function()
+				return {
+					Status = if success then Enum.PathStatus.Success else Enum.PathStatus.NoPath,
+					ComputeAsync = function()
+						computes += 1
+					end,
+					GetWaypoints = function()
+						return { { Position = Vector3.new(50, 0, 50), Action = Enum.PathWaypointAction.Walk } }
+					end,
+				}
+			end,
+		}
+	end
+	local root = bot.Character.HumanoidRootPart
+	local target = root.Position + Vector3.new(120, 0, 0)
+	BotService.pathfinding = service(false)
+	for _ = 1, 60 do
+		realMover(bot, target)
+		World.advance(0.25)
+	end
+	check(computes <= 8, "расчётов пути за 15 с недостижимой цели: " .. computes .. " (нужно не больше 8)")
+	check(computes >= 1, "путь не считался вообще (проверка пуста)")
+	check(moves >= 55, "бот перестал идти напрямую после неудачи пути: шагов " .. moves)
+	-- Контроль: удачный путь не душится этой паузой (пересчёт раз в 4 с).
+	computes, moves = 0, 0
+	bot.waypoints, bot.pathTarget, bot.pathRetryAt = nil, nil, nil
+	BotService.pathfinding = service(true)
+	for _ = 1, 60 do
+		realMover(bot, target)
+		World.advance(0.25)
+	end
+	check(computes >= 3 and computes <= 5, "расчётов при удачном пути за 15 с: " .. computes)
+	BotService.pathfinding = nil
+	humanoid.MoveTo = nil
+end)
+
 scenario("новичок в обучении, платный и редкий брейнроты, чужие базы: бот не крадёт", function()
 	-- Хозяин ещё в обучении (шаг 1): у него и у Watcher бот ничего не берёт.
 	ownerEntry = give(owner)
@@ -504,6 +729,8 @@ scenario("бот ворует по правилам: удары с кулдау�
 	local model = creatureModel(owner, stolenEntry)
 	check(model:GetAttribute("MaxHp") == 5, "на земле не 5 ❤️: " .. tostring(model:GetAttribute("MaxHp")))
 	readyToSteal()
+	local countBefore = #DataService.get(owner).creatures
+	local notesBefore = #World.sent
 	local hits, lastHp, lastHitAt, maxThieves = {}, model:GetAttribute("Hp"), nil, 0
 	local sentBefore = swings()
 	local carriedAt
@@ -543,6 +770,11 @@ scenario("бот ворует по правилам: удары с кулдау�
 	check(theftBot.Character.Humanoid.WalkSpeed == StealService.CARRY_SPEED, "скорость вора-бота " .. tostring(theftBot.Character.Humanoid.WalkSpeed))
 	check(not has(owner, stolenEntry), "у хозяина остался украденный")
 	check(owner:GetAttribute("BeingRobbed") == 1, "у хозяина нет отметки «грабят»")
+	-- Сохранение посреди переноса (автосохранение, выход, сбой сервера): брейнрот в нём ровно один раз, потери не записано.
+	check(DataService.save(owner) == true, "сохранение посреди переноса не прошло")
+	local copiesMid, lostMid = savedState(owner, stolenEntry.uid)
+	check(copiesMid == 1, "в сохранении посреди переноса записей украденного " .. copiesMid .. " (нужна 1)")
+	check(lostMid == 0, "в сохранении посреди переноса записана потеря от воров: " .. lostMid)
 	-- Хозяин получил тревогу с подписью [BOT].
 	local alarm = false
 	for _, sent in ipairs(World.sent) do
@@ -551,13 +783,38 @@ scenario("бот ворует по правилам: удары с кулдау�
 		end
 	end
 	check(alarm, "хозяину не пришла тревога с [BOT]")
-	-- Доходит до места и уносит.
+	-- Доходит до места, но брейнрот не забирает насовсем (решение лида 14.11): он возвращается хозяину в его данные.
 	check(waitFor(function()
-		return theftBot.stolen == 1
-	end, 70), "бот не унёс брейнрота")
+		return theftBot.escaped == 1
+	end, 70), "бот не добежал до места")
 	check(StealService.carryOf(theftBot) == nil, "бот всё ещё несёт")
-	check(not has(owner, stolenEntry), "унесённый вернулся без причины")
-	check(DataService.get(owner).stats.lostToThieves == 1, "потеря не записана хозяину")
+	check(has(owner, stolenEntry), "брейнрот не вернулся хозяину после побега бота")
+	check(#DataService.get(owner).creatures == countBefore, "брейнротов у хозяина до кражи " .. countBefore .. ", после побега бота " .. #DataService.get(owner).creatures)
+	check((DataService.get(owner).stats.lostToThieves or 0) == 0, "потеря записана хозяину, хотя брейнрот вернулся")
+	check(creatureModel(owner, stolenEntry) ~= nil, "брейнрот не появился на базе хозяина")
+	local returnedNote = false
+	for index = notesBefore + 1, #World.sent do
+		local sent = World.sent[index]
+		if sent.remote == "Notify" and sent.player == owner then
+			local text = S.text(sent.args[1])
+			if text == S.t("steal.bot_returned") and string.find(text, "[BOT]", 1, true) and not string.find(text, "{", 1, true) then
+				returnedNote = true
+			end
+		end
+	end
+	check(returnedNote, "хозяину не пришло «" .. S.t("steal.bot_returned") .. "»")
+	if World.locale == "en-us" then
+		check(S.t("steal.bot_returned") == "✅ [BOT] dropped your brainrot — it's back on your base", "текст строки: " .. S.t("steal.bot_returned"))
+	end
+	-- Тот же экземпляр записи, без дубля: в данных хозяина ровно одна запись с этим uid, и это та самая таблица.
+	local copies, same = 0, false
+	for _, item in ipairs(DataService.get(owner).creatures) do
+		if item.uid == stolenEntry.uid then
+			copies += 1
+			same = rawequal(item, stolenEntry)
+		end
+	end
+	check(copies == 1 and same, "после побега бота у хозяина записей украденного " .. copies .. " (нужна 1, та же таблица: " .. tostring(same) .. ")")
 	check(theftBot.Character.Humanoid.WalkSpeed == StealService.NORMAL_SPEED, "скорость после кражи не вернулась")
 	check(owner:GetAttribute("BeingRobbed") == nil, "отметка «грабят» не снята")
 end)
@@ -811,7 +1068,7 @@ end)
 scenario("нет в лидерах, DataStore и счётчиках", function()
 	World.advance(130) -- автосохранение и запись таблиц лидеров
 	check(#storeKeys > 0, "в DataStore не писали и не читали вообще (проверка пуста)")
-	local real = { ["4001"] = true, ["4002"] = true, ["4003"] = true, ["4004"] = true, ["4005"] = true, ["4006"] = true }
+	local real = { ["4001"] = true, ["4002"] = true, ["4003"] = true, ["4004"] = true, ["4005"] = true, ["4006"] = true, ["4020"] = true }
 	for _, key in ipairs(storeKeys) do
 		local digits = string.match(key, "(%-?%d+)")
 		check(digits ~= nil and real[digits] == true and not string.find(key, "-", 1, true) and not string.find(key, "Bot", 1, true), "в DataStore ключ не человека: " .. key)
@@ -820,7 +1077,7 @@ scenario("нет в лидерах, DataStore и счётчиках", function()
 		check(DataService.get(bot) == nil, "у бота есть профиль")
 		check(rawget(bot, "leaderstats") == nil and bot.Character:FindFirstChild("leaderstats") == nil, "у бота есть leaderstats")
 	end
-	check(joined == 6, "PlayerAdded сработал " .. joined .. " раз при 6 живых игроках (боты не входили)")
+	check(joined == 7, "PlayerAdded сработал " .. joined .. " раз при 7 входах людей (боты не входили)")
 	check(#Players:GetPlayers() == 2, "в Players не двое людей: " .. #Players:GetPlayers())
 end)
 
@@ -844,7 +1101,7 @@ scenario("пришли ещё люди (4 игрока) посреди краж�
 	if not carrier then
 		return
 	end
-	local stolenBefore = carrier.stolen
+	local escapedBefore = carrier.escaped
 	-- Вор первым в списке: если бы уходящего выбирали без оглядки на кражу, ушёл бы именно он.
 	table.remove(BotService.list(), table.find(BotService.list(), carrier))
 	table.insert(BotService.list(), 1, carrier)
@@ -863,7 +1120,7 @@ scenario("пришли ещё люди (4 игрока) посреди краж�
 	end, 90)
 	check(carried, "вор-бот не закончил кражу за 90 с")
 	check(leftEarly == false, "бот ушёл посреди кражи")
-	check(carrier.stolen == stolenBefore + 1, "вор-бот не добежал: stolen = " .. tostring(carrier.stolen))
+	check(carrier.escaped == escapedBefore + 1, "вор-бот не добежал: escaped = " .. tostring(carrier.escaped))
 	check(waitFor(function()
 		return botCount() == 0
 	end, 120), "при 4 игроках после кражи остались боты: " .. botCount())
@@ -915,16 +1172,38 @@ scenario("вышел последний игрок посреди кражи: н
 		check(StealService.carryOf(carrier) == nil, "кража не отменена")
 	end
 	check(entry ~= nil, "нет украденного для проверки")
+	-- Хозяин вышел, пока бот нёс: брейнрот в итоговом сохранении ровно один раз, потеря от воров не записана.
+	if entry then
+		local copies, lost = savedState(owner, entry.uid)
+		check(copies == 1, "после выхода хозяина в сохранении записей брейнрота " .. copies .. " (нужна 1)")
+		check(lost == 0, "после выхода хозяина в сохранении записана потеря от воров: " .. lost)
+	end
 	World.advance(10)
 	check(botCount() == 0, "боты вернулись на пустой сервер")
 end)
 
 scenario("зашёл новый игрок: боты снова появляются", function()
+	local warned = {}
+	local realWarn, realSlapper = warn, StealService.newSlapper
+	warn = function(...)
+		table.insert(warned, table.concat({ ... }, " "))
+	end
+	StealService.newSlapper = function()
+		return nil
+	end
 	local back = addHuman(4007, "Back")
 	table.insert(extra, back)
 	check(waitFor(function()
 		return botCount() == 3
 	end, 15), "после входа ботов " .. botCount())
+	warn, StealService.newSlapper = realWarn, realSlapper
+	local noSlapper = 0
+	for _, text in ipairs(warned) do
+		if string.find(text, "[Bots] no Slapper", 1, true) then
+			noSlapper += 1
+		end
+	end
+	check(noSlapper >= 3, "бот без шлепалки не оставил предупреждения (warn): " .. noSlapper .. " из 3")
 end)
 
 scenario("ботов выключили в конфиге: ни одного", function()
