@@ -46,7 +46,7 @@ end
 
 local MENU = {
 	"hud.rewards", "hud.factory", "hud.base", "hud.upgrades", "hud.rebirth", "hud.index", "hud.achievements",
-	"hud.trade", "hud.battles", "hud.skins", "hud.shop", "hud.help", "hud.admin",
+	"hud.trade", "hud.battles", "hud.skins", "hud.shop", "hud.invite", "hud.help", "hud.admin",
 }
 
 -- В каждом окне нажимаем все кнопки по очереди (те, что ещё на экране после прошлых нажатий).

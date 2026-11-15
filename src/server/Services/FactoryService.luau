@@ -8,6 +8,7 @@ local Capsules = require(Shared.Config.Capsules)
 local Creatures = require(Shared.Config.Creatures)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
+local Social = require(Shared.Config.Social)
 local Formulas = require(Shared.Util.Formulas)
 local Format = require(Shared.Util.Format)
 local Remotes = require(Shared.Remotes)
@@ -24,6 +25,7 @@ local FactoryService = {}
 
 local BAD = Color3.fromRGB(255, 110, 110)
 local GOOD = Color3.fromRGB(120, 255, 120)
+local FRIEND_HINT_DELAY = 5 -- seconds after the first craft: the big reveal of the first capsule takes 4 (client Ui/Reveal)
 
 local rng = Random.new()
 local lastCraft = {} -- [player] = os.clock()
@@ -216,6 +218,15 @@ local function craft(player, capsuleId, silent)
 		capsule = capsule.id,
 		first = free or nil, -- the free first capsule: the client plays the big reveal
 	})
+	if data.stats.crafted == 1 then
+		-- Once in a profile's life, after the very first capsule and its reveal: one line about the friend bonus
+		-- (the bonus itself is SocialService: Social.FRIEND_BONUS per friend on the server).
+		task.delay(FRIEND_HINT_DELAY, function()
+			if player.Parent then
+				Remotes.Notify:FireClient(player, S.m("social.friend_hint", { bonus = math.floor(Social.FRIEND_BONUS * 100 + 0.5) }), GOOD)
+			end
+		end)
+	end
 	return true
 end
 

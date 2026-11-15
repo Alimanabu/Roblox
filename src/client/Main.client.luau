@@ -12,6 +12,7 @@ local State = require(script.Parent.State)
 local Sfx = require(script.Parent.Sfx)
 local Music = require(script.Parent.Music)
 local SlapFx = require(script.Parent.SlapFx)
+local Invite = require(script.Parent.Invite)
 local LegendaryFx = require(script.Parent.LegendaryFx)
 local PetFollow = require(script.Parent.PetFollow)
 local WorldText = require(script.Parent.WorldText)
@@ -56,7 +57,15 @@ local uiScale = Theme.create("UIScale", { Parent = screenGui })
 local eyeScale = Theme.create("UIScale", { Parent = eyeGui })
 
 local panels = Panels.new(screenGui)
-local hud = Hud.new(screenGui, function(name)
+local hud
+hud = Hud.new(screenGui, function(name)
+	if name == "Invite" then
+		-- Not a window: Roblox draws the invite itself. A refusal gives one line at the bottom.
+		Invite.prompt(player, function(text)
+			hud:notify(text, Theme.Colors.Bad)
+		end)
+		return
+	end
 	panels:open(name)
 end, Panels.giftsReady)
 local reveal = Reveal.new(screenGui)

@@ -1,5 +1,5 @@
 -- Main screen: coins, income, level, menu and notifications.
--- The middle of the screen is for the game: coins on top, the menu behind ☰ on the left,
+-- The middle of the screen is for the game: coins on top, the menu behind ☰ and the invite button on the left,
 -- small plates with ✕ in the right column, notifications at the bottom (see Layout).
 
 local TweenService = game:GetService("TweenService")
@@ -23,6 +23,7 @@ Hud.PLATE_WIDTH = 180 -- plates of the right column
 Hud.LEVEL_WIDTH = 420 -- PC: the level line holds a long title and the rebirth title at 12+ pt
 Hud.NOTIFY_MAX = 2 -- notifications on screen at once
 Hud.TOUCH_CELL = 120 -- width of a menu button on a touch screen
+Hud.INVITE_TEXT_X = 1 -- touch: left edge of the caption under the invite button, in points
 
 local MENU = {
 	{ id = "Rewards", text = S.t("hud.rewards"), color = Color3.fromRGB(255, 120, 60) },
@@ -36,6 +37,7 @@ local MENU = {
 	{ id = "Battles", text = S.t("hud.battles"), color = Color3.fromRGB(200, 60, 90) },
 	{ id = "Skins", text = S.t("hud.skins"), color = Color3.fromRGB(220, 90, 200) },
 	{ id = "Shop", text = S.t("hud.shop"), color = C.Gold },
+	{ id = "Invite", text = S.t("hud.invite"), color = Color3.fromRGB(90, 110, 230) }, -- not a window: the Roblox invite (Main, client/Invite)
 	{ id = "Help", text = S.t("hud.help"), color = Color3.fromRGB(120, 120, 150) },
 	{ id = "Admin", text = S.t("hud.admin"), color = Color3.fromRGB(70, 70, 90), adminOnly = true },
 }
@@ -189,6 +191,26 @@ function Hud.new(screenGui, onMenu, giftsReady)
 	end)
 	self.giftBadge = badge(self.giftButton)
 	table.insert(self.badgeList, self.giftBadge)
+	-- Invite friends. Touch screens: the fifth round button of the left column with a caption under it, at the edge
+	-- (the menu is folded there and keeps its rows). PC: the line of the always open menu.
+	self.inviteButton = Hud.sideButton({ Name = "InviteButton", Text = "👥", Visible = false, Parent = screenGui }, 4, function()
+		onMenu("Invite")
+	end)
+	self.inviteLabel = create("TextButton", {
+		Name = "InviteText",
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Font = Theme.Font,
+		Text = S.t("hud.invite_short"),
+		TextColor3 = C.Text,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		Visible = false,
+		Parent = screenGui,
+	}, { create("UIStroke", { Thickness = 1.5, Transparency = 0.3 }) })
+	self.inviteLabel.Activated:Connect(function()
+		onMenu("Invite")
+	end)
 
 	-- The menu: PC two columns under the left column; touch a drawer next to it that scrolls.
 	self.menuGrid = create("UIGridLayout", {
@@ -596,6 +618,16 @@ function Hud:applyLayout(size, touch, scale)
 	sideButton(self.menuButton, 0)
 	sideButton(self.giftButton, 1)
 	sideButton(self.eyeButton, 2)
+	sideButton(self.inviteButton, 4) -- under ⚙ (row 3 on a touch screen)
+	self.inviteButton.Visible = touch == true
+	self.inviteLabel.Visible = touch == true
+	self.buttons.Invite.Visible = not touch
+	Hud.fixFont(self.inviteLabel, touch, u, PT.FONT)
+	if touch then
+		-- The caption: two lines of the smallest text, centered under the button, inside the edge strip.
+		self.inviteLabel.Position = UDim2.new(0, pt(Hud.INVITE_TEXT_X), top.scale, pt(top.pt + 4 * (PT.BUTTON + PT.GAP) + PT.BUTTON + 2))
+		self.inviteLabel.Size = UDim2.fromOffset(pt(2 * (PT.LEFT + PT.BUTTON / 2 - Hud.INVITE_TEXT_X)), pt(PT.FONT * Layout.LINE * 2 + 1))
+	end
 
 	if touch then
 		local height = size.Y * (1 - top.scale) - top.pt - PT.LEFT

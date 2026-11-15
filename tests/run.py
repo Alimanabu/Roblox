@@ -382,8 +382,11 @@ def main():
     onboarding = world("onboarding.spec.luau", "en-us")
     onboarding_ru = world("onboarding.spec.luau", "ru-ru")
     onboarding_kk = world("onboarding.spec.luau", "kk-kz")
+    invite = world("invite.spec.luau", "en-us")
+    invite_ru = world("invite.spec.luau", "ru-ru")
+    invite_kk = world("invite.spec.luau", "kk-kz")
 
-    return (economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or policy or trade or trade_ru or trade_kk
+    return (invite or invite_ru or invite_kk or economy or purchases or dictionary or text_assign or funnel_calls or strings or music or screens or screens_ru or screens_kk or steal or slap or policy or trade or trade_ru or trade_kk
             or rejoin or funnel or frames or loading or retention or retention_ru or retention_kk or layout or layout_ru or layout_kk
             or show_keys or show_keys_negative or onboarding or onboarding_ru or onboarding_kk or funnel_glue or publish_tool)
 
