@@ -93,7 +93,9 @@ base.friends,👥 Friends on server: {friends}/4 (+{bonus}%),,,👥 Друзья
 base.group_on,⭐ Group +10%,,,⭐ Группа +10%,⭐ Топ +10%
 base.group_off,⭐ Join the group: +10%,,,⭐ Вступи в группу: +10%,⭐ Топқа кір: +10%
 social.friend_hint,👥 Play with a friend: +{bonus}% income,,,👥 Играй с другом: +{bonus}% дохода,👥 Доспен ойна: +{bonus}% табыс
-social.invite_unavailable,👥 Invites are not available right now,,,👥 Приглашения сейчас недоступны,👥 Шақыру қазір қолжетімсіз
+social.invite_unavailable,👥 Invites aren't available right now. Try again later or invite a friend from the Roblox app,,,👥 Приглашения сейчас недоступны. Попробуй позже или позови друга из приложения Roblox,👥 Шақыру қазір қолжетімсіз. Кейінірек қайталап көр немесе досты Roblox қосымшасынан шақыр
+social.invite_failed,"👥 Couldn't open invites, try again later",,,"👥 Не удалось открыть приглашения, попробуй позже","👥 Шақыруды ашу мүмкін болмады, кейінірек қайталап көр"
+social.invite_denied,👥 Roblox doesn't allow invites for you now. Check privacy settings or use the Roblox app,,,👥 Roblox не разрешает приглашения сейчас. Проверь приватность или зови друзей из приложения,👥 Roblox қазір шақыруға рұқсат бермейді. Құпиялылықты тексер немесе қосымшадан шақыр
 base.empty,Nothing here yet! Go to the 🏭 Factory and craft your first brainrot.,,,Тут пусто! Иди на 🏭 Фабрику и создай первого брейнрота.,"Әзірге ештеңе жоқ! 🏭 Фабрикаға барып, алғашқы брейнротыңды жаса."
 base.sell_all,💰 Sell all,,,💰 Продать всех,💰 Бәрін сату
 base.confirm,Sure? Tap again,,,Точно? Нажми ещё,Сенімдісің бе? Қайта бас

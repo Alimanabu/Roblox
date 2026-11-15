@@ -725,6 +725,8 @@ local function checkQuestTexts(screen)
 		{ "Notify", longest },
 		{ "NotifyFriend", S.t("social.friend_hint", { bonus = 100 }) },
 		{ "NotifyInvite", S.t("social.invite_unavailable") },
+		{ "NotifyInviteFailed", S.t("social.invite_failed") },
+		{ "NotifyInviteDenied", S.t("social.invite_denied") },
 	}
 	for _, notice in ipairs(NOTICES) do
 		shared_require("Remotes").Notify:FireClient(player, notice[2], nil)
@@ -1064,7 +1066,7 @@ end
 check(menusWhole >= 1, "меню с титулом ни на одном экране не помещается целиком: проверка «кнопки в рамке» ничего не доказала")
 -- 13.11: 788 = плашки и верхняя строка 633 + 11 заданий окна наград × 7 + уведомление × 7 + 10 титулов × 5
 -- + круг «позвать друзей»: 2 уведомления × 7 + строка меню × 7 (порог был 760 при 767)
-local MIN_TEXTS = 781
+local MIN_TEXTS = 795
 check(textsChecked >= MIN_TEXTS, string.format("фраз проверено %d, нужно не меньше %d", textsChecked, MIN_TEXTS))
 print(string.format("TEXTS|%s|фраз проверено %d|меню целиком на экранах %d", tostring(__LOCALE), textsChecked, menusWhole))
 

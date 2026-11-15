@@ -125,7 +125,27 @@ local inviteButton = findNamed(gui, "InviteButton")
 local menu = findNamed(gui, "Menu")
 local inviteRow = menu and menu:FindFirstChild("Invite")
 local inviteCaption = findNamed(gui, "InviteText")
-local UNAVAILABLE = S.t("social.invite_unavailable")
+local UNAVAILABLE = S.t("social.invite_unavailable") -- ответ не true/false и не пустой: не узнан
+local FAILED = S.t("social.invite_failed") -- ошибка запроса, нет ответа, окно не открылось
+local DENIED = S.t("social.invite_denied") -- Roblox ответил false
+local Invite = shared_require("client/Invite")
+
+-- Все warn этого теста (клиентский код пишет их через глобальный warn).
+local warned = {}
+local realWarn = warn
+warn = function(...)
+	table.insert(warned, table.concat({ ... }, " "))
+	realWarn(...)
+end
+local function warnsSince(index, prefix)
+	local n = 0
+	for i = index + 1, #warned do
+		if string.sub(warned[i], 1, #prefix) == prefix then
+			n += 1
+		end
+	end
+	return n
+end
 
 ---------------------------------------------------------------------------
 -- 1. Кнопка
@@ -200,7 +220,7 @@ scenario("должно пройти: Roblox ответил true — окно п�
 			do
 				rows += 1
 				local opened, notice, errors = press(button)
-				local ok = opened == 1 and notice ~= UNAVAILABLE and errors == 0
+				local ok = opened == 1 and notice == "" and errors == 0
 				if not ok then
 					falseRefusals += 1
 				end
@@ -216,40 +236,65 @@ scenario("должно пройти: Roblox ответил true — окно п�
 	frames()
 end)
 
-scenario("не должно пройти: любой ответ, кроме true, ошибка запроса или окна — строка отказа, окна нет, ошибок нет (12 строк)", function()
+scenario("не должно пройти: любой ответ, кроме true, ошибка запроса или окна — строка по ветке отказа, свой warn, окна нет (12 строк)", function()
+	-- Три разных текста: отказ Roblox (false), сбой (ошибка, нет ответа, окно не открылось), ответ, который мы не узнали.
+	check(DENIED ~= FAILED and FAILED ~= UNAVAILABLE and DENIED ~= UNAVAILABLE, "тексты отказа совпадают между ветками")
+	check(string.find(DENIED, "privacy", 1, true) or World.locale ~= "en-us", "в тексте отказа нет действия (настройки приватности)")
 	local REFUSED = {
-		{ "false", function() World.invite.can = false end },
-		{ "nil (нет ответа)", function() World.invite.can = nil end },
-		{ 'строка "true"', function() World.invite.can = "true" end },
-		{ 'строка "yes"', function() World.invite.can = "yes" end },
-		{ "число 1", function() World.invite.can = 1 end },
-		{ "число 0", function() World.invite.can = 0 end },
-		{ "пустая таблица", function() World.invite.can = {} end },
-		{ "таблица { true }", function() World.invite.can = { true } end },
-		{ "функция", function() World.invite.can = function() return true end end },
-		{ "ошибка запроса при can = true", function() World.invite.can, World.invite.throws = true, true end },
-		{ "ошибка запроса при can = false", function() World.invite.can, World.invite.throws = false, true end },
-		{ "true, но окно приглашения упало", function() World.invite.can, World.invite.promptFails = true, true end },
+		{ "false", function() World.invite.can = false end, DENIED, "[Invite] denied" },
+		{ "nil (нет ответа)", function() World.invite.can = nil end, FAILED, "[Invite] failed (empty answer)" },
+		{ 'строка "true"', function() World.invite.can = "true" end, UNAVAILABLE, "[Invite] unavailable" },
+		{ 'строка "yes"', function() World.invite.can = "yes" end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "число 1", function() World.invite.can = 1 end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "число 0", function() World.invite.can = 0 end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "пустая таблица", function() World.invite.can = {} end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "таблица { true }", function() World.invite.can = { true } end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "функция", function() World.invite.can = function() return true end end, UNAVAILABLE, "[Invite] unavailable" },
+		{ "ошибка запроса при can = true", function() World.invite.can, World.invite.throws = true, true end, FAILED, "[Invite] failed (request error)" },
+		{ "ошибка запроса при can = false", function() World.invite.can, World.invite.throws = false, true end, FAILED, "[Invite] failed (request error)" },
+		{ "true, но окно приглашения упало", function() World.invite.can, World.invite.promptFails = true, true end, FAILED, "[Invite] failed (window did not open)" },
 	}
 	local wrong = 0
+	local branches = {}
 	for index, row in ipairs(REFUSED) do
 		World.invite.can, World.invite.throws, World.invite.promptFails = true, nil, nil
 		row[2]()
 		local button = if index % 2 == 0 then inviteCaption else inviteButton
+		local mark = #warned
 		local opened, notice, errors = press(button)
-		local ok = opened == 0 and notice == UNAVAILABLE and errors == 0
+		local inBranch, inAll = warnsSince(mark, row[4]), warnsSince(mark, "[Invite]")
+		local ok = opened == 0 and notice == row[3] and errors == 0 and inBranch == 1 and inAll == 1
 		if not ok then
 			wrong += 1
 		end
-		check(ok, string.format("ответ %s: окон %d, строка «%s», ошибок %d", row[1], opened, notice, errors))
-		print(string.format("ALLOW|не должно пройти|%s|%s|окон %d|%s", row[1], button.Name, opened, ok and "отказ со строкой" or "ПРОШЛО"))
+		branches[row[4]] = true
+		check(ok, string.format("ответ %s: окон %d, строка «%s» (нужна «%s»), ошибок %d, warn ветки %d из %d", row[1], opened, notice, row[3], errors, inBranch, inAll))
+		print(string.format("ALLOW|не должно пройти|%s|%s|окон %d|%s|warn %s", row[1], button.Name, opened, ok and "отказ по ветке" or "ПРОШЛО", row[4]))
+	end
+	local distinct = 0
+	for _ in pairs(branches) do
+		distinct += 1
 	end
 	check(#REFUSED >= 10, "строк «не должно пройти» меньше 10")
-	print(string.format("ALLOW|не должно пройти: прошло %d из %d", wrong, #REFUSED))
+	check(distinct >= 3, "разных warn по веткам " .. distinct .. ", нужно не меньше 3")
+	print(string.format("ALLOW|не должно пройти: прошло %d из %d; веток с отдельным warn %d", wrong, #REFUSED, distinct))
 	World.invite.can, World.invite.throws, World.invite.promptFails = true, nil, nil
 	-- После отказов кнопка жива: следующий ответ true открывает окно.
 	local opened = press(inviteButton)
 	check(opened == 1, "после отказов кнопка больше не открывает окно")
+end)
+
+scenario("если само уведомление упало, это warn, а не молчание; кнопка потом работает", function()
+	World.invite.can, World.invite.throws, World.invite.promptFails = false, nil, nil
+	local mark = #warned
+	local ok, result = pcall(Invite.prompt, player, function()
+		error("boom")
+	end)
+	check(ok and result == false, "Invite.prompt упал или открыл окно, когда уведомление не показалось")
+	check(warnsSince(mark, "[Invite] notify failed: ") == 1, "уведомление упало без warn «notify failed»: " .. warnsSince(mark, "[Invite] notify failed: "))
+	check(warnsSince(mark, "[Invite] denied") == 1, "ветка отказа не записала свой warn при упавшем уведомлении")
+	World.invite.can = true
+	check(press(inviteButton) == 1, "после упавшего уведомления кнопка не работает")
 end)
 
 scenario("пока Roblox отвечает, повторные нажатия не шлют новых запросов; после ответа кнопка работает снова", function()
@@ -263,6 +308,54 @@ scenario("пока Roblox отвечает, повторные нажатия н
 	check(#World.invite.prompts - prompts == 1, "окон за три нажатия: " .. (#World.invite.prompts - prompts))
 	World.invite.wait = nil
 	check(press(inviteButton) == 1, "после долгого ответа кнопка не работает")
+end)
+
+scenario("Roblox не отвечает: через 12 с кнопка снова работает и игрок видит текст ошибки", function()
+	World.invite.can, World.invite.throws, World.invite.promptFails = true, nil, nil
+	World.invite.wait = 100 -- ответ придёт через 100 с: для игрока «не вернулся»
+	local asked, prompts, mark = World.invite.asked, #World.invite.prompts, #warned
+	local order = newestNotice()
+	World.click(inviteButton)
+	World.advance(5)
+	World.click(inviteButton) -- на 5-й секунде кнопка ещё занята
+	check(World.invite.asked - asked == 1, "запросов за два нажатия до срока: " .. (World.invite.asked - asked))
+	check(Invite.busy == true, "на 5-й секунде замок уже снят")
+	World.advance(6.5) -- 11,5 с: срок ещё не вышел
+	check(Invite.busy == true, "замок снят раньше 12 с")
+	check(warnsSince(mark, "[Invite] failed (no answer") == 0, "текст ошибки показан раньше срока")
+	World.advance(1) -- 12,5 с
+	frames(2)
+	local newOrder, shown = newestNotice()
+	check(Invite.busy == false, "через 12 с замок не снят")
+	check(newOrder > order and shown == FAILED, "через 12 с нет текста ошибки: «" .. shown .. "»")
+	check(warnsSince(mark, "[Invite] failed (no answer in 12 s)") == 1, "нет warn ветки «нет ответа»: " .. warnsSince(mark, "[Invite] failed (no answer in 12 s)"))
+	-- Кнопка снова работает (новый запрос отвечает сразу).
+	World.invite.wait = nil
+	check(press(inviteButton) == 1, "после срока кнопка не открывает окно")
+	check(World.invite.prompts[#World.invite.prompts] == player, "окно открыто не тому игроку")
+	check(#World.invite.prompts - prompts == 1, "окон за сценарий " .. (#World.invite.prompts - prompts))
+	print(string.format("TIMEOUT|замок снят через %d с|текст «%s»|запросов %d", Invite.TIMEOUT, shown, World.invite.asked - asked))
+end)
+
+scenario("поздний ответ старого запроса ничего не открывает и не снимает замок нового", function()
+	World.invite.wait = 20 -- первый запрос ответит через 20 с, после срока в 12 с
+	local prompts, mark = #World.invite.prompts, #warned
+	World.click(inviteButton)
+	World.advance(12.5)
+	check(Invite.busy == false, "замок не снят по сроку")
+	World.invite.wait = 9 -- новый запрос (ответит на 21,5 с, в срок) ещё в пути, когда ответит старый (на 20 с)
+	World.click(inviteCaption)
+	check(Invite.busy == true, "новый запрос не взял замок")
+	World.advance(8) -- 20,5 с от первого: пришёл ответ старого
+	check(#World.invite.prompts == prompts, "поздний ответ старого запроса открыл окно")
+	check(warnsSince(mark, "[Invite] late answer ignored") == 1, "нет warn о позднем ответе: " .. warnsSince(mark, "[Invite] late answer ignored"))
+	check(Invite.busy == true, "поздний ответ снял замок нового запроса")
+	World.advance(3)
+	check(#World.invite.prompts - prompts == 1, "новый запрос не открыл окно: " .. (#World.invite.prompts - prompts))
+	check(Invite.busy == false, "замок не снят после ответа нового запроса")
+	World.invite.wait = nil
+	World.advance(100) -- долгий ответ первого сценария тоже дошёл и был проигнорирован
+	check(#World.invite.prompts - prompts == 1, "окон за сценарий " .. (#World.invite.prompts - prompts))
 end)
 
 ---------------------------------------------------------------------------
