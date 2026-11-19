@@ -804,6 +804,17 @@ local services = {
 			table.insert(World.invite.prompts, player)
 		end,
 	}),
+	-- Группы: World.groups[id] — что Roblox ответит про группу (нет записи — ошибка, как у несуществующей группы).
+	GroupService = service("GroupService", {
+		GetGroupInfoAsync = function(_, groupId)
+			World.groupAsked += 1
+			local answer = World.groups[groupId]
+			if answer == nil then
+				error("GetGroupInfoAsync: group not found")
+			end
+			return answer
+		end,
+	}),
 	LocalizationService = service("LocalizationService"),
 	UserInputService = service("UserInputService", { TouchEnabled = false }),
 	-- Every call is written to World.analytics; World.analyticsDown = true makes the service throw.
@@ -823,6 +834,7 @@ World.services = services
 World.analytics = {} -- calls of AnalyticsService: { method, args }
 World.restricted = {} -- [userId] = true: Roblox запрещает игроку платные случайные награды
 World.invite = { can = true, asked = 0, prompts = {} }
+World.groups, World.groupAsked = {}, 0
 
 local translations = Instance_new("LocalizationTable", "Translations")
 rawget(translations, "__state").props.GetEntries = function()

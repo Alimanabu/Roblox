@@ -6,6 +6,7 @@
 --    или ошибка самого окна — одна строка внизу, без ошибок в коде.
 -- 2. После первой капсулы — одна строка «Play with a friend: +N% income»; N сверяется с бонусом, который сервер
 --    на самом деле даёт за одного друга (SocialService), а не с тем же числом из той же строки.
+-- 3. Бонус группы: строка в окне базы и сам бонус есть только при группе, которую подтвердил Roblox.
 
 local failures = 0
 local scenarios = 0
@@ -53,6 +54,8 @@ rawget(player, "__state").props.IsFriendsWith = function(_, userId)
 end
 
 local S = shared_require("Strings")
+local Social = shared_require("Config/Social")
+local SHIPPED_GROUP_ID = Social.GroupId -- что записано в настройке, до опытов этого теста
 local Capsules = shared_require("Config/Capsules")
 
 World.startServer()
@@ -443,6 +446,108 @@ scenario("число в строке — тот бонус, который се�
 	World.removePlayer(friend)
 	World.advance(2)
 	check(SocialService.snapshot(player).bonus == 0, "друг вышел, а бонус остался")
+end)
+
+---------------------------------------------------------------------------
+-- 3. Бонус группы
+---------------------------------------------------------------------------
+
+local GROUP_OFF, GROUP_ON = S.t("base.group_off"), S.t("base.group_on")
+local function openBase()
+	World.click(menu:FindFirstChild("Base"))
+	frames()
+end
+local function setGroup(id)
+	Social.GroupId = id
+	SocialService.checkGroup()
+	SocialService.refresh()
+	frames()
+end
+
+scenario("настройка как в игре: строки про группу в окне базы нет", function()
+	Social.GroupId = SHIPPED_GROUP_ID
+	openBase()
+	check(onScreen(S.t("base.friends", { friends = 0, bonus = 0 })), "окно базы не открыто: нет строки про друзей (сломан сам тест)")
+	local enabled = SocialService.snapshot(player).groupEnabled
+	local shownLine = onScreen(GROUP_OFF) or onScreen(GROUP_ON)
+	check(shownLine == enabled, "строка про группу на экране не совпадает с состоянием сервера")
+	if SHIPPED_GROUP_ID == 0 then
+		check(enabled == false and not shownLine, "GroupId = 0, а бонус группы показан")
+	end
+	print(string.format("GROUP|в настройке Social.GroupId = %s|запросов к Roblox о группе %d|бонус группы %s|строка в окне базы %s",
+		tostring(SHIPPED_GROUP_ID), World.groupAsked, enabled and "включён" or "выключен", shownLine and "есть" or "нет"))
+end)
+
+scenario("группа показана и даёт бонус, только когда Roblox подтвердил её (2 строки «да», 11 строк «нет»)", function()
+	World.groups[777] = { Name = "Brainrot Capsule Factory Fans", Id = 777 }
+	World.groups[782] = { Name = "Fans without id" }
+	World.groups[778] = { Name = "Other group", Id = 12345 }
+	World.groups[779] = {}
+	World.groups[780] = "ok"
+	World.groups[781] = { Name = "", Id = 781 }
+	World.groups[783] = { Name = 5, Id = 783 }
+	local CASES = {
+		{ 777, true, "группа есть, Id совпал" },
+		{ 782, true, "группа есть, Id в ответе нет" },
+		{ 0, false, "GroupId = 0" },
+		{ false, false, "GroupId = false" },
+		{ "777", false, 'GroupId строкой "777"' },
+		{ -777, false, "отрицательный id" },
+		{ 777.5, false, "дробный id" },
+		{ 555, false, "группы нет: Roblox ответил ошибкой" },
+		{ 778, false, "в ответе другой Id" },
+		{ 779, false, "пустой ответ" },
+		{ 780, false, "ответ строкой" },
+		{ 781, false, "пустое имя группы" },
+		{ 783, false, "имя группы не строка" },
+	}
+	-- Игрок состоит в любой группе, про которую его спросят: бонус не должен появиться без подтверждённой группы.
+	rawget(player, "__state").props.IsInGroup = function()
+		return true
+	end
+	local yes, no = 0, 0
+	for _, case in ipairs(CASES) do
+		setGroup(case[1])
+		local snapshot = SocialService.snapshot(player)
+		local line = onScreen(GROUP_ON) or onScreen(GROUP_OFF)
+		local bonus = snapshot.bonus > 0
+		check(snapshot.groupEnabled == case[2] and line == case[2] and bonus == case[2],
+			string.format("%s: включён %s, строка %s, бонус %s; нужно %s", case[3], tostring(snapshot.groupEnabled), tostring(line), tostring(bonus), tostring(case[2])))
+		if case[2] then
+			yes += 1
+			check(onScreen(GROUP_ON) and math.abs(snapshot.bonus - Social.GROUP_BONUS) < 0.001, case[3] .. ": участнику группы не показано «Group +10%» или бонус не тот")
+		else
+			no += 1
+		end
+		print(string.format("GROUP|%s|%s|бонус %s, строка %s", case[2] and "должно пройти" or "не должно пройти", case[3],
+			bonus and "есть" or "нет", line and "есть" or "нет"))
+	end
+	check(yes == 2 and no == 11, string.format("строк «да» %d, «нет» %d", yes, no))
+end)
+
+scenario("игрок не в группе: при подтверждённой группе видит «Join the group», бонуса нет", function()
+	local outsider = World.addPlayer(2004, "Outsider")
+	World.advance(1)
+	setGroup(777)
+	local snapshot = SocialService.snapshot(outsider)
+	check(snapshot.groupEnabled == true and snapshot.group == false and snapshot.bonus == 0, "у игрока вне группы бонус или нет приглашения в группу")
+	World.removePlayer(outsider)
+	World.advance(2)
+end)
+
+scenario("запрос о группе упал при старте: бонуса нет; через минуту Roblox ответил — бонус включился сам", function()
+	setGroup(900)
+	check(SocialService.snapshot(player).groupEnabled == false and not onScreen(GROUP_ON), "группа 900 показана до ответа Roblox")
+	World.groups[900] = { Name = "Late group", Id = 900 }
+	World.advance(61)
+	frames()
+	check(SocialService.snapshot(player).groupEnabled == true and onScreen(GROUP_ON), "после ответа Roblox бонус группы не включился")
+	-- И обратно к настройке игры.
+	setGroup(SHIPPED_GROUP_ID)
+	check(SocialService.snapshot(player).groupEnabled == (SHIPPED_GROUP_ID ~= 0 and World.groups[SHIPPED_GROUP_ID] ~= nil), "настройка игры не вернулась")
+	if SHIPPED_GROUP_ID == 0 then
+		check(not onScreen(GROUP_ON) and not onScreen(GROUP_OFF) and SocialService.snapshot(player).bonus == 0, "после опытов строка группы осталась")
+	end
 end)
 
 check(#World.errors == 0, "ошибки в коде: " .. #World.errors)

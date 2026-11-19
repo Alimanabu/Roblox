@@ -395,7 +395,7 @@ local function floorCard(content, state, order)
 end
 
 function Base.signature(state)
-	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.pet), floorSignature(state), tostring(randomRestricted()) }
+	local parts = { state.slots, state.incomeMultiplier, state.social.bonus, tostring(state.social.groupEnabled), tostring(state.pet), floorSignature(state), tostring(randomRestricted()) }
 	for _, entry in ipairs(state.creatures) do
 		table.insert(parts, entry.uid .. tostring(entry.nickname))
 	end
