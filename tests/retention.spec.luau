@@ -331,8 +331,10 @@ local function redeem(player, code)
 	local mark = #World.sent
 	fromPlayer(Remotes.RedeemCode, player, code)
 	codeReply = notifies(player, mark)[1] or ""
+	-- Награда считается до паузы: за 3 секунды паузы уже выданный брейнрот сам приносит монеты, и это не награда за код.
+	local gained = data.coins - coins
 	World.advance(3) -- пауза между попытками
-	return data.coins - coins
+	return gained
 end
 
 scenario("код: неверный даёт понятное сообщение и ничего не выдаёт", function()
@@ -359,7 +361,7 @@ scenario("код: новые коды для роликов и Discord рабо�
 end)
 
 scenario("код: просроченный не принимается", function()
-	Codes.OLDCODE = { coinsMinutes = 1, expires = os.time() - 1 }
+	Codes.OLDCODE = { enabled = true, coinsMinutes = 1, expires = os.time() - 1 }
 	check(redeem(coder, "OLDCODE") == 0, "просроченный код принят")
 	check(codeReply == text("code.invalid"), "сообщение о просроченном коде: " .. codeReply)
 	Codes.OLDCODE = nil
@@ -374,6 +376,78 @@ scenario("код: использованный остаётся использо
 	local other = join(OLD_PLAIN + 100, "Other")
 	check(redeem(other, "BRAINROT") == Codes.BRAINROT.coinsMinutes * MIN, "другому игроку код не выдан")
 	leave(other)
+end)
+
+-- Разрешающий список (13.11): код выдаётся только при записи-таблице с enabled ровно true и, если есть срок, числом,
+-- которое ещё не прошло. Всё остальное — «такого кода нет», награды нет, код не записан использованным.
+scenario("код: выдаётся только включённый (enabled = true); код на 25 лайков записан, но выключен", function()
+	check(type(Codes.LIKES25) == "table" and Codes.LIKES25.enabled == false, "код LIKES25 не записан выключенным")
+	local lister = join(CODER + 500, "Lister")
+	local data = DataService.get(lister)
+	local now = os.time()
+	Codes.TNOEXP = { enabled = true, coinsMinutes = 1 }
+	Codes.TFUTURE = { enabled = true, coinsMinutes = 1, expires = now + 100000 }
+	local PASS = { "SIXSEVEN", "brainrot", " Rizz ", "sigma", "RELEASE", "discord", "YouTube", "skin67", "TNOEXP", "tfuture" }
+	Codes.TMISSING = { coinsMinutes = 1 }
+	Codes.TTYPO = { enable = true, coinsMinutes = 1 }
+	Codes.TSTRING = { enabled = "true", coinsMinutes = 1 }
+	Codes.TYES = { enabled = "yes", coinsMinutes = 1 }
+	Codes.TONE = { enabled = 1, coinsMinutes = 1 }
+	Codes.TTABLE = { enabled = {}, coinsMinutes = 1 }
+	Codes.TFALSE = { enabled = false, coinsMinutes = 1 }
+	Codes.TPAST = { enabled = true, coinsMinutes = 1, expires = now - 1 }
+	Codes.TBADDATE = { enabled = true, coinsMinutes = 1, expires = "tomorrow" }
+	Codes.TNOTTABLE = true
+	Codes.TTEXT = "coins"
+	local FAIL = { "LIKES25", "likes25", " Likes 25 ", "TMISSING", "TTYPO", "TSTRING", "TYES", "TONE", "TTABLE", "TFALSE", "TPAST",
+		"TBADDATE", "TNOTTABLE", "TTEXT", "NOSUCHCODE" }
+	local function try(code)
+		local key = string.upper((code:gsub("%s", "")))
+		local errors, creatures = #World.errors, #data.creatures
+		local skins = 0
+		for _ in pairs(data.skins or {}) do
+			skins += 1
+		end
+		local luck = data.boosts.luckUntil or 0
+		local gained = redeem(lister, code)
+		local skinsNow = 0
+		for _ in pairs(data.skins or {}) do
+			skinsNow += 1
+		end
+		local rewarded = gained > 0 or #data.creatures > creatures or skinsNow > skins or (data.boosts.luckUntil or 0) > luck
+		return key, data.codes[key] == true, rewarded, codeReply, #World.errors - errors
+	end
+	local falseRefusals = 0
+	for _, code in ipairs(PASS) do
+		local key, used, rewarded, reply, errors = try(code)
+		local ok = used and rewarded and reply ~= text("code.invalid") and errors == 0
+		if not ok then
+			falseRefusals += 1
+		end
+		check(ok, string.format("код «%s» должен пройти: записан %s, награда %s, ответ «%s», ошибок %d", code, tostring(used), tostring(rewarded), reply, errors))
+		print(string.format("CODE|должно пройти|«%s» -> %s|%s", code, key, ok and "выдан" or "ОТКАЗ"))
+	end
+	local leaked = 0
+	for _, code in ipairs(FAIL) do
+		local key, used, rewarded, reply, errors = try(code)
+		local ok = not used and not rewarded and reply == text("code.invalid") and errors == 0
+		if not ok then
+			leaked += 1
+		end
+		check(ok, string.format("код «%s» не должен пройти: записан %s, награда %s, ответ «%s», ошибок %d", code, tostring(used), tostring(rewarded), reply, errors))
+		print(string.format("CODE|не должно пройти|«%s» -> %s|%s", code, key, ok and "отказ" or "ВЫДАН"))
+	end
+	check(#PASS >= 10 and #FAIL >= 10, "строк таблицы меньше 10")
+	print(string.format("CODE|должно пройти %d, ложных отказов %d|не должно пройти %d, выдано %d", #PASS, falseRefusals, #FAIL, leaked))
+	-- Выключатель работает в обе стороны: включили — код выдаётся (так его включат при 25 лайках), и снова выключили.
+	Codes.LIKES25.enabled = true
+	local _, used, rewarded = try("likes25")
+	check(used and rewarded, "LIKES25 не выдаётся после enabled = true")
+	Codes.LIKES25.enabled = false
+	for _, key in ipairs({ "TNOEXP", "TFUTURE", "TMISSING", "TTYPO", "TSTRING", "TYES", "TONE", "TTABLE", "TFALSE", "TPAST", "TBADDATE", "TNOTTABLE", "TTEXT" }) do
+		Codes[key] = nil
+	end
+	leave(lister)
 end)
 
 ---------------------------------------------------------------------------

@@ -16,6 +16,18 @@ local ATTEMPT_COOLDOWN = 2
 
 local lastAttempt = {} -- [player] = os.clock()
 
+-- A code is given out only when its entry is a table with enabled exactly true and, when it has a date, a number
+-- that has not passed. Everything else (no entry, enabled missing or of another kind, a broken date) is refused.
+function CodeService.active(reward, now)
+	if type(reward) ~= "table" or reward.enabled ~= true then
+		return false
+	end
+	if reward.expires ~= nil and (type(reward.expires) ~= "number" or now > reward.expires) then
+		return false
+	end
+	return true
+end
+
 local function redeem(player, text)
 	if type(text) ~= "string" or #text > 40 then
 		return
@@ -33,7 +45,7 @@ local function redeem(player, text)
 	end
 	local code = string.upper((text:gsub("%s", "")))
 	local reward = Codes[code]
-	if not reward or (reward.expires and os.time() > reward.expires) then
+	if not CodeService.active(reward, os.time()) then
 		Remotes.Notify:FireClient(player, S.m("code.invalid"), BAD)
 		return
 	end

@@ -254,8 +254,8 @@ local Source = {
 
 	-- Promo codes
 	["code.skin67.text"] = "Skin 67 unlocked! Put it on in 🎨 Skins",
-	["code.invalid"] = "❌ That code doesn't exist (or it has expired)",
-	["code.used"] = "You've already used this code",
+	["code.invalid"] = "❌ No such code. Check the letters, or it may have ended",
+	["code.used"] = "You already used this code. Each code works once per account",
 	["code.redeemed"] = "🎟️ Code {code}: {reward} {text}",
 
 	-- How to play
